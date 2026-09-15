@@ -20,6 +20,8 @@ struct FeatureDetailView: View {
                 AcademicRecordsView(kind: .grades)
             case .exams:
                 AcademicRecordsView(kind: .exams)
+            case .personInfo:
+                AcademicStudentInfoView()
             case nil:
                 portalOrUnavailable
             }

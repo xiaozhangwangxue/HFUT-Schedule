@@ -18,6 +18,7 @@ enum NativeDestination: String, Hashable {
     case settings
     case grades
     case exams
+    case personInfo
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -46,7 +47,7 @@ enum FeatureCatalog {
         .init(id: 7, title: "成绩", subtitle: "成绩查询与分析", systemImage: "chart.bar.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .grades),
         .init(id: 8, title: "挂科率", subtitle: "课程通过情况", systemImage: "percent", category: .study, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 9, title: "课程汇总", subtitle: "学期课程与教材", systemImage: "books.vertical.fill", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
-        .init(id: 10, title: "个人信息", subtitle: "学籍与校园身份", systemImage: "person.text.rectangle.fill", category: .campus, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 10, title: "个人信息", subtitle: "学籍与校园身份", systemImage: "person.text.rectangle.fill", category: .campus, urlString: nil, nativeDestination: .personInfo),
         .init(id: 11, title: "网址导航", subtitle: "实验室与常用站点", systemImage: "folder.fill", category: .tools, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 12, title: "洗浴", subtitle: "洗浴服务与账单", systemImage: "shower.fill", category: .life, urlString: "https://bathing.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 13, title: "选课", subtitle: "选课与确认", systemImage: "checklist", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
