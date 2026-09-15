@@ -78,6 +78,30 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(courses[0].source, "academic")
     }
 
+    func testAcademicScheduleAcceptsCurrentLooseFieldTypes() throws {
+        let json = """
+        {
+          "result": {
+            "lessonList": [{"id": 42, "name": "高等数学"}],
+            "scheduleList": [{
+              "lessonId": "42", "room": "翠十二教 101", "weekday": "1",
+              "personName": null, "weekIndex": "2", "startTime": "0800",
+              "endTime": 950, "date": "2026-09-21"
+            }]
+          }
+        }
+        """.data(using: .utf8)!
+        let datum = try JSONDecoder().decode(AcademicDatumResponse.self, from: json)
+        let payload = AcademicSyncPayload(
+            term: AcademicTermResponse(lessonIds: [42], timeTableLayoutId: nil, currentWeek: nil),
+            datum: datum
+        )
+
+        XCTAssertEqual(payload.courses().first?.name, "高等数学")
+        XCTAssertEqual(payload.courses().first?.location, "翠十二教 101")
+        XCTAssertEqual(payload.courses().first?.startTime, "08:00")
+    }
+
     func testLegacyCourseBackupStillDecodes() throws {
         let json = """
         [{
@@ -151,6 +175,11 @@ final class FeatureCatalogTests: XCTestCase {
         <h3>2026~2027年第1学期</h3><table class="student-grade-table"><tr><td>高等数学</td><td></td><td>MATH1001</td><td>5</td><td>3.8</td><td>期末</td><td>92</td></tr></table>
         """
         XCTAssertEqual(AcademicHTMLParser.grades(from: gradesHTML).first?.grades.first?.score, "92")
+
+        let gradesWithoutLegacyClass = """
+        <h3>2026~2027年第1学期</h3><table><tr><td>大学英语</td><td></td><td>EN1001</td><td>2</td><td>3.5</td><td>期末</td><td>88</td></tr></table>
+        """
+        XCTAssertEqual(AcademicHTMLParser.grades(from: gradesWithoutLegacyClass).first?.grades.first?.score, "88")
 
         let examsHTML = """
         <table><tbody><tr><td>高等数学</td><td>2027-01-08 08:00~10:00</td><td>翠十二教 101</td></tr></tbody></table>

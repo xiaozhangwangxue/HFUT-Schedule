@@ -36,7 +36,7 @@ struct AcademicClient {
         do {
             term = try JSONDecoder().decode(AcademicTermResponse.self, from: termData)
         } catch {
-            throw AcademicClientError.invalidData("课表索引解析失败：\(error.localizedDescription)")
+            throw AcademicClientError.invalidData("课表索引解析失败：\(Self.decodingDescription(error))")
         }
 
         let body = try JSONSerialization.data(withJSONObject: [
@@ -49,9 +49,13 @@ struct AcademicClient {
         do {
             datum = try JSONDecoder().decode(AcademicDatumResponse.self, from: datumData)
         } catch {
-            throw AcademicClientError.invalidData("课表详情解析失败：\(error.localizedDescription)")
+            throw AcademicClientError.invalidData("课表详情解析失败：\(Self.decodingDescription(error))")
         }
-        return AcademicSyncPayload(term: term, datum: datum)
+        let payload = AcademicSyncPayload(term: term, datum: datum)
+        guard !payload.courses().isEmpty || term.lessonIds.isEmpty else {
+            throw AcademicClientError.invalidData("课表详情已返回，但没有可识别的上课记录（lessonIds：\(term.lessonIds.count)）。")
+        }
+        return payload
     }
 
     func fetchGrades() async throws -> [AcademicGradeTerm] {
@@ -144,6 +148,27 @@ struct AcademicClient {
         return Int(text[range])
     }
 
+    private static func decodingDescription(_ error: Error) -> String {
+        guard let decodingError = error as? DecodingError else { return error.localizedDescription }
+        switch decodingError {
+        case .keyNotFound(let key, let context):
+            return "缺少字段 \(path(context.codingPath, ending: key.stringValue))"
+        case .typeMismatch(_, let context):
+            return "字段类型不符：\(path(context.codingPath))"
+        case .valueNotFound(_, let context):
+            return "字段为空：\(path(context.codingPath))"
+        case .dataCorrupted(let context):
+            return "JSON 数据损坏：\(path(context.codingPath))"
+        @unknown default:
+            return error.localizedDescription
+        }
+    }
+
+    private static func path(_ codingPath: [CodingKey], ending: String? = nil) -> String {
+        let parts = codingPath.map(\.stringValue) + (ending.map { [$0] } ?? [])
+        return parts.isEmpty ? "根节点" : parts.joined(separator: ".")
+    }
+
     private struct StudentContext {
         let studentID: Int
         let bizTypeID: Int
@@ -187,7 +212,12 @@ enum AcademicHTMLParser {
 
     static func grades(from html: String) -> [AcademicGradeTerm] {
         let headings = matches(in: html, pattern: #"(?is)<h3\b[^>]*>(.*?)</h3>"#).map(clean)
-        let tables = matches(in: html, pattern: #"(?is)<table\b[^>]*class=[\"'][^\"']*student-grade-table[^\"']*[\"'][^>]*>(.*?)</table>"#)
+        let gradeTables = matches(in: html, pattern: #"(?is)<table\b[^>]*class=[\"'][^\"']*student-grade-table[^\"']*[\"'][^>]*>(.*?)</table>"#)
+        let tables = gradeTables.isEmpty
+            ? matches(in: html, pattern: #"(?is)<table\b[^>]*>(.*?)</table>"#).filter { table in
+                rows(in: table).contains(where: { $0.count >= 7 })
+            }
+            : gradeTables
         return tables.enumerated().compactMap { index, table in
             let grades = rows(in: table).compactMap { cells -> AcademicGrade? in
                 guard cells.count >= 7 else { return nil }
