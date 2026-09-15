@@ -29,5 +29,6 @@ struct RootView: View {
             .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
             .tag(AppTab.me)
         }
+        .onAppear { appState.consumePendingDestination() }
     }
 }

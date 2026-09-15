@@ -15,6 +15,6 @@
 | 校园卡、网费、电费、洗浴 | 迁移中 | 当前可访问门户，待原生账单视图 |
 | 图书馆、校车、宿舍评分 | 迁移中 | 当前可访问门户，待原生数据视图 |
 | 通知与考试提醒 | 迁移中 | 待接入 UserNotifications |
-| Android 快捷设置磁贴 | 迁移中 | 将改为 App Intents / 快捷指令 |
+| Android 快捷设置磁贴 | 可用 | 已替换为 App Intents / 快捷指令 |
 | Android 桌面小组件 | 迁移中 | 将改为 WidgetKit |
 | APK 增量更新 | 已替换 | iOS 采用 TestFlight/App Store 版本分发 |

@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct ServicesView: View {
+    @EnvironmentObject private var appState: AppState
     @State private var query = ""
     @State private var category: FeatureCategory?
+    @State private var shortcutFeature: CampusFeature?
 
     private var filtered: [CampusFeature] {
         FeatureCatalog.all.filter { feature in
@@ -38,6 +40,26 @@ struct ServicesView: View {
         .searchable(text: $query, prompt: "搜索 48 项校园服务")
         .navigationDestination(for: CampusFeature.self) { feature in
             FeatureDetailView(feature: feature)
+        }
+        .navigationDestination(isPresented: shortcutFeatureBinding) {
+            if let shortcutFeature {
+                FeatureDetailView(feature: shortcutFeature)
+            }
+        }
+        .onAppear(perform: consumeShortcutFeature)
+        .onChange(of: appState.pendingFeatureID) { _, _ in consumeShortcutFeature() }
+    }
+
+    private var shortcutFeatureBinding: Binding<Bool> {
+        Binding(
+            get: { shortcutFeature != nil },
+            set: { if !$0 { shortcutFeature = nil } }
+        )
+    }
+
+    private func consumeShortcutFeature() {
+        if let feature = appState.consumePendingFeature() {
+            shortcutFeature = feature
         }
     }
 
