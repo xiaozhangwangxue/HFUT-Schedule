@@ -16,11 +16,17 @@ struct LoginPortalView: View {
     }
 
     var body: some View {
-        PortalWebView(
-            url: AcademicPortal.loginURL(for: selectedMode),
-            academicMode: selectedMode,
-            onAcademicAuthenticated: synchronizeAll
-        )
+        Group {
+            if selectedMode == .direct {
+                NativeCASLoginView(onAuthenticated: synchronizeAll)
+            } else {
+                PortalWebView(
+                    url: AcademicPortal.loginURL(for: selectedMode),
+                    academicMode: selectedMode,
+                    onAcademicAuthenticated: synchronizeAll
+                )
+            }
+        }
             .id(selectedMode)
             .safeAreaInset(edge: .top) {
                 Picker("访问方式", selection: $connectionMode) {

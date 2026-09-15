@@ -2,6 +2,13 @@ import XCTest
 @testable import HFUTSchedule
 
 final class FeatureCatalogTests: XCTestCase {
+    func testCASEncryptionMatchesAndroidAES() throws {
+        XCTAssertEqual(
+            try CASLoginClient.encryptAES("password", key: "1234567890123456"),
+            "mcM3yWWT+8sre6MjlFUpww=="
+        )
+    }
+
     func testFeatureIDsAreUnique() {
         let ids = FeatureCatalog.all.map(\.id)
         XCTAssertEqual(ids.count, Set(ids).count)
