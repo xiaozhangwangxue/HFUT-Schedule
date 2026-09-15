@@ -1,0 +1,538 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */; };
+		1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B76EDDB25B66726ADAC9524 /* AppTheme.swift */; };
+		1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839B072306659B2A53C5E287 /* RootView.swift */; };
+		1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */; };
+		2C1E67D687D8D240EA372E94 /* ServicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0F020B95A60E658FCAD4CB /* ServicesView.swift */; };
+		32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */; };
+		350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */; };
+		4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */; };
+		5A27648FC106C74B2D07EB19 /* ScheduleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */; };
+		5B80267BD16244C636A025D6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 56C449DEFB153FC3EAAB8391 /* Assets.xcassets */; };
+		83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44D706B873C376660720FE /* ScheduleView.swift */; };
+		8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */; };
+		95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BBD76AF5494A92805F31C3 /* PortalWebView.swift */; };
+		A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */; };
+		AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C31E16CE43EAF7ACA3328B /* AppState.swift */; };
+		B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADF53983339A1298C10365C /* GlassSurface.swift */; };
+		C1F569CE2ECC5673AA49A0A6 /* LoginPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */; };
+		D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */; };
+		D40893D53C715F270D34712D /* Course.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA33B515BDFC62F529434E96 /* Course.swift */; };
+		E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B7919A5A2D1B0110883E7068 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0FAD7D9E7CE038D6D3B1805 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BF93C226D692DE9727DB1041;
+			remoteInfo = HFUTSchedule;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		1B76EDDB25B66726ADAC9524 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		28C31E16CE43EAF7ACA3328B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusFeature.swift; sourceTree = "<group>"; };
+		3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		3D44D706B873C376660720FE /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HFUTScheduleApp.swift; sourceTree = "<group>"; };
+		48BBD76AF5494A92805F31C3 /* PortalWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebView.swift; sourceTree = "<group>"; };
+		4ADF53983339A1298C10365C /* GlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSurface.swift; sourceTree = "<group>"; };
+		56C449DEFB153FC3EAAB8391 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		594A872EB0360AC8D4B51844 /* HFUTScheduleTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HFUTScheduleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleStore.swift; sourceTree = "<group>"; };
+		839B072306659B2A53C5E287 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureDetailView.swift; sourceTree = "<group>"; };
+		AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
+		D4622359506E21C63B8B6737 /* HFUTSchedule.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HFUTSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExporter.swift; sourceTree = "<group>"; };
+		EA33B515BDFC62F529434E96 /* Course.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Course.swift; sourceTree = "<group>"; };
+		F63E7F4E7F025381234C540A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCatalogTests.swift; sourceTree = "<group>"; };
+		FC0F020B95A60E658FCAD4CB /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
+		FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginPortalView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		29476BA9328ECFB53F622E3E /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				4ADF53983339A1298C10365C /* GlassSurface.swift */,
+				C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		66DFDF2DAC7C77D214665B47 /* HFUTScheduleTests */ = {
+			isa = PBXGroup;
+			children = (
+				F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */,
+			);
+			path = HFUTScheduleTests;
+			sourceTree = "<group>";
+		};
+		6A9C07C87B6083E64975DC88 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */,
+				EA33B515BDFC62F529434E96 /* Course.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		BFDF154AF4B28E71331BDF66 /* HFUTSchedule */ = {
+			isa = PBXGroup;
+			children = (
+				28C31E16CE43EAF7ACA3328B /* AppState.swift */,
+				1B76EDDB25B66726ADAC9524 /* AppTheme.swift */,
+				4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */,
+				F63E7F4E7F025381234C540A /* Info.plist */,
+				839B072306659B2A53C5E287 /* RootView.swift */,
+				29476BA9328ECFB53F622E3E /* Components */,
+				6A9C07C87B6083E64975DC88 /* Models */,
+				F0EA468035002E6653598EDB /* Resources */,
+				C5252B0A3004BC3BBA69C4AF /* Services */,
+				FF044581D15BC7C19737870F /* Views */,
+			);
+			path = HFUTSchedule;
+			sourceTree = "<group>";
+		};
+		C5252B0A3004BC3BBA69C4AF /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */,
+				81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D118BA49B6533635D0EA8CA4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D4622359506E21C63B8B6737 /* HFUTSchedule.app */,
+				594A872EB0360AC8D4B51844 /* HFUTScheduleTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EF9B8BC90168B91E25EF83CB = {
+			isa = PBXGroup;
+			children = (
+				BFDF154AF4B28E71331BDF66 /* HFUTSchedule */,
+				66DFDF2DAC7C77D214665B47 /* HFUTScheduleTests */,
+				D118BA49B6533635D0EA8CA4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F0EA468035002E6653598EDB /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				56C449DEFB153FC3EAAB8391 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		FF044581D15BC7C19737870F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */,
+				8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */,
+				FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */,
+				48BBD76AF5494A92805F31C3 /* PortalWebView.swift */,
+				AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */,
+				0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */,
+				3D44D706B873C376660720FE /* ScheduleView.swift */,
+				FC0F020B95A60E658FCAD4CB /* ServicesView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BF93C226D692DE9727DB1041 /* HFUTSchedule */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7CB650EF375863F907B142AD /* Build configuration list for PBXNativeTarget "HFUTSchedule" */;
+			buildPhases = (
+				E95AC73F28A6FCF13D0A2606 /* Sources */,
+				7D143E0936C7CFCF913EFE94 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HFUTSchedule;
+			packageProductDependencies = (
+			);
+			productName = HFUTSchedule;
+			productReference = D4622359506E21C63B8B6737 /* HFUTSchedule.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E7284FDF09F320962B681E62 /* HFUTScheduleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A6DA24FE0B2F3EB13B4ECA3 /* Build configuration list for PBXNativeTarget "HFUTScheduleTests" */;
+			buildPhases = (
+				9FC8AF9D3B93459E620BB916 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2DECA870E386270C1CECC9A2 /* PBXTargetDependency */,
+			);
+			name = HFUTScheduleTests;
+			packageProductDependencies = (
+			);
+			productName = HFUTScheduleTests;
+			productReference = 594A872EB0360AC8D4B51844 /* HFUTScheduleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D0FAD7D9E7CE038D6D3B1805 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					BF93C226D692DE9727DB1041 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					E7284FDF09F320962B681E62 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F68627319857571F5F6B76BE /* Build configuration list for PBXProject "HFUTSchedule" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EF9B8BC90168B91E25EF83CB;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D118BA49B6533635D0EA8CA4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BF93C226D692DE9727DB1041 /* HFUTSchedule */,
+				E7284FDF09F320962B681E62 /* HFUTScheduleTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7D143E0936C7CFCF913EFE94 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B80267BD16244C636A025D6 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9FC8AF9D3B93459E620BB916 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E95AC73F28A6FCF13D0A2606 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */,
+				1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */,
+				0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */,
+				32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */,
+				D40893D53C715F270D34712D /* Course.swift in Sources */,
+				1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */,
+				350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */,
+				B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */,
+				8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */,
+				C1F569CE2ECC5673AA49A0A6 /* LoginPortalView.swift in Sources */,
+				95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */,
+				D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */,
+				1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */,
+				4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */,
+				5A27648FC106C74B2D07EB19 /* ScheduleStore.swift in Sources */,
+				83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */,
+				E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */,
+				2C1E67D687D8D240EA372E94 /* ServicesView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2DECA870E386270C1CECC9A2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BF93C226D692DE9727DB1041 /* HFUTSchedule */;
+			targetProxy = B7919A5A2D1B0110883E7068 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		121DDDB621F5BA1A2B98DA73 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		18BBB2E143781CEE1EC766D8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HFUTSchedule/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios;
+				PRODUCT_NAME = HFUTSchedule;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6532C8B1C57D87A2DFE6566E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HFUTSchedule.app/HFUTSchedule";
+			};
+			name = Release;
+		};
+		7DBCBD182337CF3D08F3948E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HFUTSchedule/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios;
+				PRODUCT_NAME = HFUTSchedule;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CB013367C47CC29FAE8A06FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F3BCD07D7E664CD245283918 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HFUTSchedule.app/HFUTSchedule";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7CB650EF375863F907B142AD /* Build configuration list for PBXNativeTarget "HFUTSchedule" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DBCBD182337CF3D08F3948E /* Debug */,
+				18BBB2E143781CEE1EC766D8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8A6DA24FE0B2F3EB13B4ECA3 /* Build configuration list for PBXNativeTarget "HFUTScheduleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F3BCD07D7E664CD245283918 /* Debug */,
+				6532C8B1C57D87A2DFE6566E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F68627319857571F5F6B76BE /* Build configuration list for PBXProject "HFUTSchedule" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB013367C47CC29FAE8A06FC /* Debug */,
+				121DDDB621F5BA1A2B98DA73 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D0FAD7D9E7CE038D6D3B1805 /* Project object */;
+}
