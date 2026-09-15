@@ -5,6 +5,7 @@ struct ProfileView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var notificationManager: CourseNotificationManager
+    @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var showingLogin = false
     @State private var showingAbout = false
     @State private var exportingBackup = false
@@ -69,9 +70,9 @@ struct ProfileView: View {
             HStack(spacing: 15) {
                 GlassIcon(systemName: "person.crop.circle.fill", tint: AppTheme.violet, size: 60)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("统一身份认证")
+                    Text(studentStore.info?.name.isEmpty == false ? studentStore.info!.name : "统一身份认证")
                         .font(.title3.weight(.bold))
-                    Text("登录后访问教务、图书馆与校园服务")
+                    Text(accountSubtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -85,6 +86,13 @@ struct ProfileView: View {
         }
         .padding(20)
         .adaptiveGlass(cornerRadius: 26)
+    }
+
+    private var accountSubtitle: String {
+        guard let info = studentStore.info else { return "登录后自动同步学籍、课表、成绩与考试" }
+        return [info.studentID, info.department, info.major, info.className]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
     }
 
     private var settingsCard: some View {

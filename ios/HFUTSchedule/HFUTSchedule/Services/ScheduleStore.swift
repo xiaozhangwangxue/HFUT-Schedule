@@ -12,6 +12,7 @@ final class ScheduleStore: ObservableObject {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         fileURL = directory.appendingPathComponent("courses.json")
         load()
+        removeLegacyPreviewDataIfNeeded()
     }
 
     func courses(on weekday: Int) -> [Course] {
@@ -27,11 +28,6 @@ final class ScheduleStore: ObservableObject {
 
     func remove(id: UUID) {
         courses.removeAll { $0.id == id }
-        save()
-    }
-
-    func installPreviewData() {
-        courses = Course.preview
         save()
     }
 
@@ -60,5 +56,24 @@ final class ScheduleStore: ObservableObject {
     private func save() {
         guard let data = try? JSONEncoder().encode(courses) else { return }
         try? data.write(to: fileURL, options: .atomic)
+    }
+
+    private func removeLegacyPreviewDataIfNeeded() {
+        let migrationKey = "removedLegacyPreviewScheduleV1"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+        defer { UserDefaults.standard.set(true, forKey: migrationKey) }
+
+        let previewSignatures = Set(Course.preview.map(Self.signature))
+        let storedSignatures = Set(courses.map(Self.signature))
+        guard !courses.isEmpty,
+              courses.allSatisfy({ $0.source == nil }),
+              storedSignatures.isSubset(of: previewSignatures) else { return }
+        courses.removeAll()
+        save()
+    }
+
+    private static func signature(_ course: Course) -> String {
+        [course.name, course.teacher, course.location, String(course.weekday), course.startTime, course.endTime]
+            .joined(separator: "|")
     }
 }

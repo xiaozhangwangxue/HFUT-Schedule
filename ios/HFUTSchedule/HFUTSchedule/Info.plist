@@ -59,6 +59,16 @@
         <true/>
         <key>NSAllowsLocalNetworking</key>
         <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>jxglstu.hfut.edu.cn</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>用于扫描校园服务二维码和登录二维码。</string>

@@ -156,6 +156,11 @@ private struct AcademicRecordsSyncView: View {
     @State private var isSyncing = false
     @State private var status = "请在校方页面完成统一身份认证"
     @State private var resultMessage: String?
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+
+    private var selectedMode: AcademicConnectionMode {
+        AcademicConnectionMode(rawValue: connectionMode) ?? .direct
+    }
 
     var body: some View {
         NavigationStack {
@@ -163,15 +168,26 @@ private struct AcademicRecordsSyncView: View {
                 AcademicRecordsWebView(
                     kind: kind,
                     syncTrigger: syncTrigger,
+                    connectionMode: selectedMode,
                     onPageReady: {
+                        guard !pageReady else { return }
                         pageReady = true
-                        status = "登录完成，点击同步\(kind.title)"
+                        status = "登录完成，正在自动同步\(kind.title)…"
+                        isSyncing = true
+                        syncTrigger += 1
                     },
                     onResult: handleResult
                 )
+                .id(selectedMode)
                 .ignoresSafeArea(edges: .bottom)
 
                 VStack(spacing: 10) {
+                    Picker("访问方式", selection: $connectionMode) {
+                        ForEach(AcademicConnectionMode.allCases) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                     Text(status)
                         .font(.footnote.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -232,6 +248,7 @@ private struct AcademicRecordsSyncView: View {
 private struct AcademicRecordsWebView: UIViewRepresentable {
     let kind: AcademicRecordKind
     let syncTrigger: Int
+    let connectionMode: AcademicConnectionMode
     let onPageReady: () -> Void
     let onResult: (Result<AcademicRecordsPayload, Error>) -> Void
 
@@ -241,19 +258,13 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
-        configuration.userContentController.add(context.coordinator, name: "hfutAcademicRecords")
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
 
-        var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
-        components.queryItems = [URLQueryItem(
-            name: "service",
-            value: "http://jxglstu.hfut.edu.cn/eams5-student/neusoft-sso/login"
-        )]
-        webView.load(URLRequest(url: components.url!))
+        webView.load(URLRequest(url: AcademicPortal.loginURL(for: connectionMode)))
         return webView
     }
 
@@ -261,102 +272,42 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
         context.coordinator.parent = self
         guard syncTrigger > context.coordinator.lastSyncTrigger else { return }
         context.coordinator.lastSyncTrigger = syncTrigger
-        webView.evaluateJavaScript(syncScript) { _, error in
-            if let error { onResult(.failure(error)) }
+        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+            Task {
+                do {
+                    let client = AcademicClient(mode: connectionMode, cookies: cookies)
+                    let payload: AcademicRecordsPayload
+                    switch kind {
+                    case .grades:
+                        payload = AcademicRecordsPayload(grades: try await client.fetchGrades(), exams: [])
+                    case .exams:
+                        payload = AcademicRecordsPayload(grades: [], exams: try await client.fetchExams())
+                    }
+                    await MainActor.run { onResult(.success(payload)) }
+                } catch {
+                    await MainActor.run { onResult(.failure(error)) }
+                }
+            }
         }
     }
 
-    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "hfutAcademicRecords")
-    }
-
-    private var syncScript: String {
-        let payloadScript: String
-        switch kind {
-        case .grades:
-            payloadScript = """
-            const response = await fetch(`/eams5-student/for-std/grade/sheet/info/${studentID}`, { credentials: 'include' });
-            if (!response.ok) throw new Error(`成绩请求失败 ${response.status}`);
-            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-            const headings = Array.from(doc.querySelectorAll('h3'));
-            const tables = Array.from(doc.querySelectorAll('table.student-grade-table'));
-            const grades = tables.map((table, index) => ({
-              term: headings[index] ? headings[index].textContent.trim() : `学期 ${index + 1}`,
-              grades: Array.from(table.querySelectorAll('tr')).map(row => Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim()))
-                .filter(cells => cells.length >= 7)
-                .map(cells => ({ courseName: cells[0], lessonCode: cells[2], credits: cells[3], gpa: cells[4], detail: cells[5], score: cells[6] }))
-            })).filter(term => term.grades.length > 0);
-            send({ ok: true, payload: { grades, exams: [] } });
-            """
-        case .exams:
-            payloadScript = """
-            const response = await fetch(`/eams5-student/for-std/exam-arrange/info/${studentID}`, { credentials: 'include' });
-            if (!response.ok) throw new Error(`考试请求失败 ${response.status}`);
-            const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
-            const pattern = /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}~\\d{2}:\\d{2}$/;
-            const exams = Array.from(doc.querySelectorAll('tbody tr')).map(row => Array.from(row.querySelectorAll('td')).map(cell => cell.textContent.trim()))
-              .filter(cells => cells.length >= 3 && pattern.test(cells[1]))
-              .map(cells => ({ name: cells[0], dateTime: cells[1], place: cells[2] }));
-            send({ ok: true, payload: { grades: [], exams } });
-            """
-        }
-
-        return """
-        (async function() {
-          const send = value => window.webkit.messageHandlers.hfutAcademicRecords.postMessage(value);
-          try {
-            const tableResponse = await fetch('/eams5-student/for-std/course-table', { credentials: 'include' });
-            const studentMatch = tableResponse.url.match(/course-table\\/info\\/(\\d+)/);
-            if (!studentMatch) throw new Error('未获取到教务身份，请先完成登录');
-            const studentID = Number(studentMatch[1]);
-            \(payloadScript)
-          } catch (error) {
-            send({ ok: false, message: error && error.message ? error.message : String(error) });
-          }
-        })();
-        """
-    }
-
-    final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKNavigationDelegate {
         var parent: AcademicRecordsWebView
         var lastSyncTrigger = 0
+        private var enteredAcademicAfterVPNLogin = false
 
         init(parent: AcademicRecordsWebView) { self.parent = parent }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
-            guard webView.url?.host?.lowercased() == "jxglstu.hfut.edu.cn" else { return }
+            if parent.connectionMode == .webVPN,
+               !enteredAcademicAfterVPNLogin,
+               AcademicPortal.shouldEnterAcademicAfterWebVPNLogin(webView.url) {
+                enteredAcademicAfterVPNLogin = true
+                webView.load(URLRequest(url: AcademicPortal.webVPNAcademicRoot.appendingPathComponent("neusoft-sso/login")))
+                return
+            }
+            guard AcademicPortal.isAcademicPage(webView.url, mode: parent.connectionMode) else { return }
             DispatchQueue.main.async { self.parent.onPageReady() }
         }
-
-        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard let object = message.body as? [String: Any], let ok = object["ok"] as? Bool else {
-                parent.onResult(.failure(AcademicRecordsError.invalidResponse))
-                return
-            }
-            if !ok {
-                parent.onResult(.failure(AcademicRecordsError.remote(object["message"] as? String ?? "教务系统返回未知错误")))
-                return
-            }
-            do {
-                guard let payload = object["payload"] else { throw AcademicRecordsError.invalidResponse }
-                let data = try JSONSerialization.data(withJSONObject: payload)
-                parent.onResult(.success(try JSONDecoder().decode(AcademicRecordsPayload.self, from: data)))
-            } catch {
-                parent.onResult(.failure(error))
-            }
-        }
     }
 }
-
-private enum AcademicRecordsError: LocalizedError {
-    case invalidResponse
-    case remote(String)
-
-    var errorDescription: String? {
-        switch self {
-        case .invalidResponse: "无法解析教务系统返回的数据。"
-        case .remote(let message): message
-        }
-    }
-}
-

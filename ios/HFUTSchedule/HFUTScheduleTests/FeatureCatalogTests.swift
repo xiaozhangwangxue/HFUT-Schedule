@@ -14,7 +14,7 @@ final class FeatureCatalogTests: XCTestCase {
         })
     }
 
-    func testEveryFeatureHasAUsableDestination() {
+    func testEveryFeatureHasAnExplicitDestination() {
         let unavailable = FeatureCatalog.all.filter {
             $0.url == nil && $0.nativeDestination == nil
         }
@@ -120,5 +120,34 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(payload.grades.first?.grades.first?.score, "92")
         XCTAssertEqual(payload.exams.first?.place, "翠十二教 101")
         XCTAssertNotNil(payload.exams.first?.startDate)
+    }
+
+    func testAcademicHTMLParsersMatchAndroidFields() {
+        let info = """
+        <li class="list-group-item text-right">学号 <span>2026123456</span></li>
+        <li class="list-group-item text-right">中文姓名 <span>测试同学</span></li>
+        <dl><dt>院系</dt><dd>计算机与信息学院</dd><dt>专业</dt><dd>软件工程</dd><dt>行政班</dt><dd>软件 2601</dd></dl>
+        """
+        let profile = """
+        <div class="list-group-item"><div class="col-md-3"><strong>邮箱</strong></div><div class="col-md-6"><span>student@example.edu.cn</span></div></div>
+        """
+        let student = AcademicHTMLParser.studentInfo(from: info, profileHTML: profile, fallbackStudentID: "0")
+
+        XCTAssertEqual(student.studentID, "2026123456")
+        XCTAssertEqual(student.name, "测试同学")
+        XCTAssertEqual(student.department, "计算机与信息学院")
+        XCTAssertEqual(student.major, "软件工程")
+        XCTAssertEqual(student.className, "软件 2601")
+        XCTAssertEqual(student.fields["邮箱"], "student@example.edu.cn")
+
+        let gradesHTML = """
+        <h3>2026~2027年第1学期</h3><table class="student-grade-table"><tr><td>高等数学</td><td></td><td>MATH1001</td><td>5</td><td>3.8</td><td>期末</td><td>92</td></tr></table>
+        """
+        XCTAssertEqual(AcademicHTMLParser.grades(from: gradesHTML).first?.grades.first?.score, "92")
+
+        let examsHTML = """
+        <table><tbody><tr><td>高等数学</td><td>2027-01-08 08:00~10:00</td><td>翠十二教 101</td></tr></tbody></table>
+        """
+        XCTAssertEqual(AcademicHTMLParser.exams(from: examsHTML).first?.place, "翠十二教 101")
     }
 }

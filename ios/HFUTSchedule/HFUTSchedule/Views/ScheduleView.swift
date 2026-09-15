@@ -37,12 +37,6 @@ struct ScheduleView: View {
                     }
                 }
 
-                if scheduleStore.courses.isEmpty {
-                    Button("载入演示课表", systemImage: "sparkles") {
-                        scheduleStore.installPreviewData()
-                    }
-                    .buttonStyle(.bordered)
-                }
             }
             .padding(16)
         }

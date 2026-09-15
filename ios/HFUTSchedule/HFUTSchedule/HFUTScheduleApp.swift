@@ -7,10 +7,7 @@ struct HFUTScheduleApp: App {
     @StateObject private var scheduleStore = ScheduleStore()
     @StateObject private var notificationManager = CourseNotificationManager()
     @StateObject private var academicRecordsStore = AcademicRecordsStore()
-
-    init() {
-        HFUTAppShortcuts.updateAppShortcutParameters()
-    }
+    @StateObject private var academicStudentStore = AcademicStudentStore()
 
     var body: some Scene {
         WindowGroup {
@@ -19,6 +16,7 @@ struct HFUTScheduleApp: App {
                 .environmentObject(scheduleStore)
                 .environmentObject(notificationManager)
                 .environmentObject(academicRecordsStore)
+                .environmentObject(academicStudentStore)
                 .tint(AppTheme.accent)
         }
     }

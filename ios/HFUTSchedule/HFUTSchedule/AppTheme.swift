@@ -9,9 +9,10 @@ enum AppTheme {
     static var background: LinearGradient {
         LinearGradient(
             colors: [
-                Color(red: 0.90, green: 0.96, blue: 1.00),
-                Color(red: 0.97, green: 0.94, blue: 1.00),
-                Color(red: 0.91, green: 0.99, blue: 0.97)
+                Color(uiColor: .systemBackground),
+                Color(uiColor: .secondarySystemBackground),
+                AppTheme.accent.opacity(0.10),
+                AppTheme.violet.opacity(0.08)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing

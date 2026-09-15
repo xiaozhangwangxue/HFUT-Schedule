@@ -3,12 +3,30 @@ import WebKit
 
 struct PortalWebView: View {
     let url: URL
+    var academicMode: AcademicConnectionMode?
+    var onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     @State private var isLoading = true
     @State private var title = ""
 
+    init(
+        url: URL,
+        academicMode: AcademicConnectionMode? = nil,
+        onAcademicAuthenticated: (([HTTPCookie]) -> Void)? = nil
+    ) {
+        self.url = url
+        self.academicMode = academicMode
+        self.onAcademicAuthenticated = onAcademicAuthenticated
+    }
+
     var body: some View {
         ZStack(alignment: .top) {
-            WebViewRepresentable(url: url, isLoading: $isLoading, pageTitle: $title)
+            WebViewRepresentable(
+                url: url,
+                academicMode: academicMode,
+                onAcademicAuthenticated: onAcademicAuthenticated,
+                isLoading: $isLoading,
+                pageTitle: $title
+            )
                 .ignoresSafeArea(edges: .bottom)
 
             if isLoading {
@@ -29,6 +47,8 @@ struct PortalWebView: View {
 
 private struct WebViewRepresentable: UIViewRepresentable {
     let url: URL
+    let academicMode: AcademicConnectionMode?
+    let onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     @Binding var isLoading: Bool
     @Binding var pageTitle: String
 
@@ -41,6 +61,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
@@ -49,12 +70,15 @@ private struct WebViewRepresentable: UIViewRepresentable {
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
+        context.coordinator.parent = self
         guard webView.url == nil else { return }
         webView.load(URLRequest(url: url))
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebViewRepresentable
+        private var enteredAcademicAfterVPNLogin = false
+        private var reportedAuthentication = false
 
         init(parent: WebViewRepresentable) {
             self.parent = parent
@@ -67,6 +91,20 @@ private struct WebViewRepresentable: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
             parent.isLoading = false
             parent.pageTitle = webView.title ?? "校园门户"
+            if parent.academicMode == .webVPN,
+               !enteredAcademicAfterVPNLogin,
+               AcademicPortal.shouldEnterAcademicAfterWebVPNLogin(webView.url) {
+                enteredAcademicAfterVPNLogin = true
+                webView.load(URLRequest(url: AcademicPortal.webVPNAcademicRoot.appendingPathComponent("neusoft-sso/login")))
+                return
+            }
+            guard let mode = parent.academicMode,
+                  !reportedAuthentication,
+                  AcademicPortal.isAcademicPage(webView.url, mode: mode) else { return }
+            reportedAuthentication = true
+            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [parent] cookies in
+                DispatchQueue.main.async { parent.onAcademicAuthenticated?(cookies) }
+            }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation?, withError error: Error) {
@@ -90,6 +128,18 @@ private struct WebViewRepresentable: UIViewRepresentable {
             }
             UIApplication.shared.open(target)
             decisionHandler(.cancel)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            createWebViewWith configuration: WKWebViewConfiguration,
+            for navigationAction: WKNavigationAction,
+            windowFeatures: WKWindowFeatures
+        ) -> WKWebView? {
+            if navigationAction.targetFrame == nil, let target = navigationAction.request.url {
+                webView.load(URLRequest(url: target))
+            }
+            return nil
         }
     }
 }
