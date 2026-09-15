@@ -5,6 +5,8 @@ import AppIntents
 struct HFUTScheduleApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var scheduleStore = ScheduleStore()
+    @StateObject private var notificationManager = CourseNotificationManager()
+    @StateObject private var academicRecordsStore = AcademicRecordsStore()
 
     init() {
         HFUTAppShortcuts.updateAppShortcutParameters()
@@ -15,6 +17,8 @@ struct HFUTScheduleApp: App {
             RootView()
                 .environmentObject(appState)
                 .environmentObject(scheduleStore)
+                .environmentObject(notificationManager)
+                .environmentObject(academicRecordsStore)
                 .tint(AppTheme.accent)
         }
     }

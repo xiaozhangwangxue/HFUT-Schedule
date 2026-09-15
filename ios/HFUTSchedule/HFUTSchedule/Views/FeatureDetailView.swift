@@ -16,6 +16,10 @@ struct FeatureDetailView: View {
                 NotificationsView()
             case .settings:
                 ProfileView()
+            case .grades:
+                AcademicRecordsView(kind: .grades)
+            case .exams:
+                AcademicRecordsView(kind: .exams)
             case nil:
                 portalOrUnavailable
             }
@@ -65,13 +69,51 @@ private struct ExternalLinkView: View {
 }
 
 private struct NotificationsView: View {
+    @EnvironmentObject private var scheduleStore: ScheduleStore
+    @EnvironmentObject private var notificationManager: CourseNotificationManager
+    @State private var message: String?
+
     var body: some View {
-        ContentUnavailableView(
-            "暂无新通知",
-            systemImage: "bell.slash",
-            description: Text("考试提醒和校园通知将在授权后显示。")
-        )
+        VStack(spacing: 20) {
+            GlassIcon(systemName: "bell.badge.fill", tint: .orange, size: 72)
+            Text("课程提醒")
+                .font(.title2.bold())
+            Text("通知权限：\(notificationManager.authorizationDescription)\n已安排 \(notificationManager.pendingReminderCount) 条每周提醒")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+
+            if notificationManager.authorizationStatus == .denied {
+                Text("请前往“设置 → 通知 → 聚在工大”开启通知。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button("授权并刷新提醒", systemImage: "bell.and.waves.left.and.right") {
+                    Task { await updateReminders() }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppTheme.background.ignoresSafeArea())
+        .task { await notificationManager.refresh() }
+        .alert("课程提醒", isPresented: Binding(
+            get: { message != nil },
+            set: { if !$0 { message = nil } }
+        )) {
+            Button("好") { message = nil }
+        } message: {
+            Text(message ?? "")
+        }
+    }
+
+    private func updateReminders() async {
+        do {
+            notificationManager.isEnabled = true
+            try await notificationManager.reschedule(for: scheduleStore.courses)
+            message = "课程提醒已更新。"
+        } catch {
+            message = error.localizedDescription
+        }
     }
 }

@@ -9,6 +9,9 @@ struct Course: Identifiable, Codable, Hashable {
     var startTime: String
     var endTime: String
     var colorIndex: Int
+    var weekIndices: [Int]? = nil
+    var dates: [String]? = nil
+    var source: String? = nil
 
     static let preview: [Course] = [
         Course(name: "高等数学", teacher: "", location: "教学楼 A201", weekday: 2, startTime: "08:00", endTime: "09:40", colorIndex: 0),
@@ -23,5 +26,12 @@ extension Course {
     var weekdayName: String {
         guard (1...7).contains(weekday) else { return "未安排" }
         return Self.weekdayNames[weekday - 1]
+    }
+
+    var weekDescription: String? {
+        guard let weekIndices, !weekIndices.isEmpty else { return nil }
+        let sorted = weekIndices.sorted()
+        if sorted.count == 1 { return "第 \(sorted[0]) 周" }
+        return "第 \(sorted.first!)–\(sorted.last!) 周"
     }
 }

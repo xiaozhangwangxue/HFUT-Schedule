@@ -2,8 +2,10 @@ import SwiftUI
 
 struct ScheduleView: View {
     @EnvironmentObject private var scheduleStore: ScheduleStore
+    @EnvironmentObject private var notificationManager: CourseNotificationManager
     @State private var selectedDay = 1
     @State private var showingAdd = false
+    @State private var showingAcademicSync = false
     @State private var exportMessage: String?
 
     private var selectedCourses: [Course] {
@@ -48,6 +50,9 @@ struct ScheduleView: View {
         .navigationTitle("课表")
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("教务同步", systemImage: "arrow.triangle.2.circlepath") {
+                    showingAcademicSync = true
+                }
                 Button("导出到日历", systemImage: "calendar.badge.plus") {
                     Task { await exportToCalendar() }
                 }
@@ -60,6 +65,9 @@ struct ScheduleView: View {
         .sheet(isPresented: $showingAdd) {
             AddCourseView(defaultWeekday: selectedDay)
         }
+        .sheet(isPresented: $showingAcademicSync) {
+            AcademicScheduleSyncView()
+        }
         .alert("日历", isPresented: Binding(
             get: { exportMessage != nil },
             set: { if !$0 { exportMessage = nil } }
@@ -67,6 +75,10 @@ struct ScheduleView: View {
             Button("好") { exportMessage = nil }
         } message: {
             Text(exportMessage ?? "")
+        }
+        .task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
+        .onChange(of: scheduleStore.courses) { _, courses in
+            Task { try? await notificationManager.reschedule(for: courses) }
         }
     }
 

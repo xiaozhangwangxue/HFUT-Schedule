@@ -35,6 +35,22 @@ final class ScheduleStore: ObservableObject {
         save()
     }
 
+    func replace(with importedCourses: [Course]) {
+        courses = importedCourses
+        save()
+    }
+
+    func replaceAcademicCourses(with syncedCourses: [Course]) {
+        let localCourses = courses.filter { $0.source != "academic" }
+        courses = localCourses + syncedCourses
+        save()
+    }
+
+    func removeAll() {
+        courses.removeAll()
+        save()
+    }
+
     private func load() {
         guard let data = try? Data(contentsOf: fileURL),
               let decoded = try? JSONDecoder().decode([Course].self, from: data) else { return }

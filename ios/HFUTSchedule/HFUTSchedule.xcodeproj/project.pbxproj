@@ -12,22 +12,29 @@
 		1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839B072306659B2A53C5E287 /* RootView.swift */; };
 		1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */; };
 		2C1E67D687D8D240EA372E94 /* ServicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0F020B95A60E658FCAD4CB /* ServicesView.swift */; };
+		2D8941CD276C37F2996529D4 /* AcademicRecordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */; };
+		301D3230C6E1F5A1C14023ED /* AcademicRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */; };
 		32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */; };
 		350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */; };
 		4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */; };
+		511E0A9F822BACD83D23A9EC /* AcademicScheduleSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */; };
 		5A27648FC106C74B2D07EB19 /* ScheduleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */; };
 		5B80267BD16244C636A025D6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 56C449DEFB153FC3EAAB8391 /* Assets.xcassets */; };
 		83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44D706B873C376660720FE /* ScheduleView.swift */; };
 		8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */; };
 		95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BBD76AF5494A92805F31C3 /* PortalWebView.swift */; };
+		9DD211D2A48B03B0D9D7D5EA /* AcademicScheduleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850A144603AEC626B2078445 /* AcademicScheduleModels.swift */; };
 		A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */; };
 		AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C31E16CE43EAF7ACA3328B /* AppState.swift */; };
+		B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */; };
 		B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADF53983339A1298C10365C /* GlassSurface.swift */; };
 		C1F569CE2ECC5673AA49A0A6 /* LoginPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */; };
 		D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */; };
 		D40893D53C715F270D34712D /* Course.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA33B515BDFC62F529434E96 /* Course.swift */; };
 		D91BC2AC767F10D166BF2592 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */; };
 		E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */; };
+		FF98820D9D66CA0D2E5864CD /* AcademicRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BC4332D571BE061D11515E /* AcademicRecordsView.swift */; };
+		FFC3A962DBD95BE738A0CC84 /* ScheduleBackupDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,11 +48,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		05BC4332D571BE061D11515E /* AcademicRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecordsView.swift; sourceTree = "<group>"; };
 		0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseNotificationManager.swift; sourceTree = "<group>"; };
 		1B76EDDB25B66726ADAC9524 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		28C31E16CE43EAF7ACA3328B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecordsStore.swift; sourceTree = "<group>"; };
 		35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusFeature.swift; sourceTree = "<group>"; };
+		3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleSyncView.swift; sourceTree = "<group>"; };
 		3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3D44D706B873C376660720FE /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HFUTScheduleApp.swift; sourceTree = "<group>"; };
@@ -53,8 +64,11 @@
 		4ADF53983339A1298C10365C /* GlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSurface.swift; sourceTree = "<group>"; };
 		56C449DEFB153FC3EAAB8391 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		594A872EB0360AC8D4B51844 /* HFUTScheduleTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HFUTScheduleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecords.swift; sourceTree = "<group>"; };
 		81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleStore.swift; sourceTree = "<group>"; };
+		82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleBackupDocument.swift; sourceTree = "<group>"; };
 		839B072306659B2A53C5E287 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		850A144603AEC626B2078445 /* AcademicScheduleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleModels.swift; sourceTree = "<group>"; };
 		8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureDetailView.swift; sourceTree = "<group>"; };
 		AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
@@ -88,6 +102,7 @@
 		6A9C07C87B6083E64975DC88 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */,
 				35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */,
 				EA33B515BDFC62F529434E96 /* Course.swift */,
 			);
@@ -114,8 +129,12 @@
 		C5252B0A3004BC3BBA69C4AF /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */,
+				850A144603AEC626B2078445 /* AcademicScheduleModels.swift */,
 				1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */,
 				D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */,
+				1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */,
+				82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */,
 				81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */,
 			);
 			path = Services;
@@ -150,6 +169,8 @@
 		FF044581D15BC7C19737870F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				05BC4332D571BE061D11515E /* AcademicRecordsView.swift */,
+				3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */,
 				3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */,
 				8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */,
 				FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */,
@@ -211,11 +232,11 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					BF93C226D692DE9727DB1041 = {
-						DevelopmentTeam = TZXUU25NQA;
+						DevelopmentTeam = K6T9P3LS8V;
 						ProvisioningStyle = Automatic;
 					};
 					E7284FDF09F320962B681E62 = {
-						DevelopmentTeam = TZXUU25NQA;
+						DevelopmentTeam = K6T9P3LS8V;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -264,12 +285,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				301D3230C6E1F5A1C14023ED /* AcademicRecords.swift in Sources */,
+				2D8941CD276C37F2996529D4 /* AcademicRecordsStore.swift in Sources */,
+				FF98820D9D66CA0D2E5864CD /* AcademicRecordsView.swift in Sources */,
+				9DD211D2A48B03B0D9D7D5EA /* AcademicScheduleModels.swift in Sources */,
+				511E0A9F822BACD83D23A9EC /* AcademicScheduleSyncView.swift in Sources */,
 				D91BC2AC767F10D166BF2592 /* AppShortcuts.swift in Sources */,
 				AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */,
 				1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */,
 				0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */,
 				32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */,
 				D40893D53C715F270D34712D /* Course.swift in Sources */,
+				B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */,
 				1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */,
 				350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */,
 				B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */,
@@ -279,6 +306,7 @@
 				D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */,
 				1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */,
 				4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */,
+				FFC3A962DBD95BE738A0CC84 /* ScheduleBackupDocument.swift in Sources */,
 				5A27648FC106C74B2D07EB19 /* ScheduleStore.swift in Sources */,
 				83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */,
 				E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */,
@@ -334,7 +362,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = TZXUU25NQA;
+				DEVELOPMENT_TEAM = K6T9P3LS8V;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -458,7 +486,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = TZXUU25NQA;
+				DEVELOPMENT_TEAM = K6T9P3LS8V;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;

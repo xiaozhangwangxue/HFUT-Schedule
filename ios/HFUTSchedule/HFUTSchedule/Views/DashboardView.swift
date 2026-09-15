@@ -172,6 +172,11 @@ struct CourseRow: View {
                 Label(course.location.isEmpty ? "地点待定" : course.location, systemImage: "mappin.and.ellipse")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let weeks = course.weekDescription {
+                    Text(weeks)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {

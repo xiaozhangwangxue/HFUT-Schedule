@@ -16,6 +16,8 @@ enum NativeDestination: String, Hashable {
     case calendar
     case notifications
     case settings
+    case grades
+    case exams
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -40,8 +42,8 @@ enum FeatureCatalog {
         .init(id: 3, title: "宿舍电费", subtitle: "查询与缴费", systemImage: "bolt.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: nil),
         .init(id: 4, title: "校园网", subtitle: "登录、余额与用量", systemImage: "wifi", category: .campus, urlString: "https://xywzz.hfut.edu.cn:8443/", nativeDestination: nil),
         .init(id: 5, title: "校园邮箱", subtitle: "合工大邮箱", systemImage: "envelope.fill", category: .campus, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 6, title: "考试安排", subtitle: "考试时间、地点与提醒", systemImage: "doc.text.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 7, title: "成绩", subtitle: "成绩查询与分析", systemImage: "chart.bar.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 6, title: "考试安排", subtitle: "考试时间、地点与提醒", systemImage: "doc.text.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .exams),
+        .init(id: 7, title: "成绩", subtitle: "成绩查询与分析", systemImage: "chart.bar.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .grades),
         .init(id: 8, title: "挂科率", subtitle: "课程通过情况", systemImage: "percent", category: .study, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 9, title: "课程汇总", subtitle: "学期课程与教材", systemImage: "books.vertical.fill", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
         .init(id: 10, title: "个人信息", subtitle: "学籍与校园身份", systemImage: "person.text.rectangle.fill", category: .campus, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),

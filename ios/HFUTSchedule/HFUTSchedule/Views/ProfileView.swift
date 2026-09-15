@@ -1,9 +1,15 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ProfileView: View {
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var scheduleStore: ScheduleStore
+    @EnvironmentObject private var notificationManager: CourseNotificationManager
     @State private var showingLogin = false
     @State private var showingAbout = false
+    @State private var exportingBackup = false
+    @State private var importingBackup = false
+    @State private var backupMessage: String?
 
     var body: some View {
         ScrollView {
@@ -36,6 +42,26 @@ struct ProfileView: View {
         .sheet(isPresented: $showingAbout) {
             AboutView()
         }
+        .fileExporter(
+            isPresented: $exportingBackup,
+            document: ScheduleBackupDocument(courses: scheduleStore.courses),
+            contentType: .json,
+            defaultFilename: "聚在工大课表备份"
+        ) { result in
+            if case .failure(let error) = result { backupMessage = error.localizedDescription }
+        }
+        .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.json]) { result in
+            importBackup(result)
+        }
+        .alert("数据备份", isPresented: Binding(
+            get: { backupMessage != nil },
+            set: { if !$0 { backupMessage = nil } }
+        )) {
+            Button("好") { backupMessage = nil }
+        } message: {
+            Text(backupMessage ?? "")
+        }
+        .task { await notificationManager.refresh() }
     }
 
     private var accountCard: some View {
@@ -95,6 +121,50 @@ struct ProfileView: View {
 
             Divider().padding(.leading, 70)
 
+            Toggle(isOn: reminderBinding) {
+                HStack(spacing: 14) {
+                    GlassIcon(systemName: "bell.badge.fill", tint: .orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("课程提醒")
+                            .font(.headline)
+                        Text("上课前 \(notificationManager.leadMinutes) 分钟提醒")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(14)
+
+            if notificationManager.isEnabled {
+                Picker("提前时间", selection: reminderLeadBinding) {
+                    ForEach([5, 10, 15, 30, 60], id: \.self) { minutes in
+                        Text("\(minutes) 分钟").tag(minutes)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
+            }
+
+            Divider().padding(.leading, 70)
+
+            Button {
+                exportingBackup = true
+            } label: {
+                actionRow(icon: "square.and.arrow.up.fill", title: "导出课表备份")
+            }
+            .buttonStyle(.plain)
+
+            Divider().padding(.leading, 70)
+
+            Button {
+                importingBackup = true
+            } label: {
+                actionRow(icon: "square.and.arrow.down.fill", title: "恢复课表备份")
+            }
+            .buttonStyle(.plain)
+
+            Divider().padding(.leading, 70)
+
             HStack(spacing: 14) {
                 GlassIcon(systemName: "accessibility", tint: .orange)
                 VStack(alignment: .leading, spacing: 2) {
@@ -109,6 +179,62 @@ struct ProfileView: View {
             .padding(14)
         }
         .adaptiveGlass(cornerRadius: 24)
+    }
+
+    private var reminderBinding: Binding<Bool> {
+        Binding(
+            get: { notificationManager.isEnabled },
+            set: { enabled in
+                notificationManager.isEnabled = enabled
+                Task {
+                    do {
+                        try await notificationManager.reschedule(for: scheduleStore.courses)
+                    } catch {
+                        backupMessage = error.localizedDescription
+                    }
+                }
+            }
+        )
+    }
+
+    private var reminderLeadBinding: Binding<Int> {
+        Binding(
+            get: { notificationManager.leadMinutes },
+            set: { minutes in
+                notificationManager.leadMinutes = minutes
+                Task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
+            }
+        )
+    }
+
+    private func actionRow(icon: String, title: String) -> some View {
+        HStack(spacing: 14) {
+            GlassIcon(systemName: icon, tint: AppTheme.cyan)
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(14)
+        .contentShape(Rectangle())
+    }
+
+    private func importBackup(_ result: Result<URL, Error>) {
+        do {
+            let url = try result.get()
+            let accessGranted = url.startAccessingSecurityScopedResource()
+            defer { if accessGranted { url.stopAccessingSecurityScopedResource() } }
+            let data = try Data(contentsOf: url)
+            let courses = try JSONDecoder().decode([Course].self, from: data)
+            scheduleStore.replace(with: courses)
+            Task { try? await notificationManager.reschedule(for: courses) }
+            backupMessage = "已恢复 \(courses.count) 门课程。"
+        } catch {
+            backupMessage = "恢复失败：\(error.localizedDescription)"
+        }
     }
 
     private func settingsRow(icon: String, title: String, value: String) -> some View {
