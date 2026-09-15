@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 struct NativeCASLoginView: View {
+    let mode: AcademicConnectionMode
     let onAuthenticated: ([HTTPCookie]) -> Void
 
     @AppStorage("academicUsername") private var username = ""
@@ -12,7 +13,13 @@ struct NativeCASLoginView: View {
     @State private var isLoggingIn = false
     @State private var errorMessage: String?
 
-    private let client = CASLoginClient()
+    private let client: CASLoginClient
+
+    init(mode: AcademicConnectionMode, onAuthenticated: @escaping ([HTTPCookie]) -> Void) {
+        self.mode = mode
+        self.onAuthenticated = onAuthenticated
+        client = CASLoginClient(mode: mode)
+    }
 
     var body: some View {
         ScrollView {
@@ -21,7 +28,9 @@ struct NativeCASLoginView: View {
                     GlassIcon(systemName: "lock.shield.fill", tint: AppTheme.cyan, size: 68)
                     Text("CAS 统一身份认证")
                         .font(.title2.bold())
-                    Text("使用与 Android 原版一致的原生 CAS 请求与 AES 加密流程")
+                    Text(mode == .direct
+                         ? "使用与 Android 原版一致的原生 CAS 请求与 AES 加密流程"
+                         : "使用原版 WebVPN 虚拟 Cookie 与代理教务链路")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

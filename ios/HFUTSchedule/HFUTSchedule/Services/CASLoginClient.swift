@@ -7,13 +7,19 @@ struct CASLoginPreparation {
     let captchaImageData: Data?
 }
 
-struct CASLoginClient {
+final class CASLoginClient: @unchecked Sendable {
     static let service = "http://jxglstu.hfut.edu.cn/eams5-student/neusoft-sso/login"
+    private static let webVPNRoot = "https://webvpn.hfut.edu.cn/"
+    private static let webVPNCASPrefix = "http/77726476706e69737468656265737421f3f652d22f367d44300d8db9d6562d/cas/"
+    private static let webVPNAcademicLogin = "https://webvpn.hfut.edu.cn/http/77726476706e69737468656265737421faef469034247d1e760e9cb8d6502720ede479/eams5-student/neusoft-sso/login"
 
+    private let mode: AcademicConnectionMode
     private let cookieStorage: HTTPCookieStorage
     private let session: URLSession
+    private var webVPNFlavoring: String?
 
-    init() {
+    init(mode: AcademicConnectionMode = .direct) {
+        self.mode = mode
         cookieStorage = .shared
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = cookieStorage
@@ -28,32 +34,57 @@ struct CASLoginClient {
     }
 
     func prepare(includeCaptcha: Bool = true) async throws -> CASLoginPreparation {
-        let keyURL = URL(string: "https://cas.hfut.edu.cn/cas/checkInitParams")!
-        let (keyData, keyResponse) = try await data(for: URLRequest(url: keyURL), accepted: 200..<300)
-        let needsCaptcha = (try? JSONDecoder().decode(FlavorResponse.self, from: keyData).needCaptcha) ?? false
-        guard loginFlavoring(from: keyResponse) != nil else {
-            throw CASLoginError.missingFlavoring
+        let execution = try await fetchExecution()
+        let needsCaptcha: Bool
+
+        if mode == .webVPN {
+            let (_, ticketResponse) = try await data(
+                for: URLRequest(url: URL(string: Self.webVPNRoot + "login?cas_login=true")!),
+                accepted: 200..<400
+            )
+            guard vpnTicket(from: ticketResponse) != nil else { throw CASLoginError.missingWebVPNTicket }
+
+            let initURL = URL(string: Self.webVPNRoot + Self.webVPNCASPrefix + "checkInitParams")!
+            let (initData, _) = try await data(for: URLRequest(url: initURL), accepted: 200..<300)
+            needsCaptcha = (try? JSONDecoder().decode(FlavorResponse.self, from: initData).needCaptcha) ?? false
+
+            let cookieURL = URL(string: Self.webVPNRoot + "wengine-vpn/cookie?method=get&host=cas.hfut.edu.cn&scheme=http&path=/cas/login")!
+            let (cookieData, _) = try await data(for: URLRequest(url: cookieURL), accepted: 200..<300)
+            guard let cookieText = String(data: cookieData, encoding: .utf8),
+                  let flavoring = Self.firstMatch(in: cookieText, pattern: #"LOGIN_FLAVORING=([^;\s]+)"#) else {
+                throw CASLoginError.missingFlavoring
+            }
+            webVPNFlavoring = flavoring
+        } else {
+            let keyURL = URL(string: "https://cas.hfut.edu.cn/cas/checkInitParams")!
+            let (keyData, keyResponse) = try await data(for: URLRequest(url: keyURL), accepted: 200..<300)
+            needsCaptcha = (try? JSONDecoder().decode(FlavorResponse.self, from: keyData).needCaptcha) ?? false
+            guard loginFlavoring(from: keyResponse) != nil else { throw CASLoginError.missingFlavoring }
         }
 
-        let loginURL = try Self.loginURL()
+        let captchaData = needsCaptcha && includeCaptcha ? try await fetchCaptcha() : nil
+        return CASLoginPreparation(execution: execution, needsCaptcha: needsCaptcha, captchaImageData: captchaData)
+    }
+
+    private func fetchExecution() async throws -> String {
+        let keyURL = URL(string: "https://cas.hfut.edu.cn/cas/checkInitParams")!
+        _ = try await data(for: URLRequest(url: keyURL), accepted: 200..<300)
+
+        let loginURL = try Self.directLoginURL()
         let (loginData, _) = try await data(for: URLRequest(url: loginURL), accepted: 200..<300)
         guard let html = String(data: loginData, encoding: .utf8),
               let execution = Self.firstMatch(in: html, pattern: #"name=[\"']execution[\"'][^>]*value=[\"']([^\"']+)[\"']"#)
                 ?? Self.firstMatch(in: html, pattern: #"value=[\"']([^\"']+)[\"'][^>]*name=[\"']execution[\"']"#) else {
             throw CASLoginError.missingExecution
         }
-
-        let captchaData: Data?
-        if needsCaptcha && includeCaptcha {
-            captchaData = try await fetchCaptcha()
-        } else {
-            captchaData = nil
-        }
-        return CASLoginPreparation(execution: execution, needsCaptcha: needsCaptcha, captchaImageData: captchaData)
+        return execution
     }
 
     func fetchCaptcha() async throws -> Data {
-        var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/vercode")!
+        let base = mode == .direct
+            ? "https://cas.hfut.edu.cn/cas/vercode"
+            : Self.webVPNRoot + Self.webVPNCASPrefix + "vercode"
+        var components = URLComponents(string: base)!
         components.queryItems = [URLQueryItem(name: "timestamp", value: String(Int(Date().timeIntervalSince1970 * 1_000)))]
         let (data, _) = try await data(for: URLRequest(url: components.url!), accepted: 200..<300)
         return data
@@ -64,10 +95,11 @@ struct CASLoginClient {
             throw CASLoginError.invalidCredentials("请输入学号")
         }
         guard !password.isEmpty else { throw CASLoginError.invalidCredentials("请输入信息门户密码") }
-        guard let flavoring = loginFlavoring(from: nil) else { throw CASLoginError.missingFlavoring }
+        let flavoring = mode == .direct ? loginFlavoring(from: nil) : webVPNFlavoring
+        guard let flavoring else { throw CASLoginError.missingFlavoring }
         let encryptedPassword = try Self.encryptAES(password, key: flavoring)
 
-        var request = URLRequest(url: try Self.loginURL())
+        var request = URLRequest(url: try loginURL())
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.httpBody = Self.formBody([
@@ -82,12 +114,17 @@ struct CASLoginClient {
         if response.statusCode == 401 { throw CASLoginError.invalidCredentials("账号或密码错误") }
         guard response.statusCode == 302 || response.statusCode == 303,
               let locationText = response.value(forHTTPHeaderField: "Location"),
-              locationText.contains("ticket="),
-              let ticketURL = URL(string: locationText, relativeTo: response.url)?.absoluteURL else {
+              locationText.contains("ticket=") else {
             throw CASLoginError.invalidCredentials("CAS 未返回登录票据，请检查账号、密码或验证码")
         }
 
-        var nextURL: URL? = ticketURL
+        let nextStartURL: URL?
+        if mode == .webVPN {
+            nextStartURL = URL(string: Self.webVPNAcademicLogin)
+        } else {
+            nextStartURL = URL(string: locationText, relativeTo: response.url)?.absoluteURL
+        }
+        var nextURL = nextStartURL
         for _ in 0..<4 {
             guard let url = nextURL else { break }
             let (_, serviceResponse) = try await data(for: URLRequest(url: url), accepted: 200..<400)
@@ -99,11 +136,27 @@ struct CASLoginClient {
             }
         }
 
-        let academicCookies = cookieStorage.cookies(for: AcademicPortal.directAcademicRoot) ?? []
-        guard academicCookies.contains(where: { $0.name == "SESSION" }) else {
-            throw CASLoginError.missingAcademicSession
+        if mode == .webVPN {
+            let vpnCookies = cookieStorage.cookies(for: URL(string: Self.webVPNRoot)!) ?? []
+            guard vpnCookies.contains(where: { $0.name == "wengine_vpn_ticketwebvpn_hfut_edu_cn" }) else {
+                throw CASLoginError.missingWebVPNTicket
+            }
+            return vpnCookies
+        } else {
+            let academicCookies = cookieStorage.cookies(for: AcademicPortal.directAcademicRoot) ?? []
+            guard academicCookies.contains(where: { $0.name == "SESSION" }) else {
+                throw CASLoginError.missingAcademicSession
+            }
+            return academicCookies
         }
-        return academicCookies
+    }
+
+    private func vpnTicket(from response: HTTPURLResponse?) -> String? {
+        if let value = cookieStorage.cookies?.first(where: { $0.name == "wengine_vpn_ticketwebvpn_hfut_edu_cn" })?.value,
+           !value.isEmpty { return value }
+        guard let response else { return nil }
+        return response.value(forHTTPHeaderField: "Set-Cookie")
+            .flatMap { Self.firstMatch(in: $0, pattern: #"wengine_vpn_ticketwebvpn_hfut_edu_cn=([^;\s,]+)"#) }
     }
 
     private func loginFlavoring(from response: HTTPURLResponse?) -> String? {
@@ -124,7 +177,17 @@ struct CASLoginClient {
         return (data, response)
     }
 
-    private static func loginURL() throws -> URL {
+    private func loginURL() throws -> URL {
+        if mode == .webVPN {
+            guard let url = URL(string: Self.webVPNRoot + Self.webVPNCASPrefix + "login?service=" + Self.service) else {
+                throw CASLoginError.invalidResponse
+            }
+            return url
+        }
+        return try Self.directLoginURL()
+    }
+
+    private static func directLoginURL() throws -> URL {
         var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
         components.queryItems = [URLQueryItem(name: "service", value: service)]
         guard let url = components.url else { throw CASLoginError.invalidResponse }
@@ -205,6 +268,7 @@ enum CASLoginError: LocalizedError {
     case encryptionFailed(CCCryptorStatus)
     case invalidCredentials(String)
     case missingAcademicSession
+    case missingWebVPNTicket
 
     var errorDescription: String? {
         switch self {
@@ -216,6 +280,7 @@ enum CASLoginError: LocalizedError {
         case .encryptionFailed(let status): "密码加密失败（\(status)）。"
         case .invalidCredentials(let message): message
         case .missingAcademicSession: "CAS 登录成功，但教务系统没有返回 SESSION。请确认当前网络可以访问教务系统。"
+        case .missingWebVPNTicket: "未获取到 WebVPN 会话，请重新打开校外访问并重试。"
         }
     }
 }
