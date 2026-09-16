@@ -34,6 +34,12 @@ final class CASLoginClient: @unchecked Sendable {
     }
 
     func prepare(includeCaptcha: Bool = true) async throws -> CASLoginPreparation {
+        // A persisted TGC makes /cas/login immediately redirect to a service
+        // ticket, so there is no login form (and therefore no `execution`).
+        // Entering this screen means the user explicitly requested a fresh
+        // authentication flow; clear only CAS cookies, retaining WebVPN and all
+        // service-specific sessions.
+        CampusSessionStore.shared.removeCookies(forDomainSuffix: "cas.hfut.edu.cn")
         let execution = try await fetchExecution()
         let needsCaptcha: Bool
 
@@ -146,12 +152,15 @@ final class CASLoginClient: @unchecked Sendable {
             guard vpnCookies.contains(where: { $0.name == "wengine_vpn_ticketwebvpn_hfut_edu_cn" }) else {
                 throw CASLoginError.missingWebVPNTicket
             }
-            return vpnCookies
+            let allCookies = cookieStorage.cookies ?? vpnCookies
+            CampusSessionStore.shared.persist(allCookies)
+            return allCookies
         } else {
             let academicCookies = cookieStorage.cookies(for: AcademicPortal.directAcademicRoot) ?? []
             guard academicCookies.contains(where: { $0.name == "SESSION" }) else {
                 throw CASLoginError.missingAcademicSession
             }
+            CampusSessionStore.shared.persist(cookieStorage.cookies ?? academicCookies)
             return academicCookies
         }
     }

@@ -124,7 +124,6 @@ struct OfficialClassmatesView: View {
             if classmates.isEmpty { errorMessage = "校方接口返回空名单。" }
         } catch {
             errorMessage = error.localizedDescription
-            if case OfficialCampusAPIError.uniAppAuthenticationRequired = error { showingLogin = true }
         }
         isLoading = false
     }
@@ -192,7 +191,6 @@ struct OfficialClassroomSearchView: View {
             if rooms.isEmpty { errorMessage = "校方接口未查到这个教室。" }
         } catch {
             errorMessage = error.localizedDescription
-            if case OfficialCampusAPIError.uniAppAuthenticationRequired = error { showingLogin = true }
         }
         isLoading = false
     }
@@ -203,6 +201,7 @@ struct OfficialFailRateView: View {
     @State private var records: [OfficialFailRateRecord] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showingLogin = false
 
     init(courseName: String = "") { _query = State(initialValue: courseName) }
 
@@ -214,7 +213,10 @@ struct OfficialFailRateView: View {
                     .disabled(isLoading || query.trimmed.isEmpty)
             }
             if let errorMessage {
-                Section { ContentUnavailableView("查询失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage)) }
+                Section {
+                    ContentUnavailableView("查询失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
+                    Button("前往安全登录", systemImage: "lock.shield") { showingLogin = true }
+                }
             } else {
                 ForEach(records) { record in
                     Section("\(record.courseName) · \(record.courseCode)") {
@@ -236,6 +238,9 @@ struct OfficialFailRateView: View {
         .overlay { if isLoading { ProgressView("正在读取智慧社区…") } }
         .task { if !query.trimmed.isEmpty { await search() } }
         .refreshable { await search() }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) {
+            NavigationStack { LoginPortalView() }
+        }
     }
 
     @MainActor
@@ -290,7 +295,6 @@ struct OfficialUniAppLoginView: View {
             _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: password)
             password = ""
             onSuccess()
-            dismiss()
         } catch {
             errorMessage = error.localizedDescription
         }

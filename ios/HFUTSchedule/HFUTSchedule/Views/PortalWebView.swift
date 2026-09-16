@@ -65,29 +65,17 @@ private struct WebViewRepresentable: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
-        load(url, in: webView)
+        context.coordinator.didRequestInitialLoad = true
+        CampusSessionStore.shared.hydrateWebKit(configuration.websiteDataStore.httpCookieStore) {
+            webView.load(URLRequest(url: url))
+        }
         return webView
-    }
-
-    private func load(_ url: URL, in webView: WKWebView) {
-        let cookies = HTTPCookieStorage.shared.cookies(for: url) ?? []
-        guard !cookies.isEmpty else {
-            webView.load(URLRequest(url: url))
-            return
-        }
-        let group = DispatchGroup()
-        for cookie in cookies {
-            group.enter()
-            webView.configuration.websiteDataStore.httpCookieStore.setCookie(cookie) { group.leave() }
-        }
-        group.notify(queue: .main) {
-            webView.load(URLRequest(url: url))
-        }
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.parent = self
-        guard webView.url == nil else { return }
+        guard !context.coordinator.didRequestInitialLoad else { return }
+        context.coordinator.didRequestInitialLoad = true
         webView.load(URLRequest(url: url))
     }
 
@@ -95,6 +83,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
         var parent: WebViewRepresentable
         private var enteredAcademicAfterVPNLogin = false
         private var reportedAuthentication = false
+        var didRequestInitialLoad = false
 
         init(parent: WebViewRepresentable) {
             self.parent = parent
@@ -107,6 +96,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
             parent.isLoading = false
             parent.pageTitle = webView.title ?? "校园门户"
+            CampusSessionStore.shared.captureWebKit(webView.configuration.websiteDataStore.httpCookieStore)
             if parent.academicMode == .webVPN,
                !enteredAcademicAfterVPNLogin,
                AcademicPortal.shouldEnterAcademicAfterWebVPNLogin(webView.url) {
@@ -118,8 +108,8 @@ private struct WebViewRepresentable: UIViewRepresentable {
                   !reportedAuthentication,
                   AcademicPortal.isAcademicPage(webView.url, mode: mode) else { return }
             reportedAuthentication = true
-            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [parent] cookies in
-                DispatchQueue.main.async { parent.onAcademicAuthenticated?(cookies) }
+            CampusSessionStore.shared.captureWebKit(webView.configuration.websiteDataStore.httpCookieStore) { [parent] cookies in
+                parent.onAcademicAuthenticated?(cookies)
             }
         }
 

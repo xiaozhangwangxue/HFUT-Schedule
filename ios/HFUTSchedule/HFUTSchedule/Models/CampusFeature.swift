@@ -22,6 +22,12 @@ enum NativeDestination: String, Hashable {
     case courseSearch
     case classrooms
     case failRate
+    case campusCard
+    case electricity
+    case campusNetwork
+    case bathing
+    case laundry
+    case secondClass
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -41,10 +47,10 @@ struct CampusFeature: Identifiable, Hashable {
 
 enum FeatureCatalog {
     static let all: [CampusFeature] = [
-        .init(id: 1, title: "校园卡", subtitle: "余额、账单、充值与缴费", systemImage: "creditcard.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: nil),
+        .init(id: 1, title: "校园卡", subtitle: "余额、账单、充值与缴费", systemImage: "creditcard.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: .campusCard),
         .init(id: 2, title: "扫码", subtitle: "二维码与校园登录", systemImage: "qrcode.viewfinder", category: .tools, urlString: nil, nativeDestination: .scanner),
-        .init(id: 3, title: "宿舍电费", subtitle: "查询与缴费", systemImage: "bolt.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: nil),
-        .init(id: 4, title: "校园网", subtitle: "登录、余额与用量", systemImage: "wifi", category: .campus, urlString: "https://xywzz.hfut.edu.cn:8443/", nativeDestination: nil),
+        .init(id: 3, title: "宿舍电费", subtitle: "查询与缴费", systemImage: "bolt.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: .electricity),
+        .init(id: 4, title: "校园网", subtitle: "登录、余额与用量", systemImage: "wifi", category: .campus, urlString: "https://xywzz.hfut.edu.cn:8443/", nativeDestination: .campusNetwork),
         .init(id: 5, title: "校园邮箱", subtitle: "合工大邮箱", systemImage: "envelope.fill", category: .campus, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 6, title: "考试安排", subtitle: "考试时间、地点与提醒", systemImage: "doc.text.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .exams),
         .init(id: 7, title: "成绩", subtitle: "成绩查询与分析", systemImage: "chart.bar.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .grades),
@@ -52,7 +58,7 @@ enum FeatureCatalog {
         .init(id: 9, title: "课程汇总", subtitle: "学期课程与教材", systemImage: "books.vertical.fill", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
         .init(id: 10, title: "个人信息", subtitle: "学籍与校园身份", systemImage: "person.text.rectangle.fill", category: .campus, urlString: nil, nativeDestination: .personInfo),
         .init(id: 11, title: "网址导航", subtitle: "实验室与常用站点", systemImage: "folder.fill", category: .tools, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 12, title: "洗浴", subtitle: "洗浴服务与账单", systemImage: "shower.fill", category: .life, urlString: "https://bathing.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 12, title: "洗浴", subtitle: "洗浴服务与账单", systemImage: "shower.fill", category: .life, urlString: "https://bathing.hfut.edu.cn/", nativeDestination: .bathing),
         .init(id: 13, title: "选课", subtitle: "选课与确认", systemImage: "checklist", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
         .init(id: 14, title: "宿舍评分", subtitle: "寝室卫生评分", systemImage: "house.fill", category: .life, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 15, title: "通知中心", subtitle: "校园通知统一收纳", systemImage: "bell.badge.fill", category: .information, urlString: nil, nativeDestination: .notifications),
@@ -78,12 +84,12 @@ enum FeatureCatalog {
         .init(id: 37, title: "就业服务", subtitle: "招聘、实习与双选", systemImage: "briefcase.fill", category: .campus, urlString: "https://gdjy.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 38, title: "节假日", subtitle: "放假与调休", systemImage: "calendar.badge.clock", category: .information, urlString: "https://www.gov.cn/", nativeDestination: nil),
         .init(id: 39, title: "信息共建", subtitle: "共享日程与校园资料", systemImage: "icloud.fill", category: .tools, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 40, title: "洗衣", subtitle: "洗衣、洗鞋与烘干", systemImage: "washer.fill", category: .life, urlString: "https://yshz-user.haier-ioc.com/", nativeDestination: nil),
+        .init(id: 40, title: "洗衣", subtitle: "洗衣、洗鞋与烘干", systemImage: "washer.fill", category: .life, urlString: "https://yshz-user.haier-ioc.com/", nativeDestination: .laundry),
         .init(id: 41, title: "招生信息", subtitle: "计划与历年分数", systemImage: "person.2.crop.square.stack.fill", category: .information, urlString: "https://bkzs.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 42, title: "WebVPN", subtitle: "校外访问校内资源", systemImage: "lock.shield.fill", category: .tools, urlString: "https://webvpn.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 43, title: "办事大厅", subtitle: "网上办事与流程", systemImage: "building.columns.fill", category: .campus, urlString: "https://ehall.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 44, title: "慧新易校", subtitle: "校园卡与生活缴费", systemImage: "building.2.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: nil),
-        .init(id: 45, title: "第二课堂", subtitle: "活动与学分", systemImage: "person.3.sequence.fill", category: .study, urlString: "https://dekt.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 44, title: "慧新易校", subtitle: "校园卡与生活缴费", systemImage: "building.2.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: .campusCard),
+        .init(id: 45, title: "第二课堂", subtitle: "活动与学分", systemImage: "person.3.sequence.fill", category: .study, urlString: "https://dekt.hfut.edu.cn/", nativeDestination: .secondClass),
         .init(id: 46, title: "场地预约", subtitle: "自习室、场馆与座位", systemImage: "calendar.badge.plus", category: .campus, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 47, title: "AI 助手", subtitle: "校园问答与学习辅助", systemImage: "sparkles", category: .tools, urlString: nil, nativeDestination: nil),
         .init(id: 48, title: "事务跟踪", subtitle: "反馈、进度与开发动态", systemImage: "point.3.connected.trianglepath.dotted", category: .tools, urlString: "https://github.com/Chiu-xaH/HFUT-Schedule/issues", nativeDestination: nil),

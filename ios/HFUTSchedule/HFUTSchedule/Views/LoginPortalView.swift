@@ -83,6 +83,7 @@ struct LoginPortalView: View {
 
     private func synchronizeAll(cookies: [HTTPCookie], username: String, password: String) {
         guard !isSyncing else { return }
+        CampusSessionStore.shared.persist(cookies)
         isSyncing = true
         syncMessage = "正在读取本学期教务数据"
         let mode = selectedMode
@@ -90,9 +91,11 @@ struct LoginPortalView: View {
             let client = AcademicClient(mode: mode, cookies: cookies)
             var completed: [String] = []
             var failures: [String] = []
+            var syncedStudentInfo: AcademicStudentInfo?
 
             do {
                 let info = try await client.fetchStudentInfo()
+                syncedStudentInfo = info
                 await MainActor.run { studentStore.replace(with: info) }
                 completed.append("学籍")
             } catch { failures.append("学籍：\(error.localizedDescription)") }
@@ -118,12 +121,21 @@ struct LoginPortalView: View {
                 completed.append("考试")
             } catch { failures.append("考试：\(error.localizedDescription)") }
 
-            if !password.isEmpty {
-                do {
-                    _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: password)
-                    completed.append("合工大教务 API")
-                } catch {
-                    failures.append("合工大教务 API：\(error.localizedDescription)（若教务密码与信息门户不同，可在同班同学或教室页单独登录一次）")
+            if !username.isEmpty {
+                let candidates = uniAppPasswordCandidates(portalPassword: password, info: syncedStudentInfo)
+                var uniAppError: Error?
+                for candidate in candidates {
+                    do {
+                        _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: candidate)
+                        uniAppError = nil
+                        completed.append("合工大教务 API")
+                        break
+                    } catch {
+                        uniAppError = error
+                    }
+                }
+                if let uniAppError {
+                    failures.append("合工大教务 API：\(uniAppError.localizedDescription)（若修改过教务默认密码，只需在同班同学或教室页补充一次）")
                 }
             }
 
@@ -132,6 +144,20 @@ struct LoginPortalView: View {
                 completed.append("智慧社区 API")
             } catch {
                 failures.append("智慧社区 API：\(error.localizedDescription)")
+            }
+
+            do {
+                _ = try await CampusServiceClient.shared.refreshHuiXinToken()
+                completed.append("一卡通与生活缴费")
+            } catch {
+                failures.append("一卡通：\(error.localizedDescription)")
+            }
+
+            do {
+                _ = try await CampusServiceClient.shared.fetchSecondClassActivities()
+                completed.append("第二课堂")
+            } catch {
+                failures.append("第二课堂：\(error.localizedDescription)")
             }
 
             await MainActor.run {
@@ -151,12 +177,13 @@ struct LoginPortalView: View {
     private func recoverFromPreparationFailure(_ error: Error) {
         guard isConnectivityFailure(error) else { return }
         if selectedMode == .direct {
-            syncMessage = "原生直连不可达，已切换 WebVPN 网页安全登录"
+            syncMessage = "原生直连不可达，已切换 WebVPN 安全登录"
             connectionMode = AcademicConnectionMode.webVPN.rawValue
+            usesWebLoginFallback = false
         } else {
             syncMessage = "原生请求不可达，已切换 WebVPN 网页安全登录"
+            usesWebLoginFallback = true
         }
-        usesWebLoginFallback = true
     }
 
     private func synchronizeFromWebLogin(_ cookies: [HTTPCookie]) {
@@ -170,5 +197,16 @@ struct LoginPortalView: View {
             .timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost,
             .notConnectedToInternet, .dnsLookupFailed, .secureConnectionFailed
         ].contains(code)
+    }
+
+    private func uniAppPasswordCandidates(portalPassword: String, info: AcademicStudentInfo?) -> [String] {
+        var candidates: [String] = []
+        if let identity = info?.fields.first(where: { key, _ in
+            key.contains("身份证") || key.contains("证件号")
+        })?.value.replacingOccurrences(of: " ", with: "").uppercased(), identity.count >= 6 {
+            candidates.append("Hfut@#$%" + String(identity.suffix(6)))
+        }
+        if !portalPassword.isEmpty, !candidates.contains(portalPassword) { candidates.append(portalPassword) }
+        return candidates
     }
 }

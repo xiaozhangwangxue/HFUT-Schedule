@@ -33,6 +33,18 @@ struct FeatureDetailView: View {
                 OfficialClassroomSearchView()
             case .failRate:
                 OfficialFailRateView()
+            case .campusCard:
+                CampusCardServiceView()
+            case .electricity:
+                ElectricityServiceView()
+            case .campusNetwork:
+                CampusNetworkServiceView()
+            case .bathing:
+                BathingServiceView()
+            case .laundry:
+                LaundryServiceView()
+            case .secondClass:
+                SecondClassServiceView()
             case nil:
                 portalOrUnavailable
             }

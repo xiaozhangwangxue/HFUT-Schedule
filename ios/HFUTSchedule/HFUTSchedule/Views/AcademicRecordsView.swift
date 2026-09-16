@@ -264,7 +264,9 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
 
-        webView.load(URLRequest(url: AcademicPortal.loginURL(for: connectionMode)))
+        CampusSessionStore.shared.hydrateWebKit(configuration.websiteDataStore.httpCookieStore) {
+            webView.load(URLRequest(url: AcademicPortal.loginURL(for: connectionMode)))
+        }
         return webView
     }
 
@@ -272,7 +274,7 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
         context.coordinator.parent = self
         guard syncTrigger > context.coordinator.lastSyncTrigger else { return }
         context.coordinator.lastSyncTrigger = syncTrigger
-        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+        CampusSessionStore.shared.captureWebKit(webView.configuration.websiteDataStore.httpCookieStore) { cookies in
             Task {
                 do {
                     let client = AcademicClient(mode: connectionMode, cookies: cookies)
@@ -299,6 +301,7 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
         init(parent: AcademicRecordsWebView) { self.parent = parent }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
+            CampusSessionStore.shared.captureWebKit(webView.configuration.websiteDataStore.httpCookieStore)
             if parent.connectionMode == .webVPN,
                !enteredAcademicAfterVPNLogin,
                AcademicPortal.shouldEnterAcademicAfterWebVPNLogin(webView.url) {

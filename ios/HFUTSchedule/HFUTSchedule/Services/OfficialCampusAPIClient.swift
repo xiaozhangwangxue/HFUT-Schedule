@@ -152,6 +152,7 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
 
     @discardableResult
     func refreshCommunityToken() async throws -> String {
+        CampusSessionStore.shared.restoreToSharedStorage()
         var cas = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
         cas.queryItems = [URLQueryItem(name: "service", value: "https://community.hfut.edu.cn/")]
         let (_, response) = try await noRedirectSession.data(for: URLRequest(url: cas.url!))
@@ -174,10 +175,11 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
             throw OfficialCampusAPIError.communityAuthenticationRequired
         }
         try SecureTokenStore.write(token, account: communityTokenAccount)
+        CampusSessionStore.shared.persist(HTTPCookieStorage.shared.cookies ?? [])
         return token
     }
 
-    func fetchFailRates(courseName: String, page: Int = 1) async throws -> [OfficialFailRateRecord] {
+    func fetchFailRates(courseName: String, page: Int = 1, retrying: Bool = false) async throws -> [OfficialFailRateRecord] {
         let token: String
         if let saved = SecureTokenStore.read(communityTokenAccount) {
             token = saved
@@ -198,7 +200,14 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
             throw OfficialCampusAPIError.communityAuthenticationRequired
         }
         guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }
-        return try JSONDecoder().decode(FailRateEnvelope.self, from: data).result.records
+        do {
+            return try JSONDecoder().decode(FailRateEnvelope.self, from: data).result.records
+        } catch {
+            guard !retrying else { throw error }
+            SecureTokenStore.delete(communityTokenAccount)
+            _ = try await refreshCommunityToken()
+            return try await fetchFailRates(courseName: courseName, page: page, retrying: true)
+        }
     }
 
     private func authorizedUniAppData(url: URL, token: String) async throws -> Data {

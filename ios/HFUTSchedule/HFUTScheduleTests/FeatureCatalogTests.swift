@@ -45,6 +45,42 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(failRate.terms.first?.successRate, 0.92)
     }
 
+    func testRequestedCampusServicesUseOriginalNativeFlows() {
+        let expected: [Int: NativeDestination] = [
+            1: .campusCard,
+            3: .electricity,
+            4: .campusNetwork,
+            7: .grades,
+            8: .failRate,
+            12: .bathing,
+            24: .classrooms,
+            40: .laundry,
+            44: .campusCard,
+            45: .secondClass
+        ]
+        for (id, destination) in expected {
+            XCTAssertEqual(FeatureCatalog.all.first(where: { $0.id == id })?.nativeDestination, destination)
+        }
+    }
+
+    func testLifeServiceModelsDecodeAndroidPayloads() throws {
+        let laundryJSON = """
+        {"data":{"items":[{"id":1,"name":"一号洗衣房","address":"一号楼","workTime":"06:00-23:00","categoryCodeList":["00"],"enableReserve":true,"reserveNum":2,"idleCount":3}]}}
+        """.data(using: .utf8)!
+        struct LaundryTestEnvelope: Decodable {
+            let data: DataValue
+            struct DataValue: Decodable { let items: [LaundryLocation] }
+        }
+        let laundry = try XCTUnwrap(JSONDecoder().decode(LaundryTestEnvelope.self, from: laundryJSON).data.items.first)
+        XCTAssertEqual(laundry.idleCount, 3)
+
+        let secondClassJSON = """
+        {"id":"42","name":"志愿活动","module":"志愿服务","sponsor":"校团委","peopleNum":100,"beginTime":"2026-09-16 08:00","endTime":"2026-09-16 10:00","activePhoto":"/a.jpg","form":"线下","campus":1,"keynoteSpeaker":null,"theVenue":"大学生活动中心"}
+        """.data(using: .utf8)!
+        let activity = try JSONDecoder().decode(SecondClassActivity.self, from: secondClassJSON)
+        XCTAssertEqual(activity.sponsor, "校团委")
+    }
+
     func testCASEncryptionMatchesAndroidAES() throws {
         XCTAssertEqual(
             try CASLoginClient.encryptAES("password", key: "1234567890123456"),

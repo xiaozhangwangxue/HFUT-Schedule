@@ -9,6 +9,10 @@ struct HFUTScheduleApp: App {
     @StateObject private var academicRecordsStore = AcademicRecordsStore()
     @StateObject private var academicStudentStore = AcademicStudentStore()
 
+    init() {
+        CampusSessionStore.shared.bootstrap()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
