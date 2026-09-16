@@ -49,6 +49,30 @@ struct LaundryLocation: Decodable, Identifiable, Hashable {
     let idleCount: Int
 }
 
+struct LaundryDevice: Decodable, Identifiable, Hashable {
+    let name: String
+    let state: Int
+    let finishTime: String?
+    let enableReserve: Bool
+    let reserveNum: Int
+
+    var id: String { name }
+    var stateText: String {
+        switch state {
+        case 1: "空闲"
+        case 2: "占用"
+        case 3: "故障"
+        default: "未知"
+        }
+    }
+}
+
+struct HuiXinSelectionOption: Decodable, Identifiable, Hashable {
+    let name: String
+    let value: String
+    var id: String { value }
+}
+
 enum HuiXinFeeKind {
     case electricHefei(building: String, room: String)
     case electricXuancheng(room: String)
@@ -114,6 +138,11 @@ final class CampusServiceClient: @unchecked Sendable {
 
     var savedHuiXinToken: String? { CampusCredentialStore.read(huiXinTokenKey) }
 
+    static let alipayCampusCardURL = URL(string: "alipays://platformapi/startapp?appId=20000067&url=https://ur.alipay.com/_4kQhV32216tp7bzlDc3E1k")!
+    static let alipayCampusCardFallbackURL = URL(string: "https://ur.alipay.com/_4kQhV32216tp7bzlDc3E1k")!
+    static let pinduoduoExpressURL = URL(string: "https://m.pinduoduo.net/mdkd/identificationCode")!
+    static let taobaoExpressURL = URL(string: "https://pages-fast.m.taobao.com/wow/z/uniapp/1011717/last-mile-fe/end-collect-platform/identity-code")!
+
     func savedHuiXinPortalURL(path: String = "plat") -> URL? {
         guard let token = savedHuiXinToken else { return nil }
         var components = URLComponents(string: "http://121.251.19.62/\(path)")!
@@ -145,17 +174,25 @@ final class CampusServiceClient: @unchecked Sendable {
             URLQueryItem(name: "redirect_uri", value: redirect)
         ]
         guard let start = components.url else { throw CampusServiceError.invalidResponse }
-        let token = try await followRedirects(from: start) { url, headers, body in
-            let candidates = [url.absoluteString, headers["location"] ?? "", body]
-            for candidate in candidates {
-                if let value = Self.firstMatch(in: candidate, pattern: #"synjones-auth=([^&\s\"']+)"#) {
-                    return value.removingPercentEncoding ?? value
+        var lastError: Error?
+        for _ in 0..<2 {
+            do {
+                let token = try await followRedirects(from: start) { url, headers, body in
+                    let candidates = [url.absoluteString, headers["location"] ?? "", body]
+                    for candidate in candidates {
+                        if let value = Self.firstMatch(in: candidate, pattern: #"synjones-auth=([^&\s\"']+)"#) {
+                            return value.removingPercentEncoding ?? value
+                        }
+                    }
+                    return nil
                 }
+                try CampusCredentialStore.write(token, account: huiXinTokenKey)
+                return token
+            } catch {
+                lastError = error
             }
-            return nil
         }
-        try CampusCredentialStore.write(token, account: huiXinTokenKey)
-        return token
+        throw lastError ?? CampusServiceError.authenticationRequired("一卡通")
     }
 
     func fetchCampusCards(forceRefresh: Bool = false) async throws -> [HuiXinCard] {
@@ -225,6 +262,35 @@ final class CampusServiceClient: @unchecked Sendable {
         }
         return showData.reduce(into: [String: String]()) { result, pair in
             result[pair.key] = Self.string(pair.value) ?? String(describing: pair.value)
+        }
+    }
+
+    func fetchHefeiElectricOptions(building: String? = nil, retrying: Bool = false) async throws -> [HuiXinSelectionOption] {
+        let token = try await huiXinToken(forceRefresh: retrying)
+        var fields = [
+            ("feeitemid", "1"), ("type", "select"), ("campus", "1sh"),
+            ("level", building == nil ? "1" : "2")
+        ]
+        if let building { fields.append(("building", building)) }
+        var request = URLRequest(url: URL(string: "http://121.251.19.62/charge/feeitem/getThirdData")!)
+        request.httpMethod = "POST"
+        request.setValue("bearer \(token)", forHTTPHeaderField: "synjones-auth")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.formBody(fields)
+        let (data, response) = try await data(for: request)
+        if [401, 403].contains(response.statusCode), !retrying {
+            CampusCredentialStore.delete(huiXinTokenKey)
+            return try await fetchHefeiElectricOptions(building: building, retrying: true)
+        }
+        guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let map = root["map"] as? [String: Any],
+              let values = map["data"] as? [[String: Any]] else {
+            throw CampusServiceError.invalidData("电费接口未返回楼栋或房间列表")
+        }
+        return values.compactMap { value in
+            guard let name = Self.string(value["name"]), let code = Self.string(value["value"]) else { return nil }
+            return HuiXinSelectionOption(name: name, value: code)
         }
     }
 
@@ -319,7 +385,25 @@ final class CampusServiceClient: @unchecked Sendable {
         request.httpBody = try JSONSerialization.data(withJSONObject: json)
         let (data, response) = try await data(for: request)
         guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
-        return try JSONDecoder().decode(LaundryEnvelope.self, from: data).data.items
+        return try JSONDecoder().decode(LaundryEnvelope.self, from: data).data.items.filter { location in
+            if xuancheng { return location.address.contains("宣州区薰化路301号") }
+            return location.address.contains("合肥工业大学") || location.name.contains("屯溪路") || location.name.contains("翡翠湖")
+        }
+    }
+
+    func fetchLaundryDevices(positionID: Int64, categoryCode: String, page: Int = 1) async throws -> [LaundryDevice] {
+        var request = URLRequest(url: URL(string: "https://yshz-user.haier-ioc.com/position/deviceDetailPage")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "positionId": String(positionID),
+            "categoryCode": categoryCode,
+            "page": page,
+            "pageSize": 30
+        ])
+        let (data, response) = try await data(for: request)
+        guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
+        return try JSONDecoder().decode(LaundryDeviceEnvelope.self, from: data).data.items
     }
 
     private func huiXinToken(forceRefresh: Bool) async throws -> String {
@@ -339,6 +423,10 @@ final class CampusServiceClient: @unchecked Sendable {
                let token = Self.firstMatch(in: setCookie, pattern: #"(?:^|[,;]\s*)(SESSION=[^;,\s]+)"#) {
                 return token
             }
+            if url.host == "dekt.hfut.edu.cn",
+               let value = HTTPCookieStorage.shared.cookies(for: URL(string: "https://dekt.hfut.edu.cn/")!)?.first(where: { $0.name == "SESSION" })?.value {
+                return "SESSION=\(value)"
+            }
             return nil
         }
         try CampusCredentialStore.write(cookie, account: secondClassCookieKey)
@@ -351,7 +439,14 @@ final class CampusServiceClient: @unchecked Sendable {
     ) async throws -> String {
         var current = start
         for _ in 0..<12 {
-            let (data, response) = try await noRedirectSession.data(for: URLRequest(url: current))
+            var request = URLRequest(url: current)
+            if current.host?.lowercased() == "cas.hfut.edu.cn" {
+                let cookies = HTTPCookieStorage.shared.cookies(for: current) ?? []
+                if !cookies.isEmpty {
+                    request.setValue(cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; "), forHTTPHeaderField: "Cookie")
+                }
+            }
+            let (data, response) = try await noRedirectSession.data(for: request)
             guard let http = response as? HTTPURLResponse else { throw CampusServiceError.invalidResponse }
             CampusSessionStore.shared.persist(HTTPCookieStorage.shared.cookies ?? [])
             let headers = http.allHeaderFields.reduce(into: [String: String]()) { result, item in
@@ -468,6 +563,10 @@ private struct SecondClassEnvelope: Decodable { let list: [SecondClassActivity] 
 private struct LaundryEnvelope: Decodable {
     let data: DataValue
     struct DataValue: Decodable { let items: [LaundryLocation] }
+}
+private struct LaundryDeviceEnvelope: Decodable {
+    let data: DataValue
+    struct DataValue: Decodable { let items: [LaundryDevice] }
 }
 
 private enum CampusCredentialStore {

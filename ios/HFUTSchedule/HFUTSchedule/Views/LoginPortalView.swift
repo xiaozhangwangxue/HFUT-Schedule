@@ -92,6 +92,8 @@ struct LoginPortalView: View {
             var completed: [String] = []
             var failures: [String] = []
             var syncedStudentInfo: AcademicStudentInfo?
+            var gradesSynced = false
+            var examsSynced = false
 
             do {
                 let info = try await client.fetchStudentInfo()
@@ -113,29 +115,57 @@ struct LoginPortalView: View {
                 let grades = try await client.fetchGrades()
                 await MainActor.run { recordsStore.replaceGrades(with: grades) }
                 completed.append("成绩")
+                gradesSynced = true
             } catch { failures.append("成绩：\(error.localizedDescription)") }
 
             do {
                 let exams = try await client.fetchExams()
                 await MainActor.run { recordsStore.replaceExams(with: exams) }
                 completed.append("考试")
+                examsSynced = true
             } catch { failures.append("考试：\(error.localizedDescription)") }
 
-            if !username.isEmpty {
+            let uniAppUsername = username.isEmpty ? (syncedStudentInfo?.studentID ?? "") : username
+            if !uniAppUsername.isEmpty {
                 let candidates = uniAppPasswordCandidates(portalPassword: password, info: syncedStudentInfo)
                 var uniAppError: Error?
+                var uniAppLoggedIn = OfficialCampusAPIClient.shared.hasUniAppToken
                 for candidate in candidates {
                     do {
-                        _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: candidate)
+                        _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: uniAppUsername, password: candidate)
                         uniAppError = nil
+                        uniAppLoggedIn = true
                         completed.append("合工大教务 API")
                         break
                     } catch {
                         uniAppError = error
                     }
                 }
-                if let uniAppError {
+                if !uniAppLoggedIn, let uniAppError {
                     failures.append("合工大教务 API：\(uniAppError.localizedDescription)（若修改过教务默认密码，只需在同班同学或教室页补充一次）")
+                }
+
+                if uniAppLoggedIn, !gradesSynced {
+                    do {
+                        let grades = try await OfficialCampusAPIClient.shared.fetchGrades()
+                        await MainActor.run { recordsStore.replaceGrades(with: grades) }
+                        completed.append("成绩（官方 API）")
+                        gradesSynced = true
+                        failures.removeAll { $0.hasPrefix("成绩：") }
+                    } catch {
+                        failures.append("成绩（官方 API）：\(error.localizedDescription)")
+                    }
+                }
+                if uniAppLoggedIn, !examsSynced {
+                    do {
+                        let exams = try await OfficialCampusAPIClient.shared.fetchExams()
+                        await MainActor.run { recordsStore.replaceExams(with: exams) }
+                        completed.append("考试（官方 API）")
+                        examsSynced = true
+                        failures.removeAll { $0.hasPrefix("考试：") }
+                    } catch {
+                        failures.append("考试（官方 API）：\(error.localizedDescription)")
+                    }
                 }
             }
 
@@ -204,7 +234,9 @@ struct LoginPortalView: View {
         if let identity = info?.fields.first(where: { key, _ in
             key.contains("身份证") || key.contains("证件号")
         })?.value.replacingOccurrences(of: " ", with: "").uppercased(), identity.count >= 6 {
-            candidates.append("Hfut@#$%" + String(identity.suffix(6)))
+            if let password = OfficialCampusAPIClient.defaultUniAppPassword(identityNumber: identity) {
+                candidates.append(password)
+            }
         }
         if !portalPassword.isEmpty, !candidates.contains(portalPassword) { candidates.append(portalPassword) }
         return candidates

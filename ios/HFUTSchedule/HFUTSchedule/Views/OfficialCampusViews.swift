@@ -130,20 +130,38 @@ struct OfficialClassmatesView: View {
 }
 
 struct OfficialClassroomSearchView: View {
-    @State private var query: String
-    @State private var rooms: [OfficialClassroom] = []
+    @State private var selectedDate = Date()
+    @State private var campusID = 3
+    @State private var buildingID = 0
+    @State private var floor = 0
+    @State private var buildings: [OfficialBuilding] = []
+    @State private var rooms: [OfficialEmptyClassroom] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLogin = false
 
-    init(query: String = "") { _query = State(initialValue: query) }
+    init(query: String = "") {}
+
+    private let campuses = [("屯溪路", 2), ("翡翠湖", 3), ("宣城", 6)]
+    private var filteredBuildings: [OfficialBuilding] { buildings.filter { $0.campusAssoc == campusID } }
 
     var body: some View {
         List {
-            Section("官方教室查询") {
-                TextField("例如：翠五教304", text: $query)
-                Button("查询教室状态", systemImage: "magnifyingglass") { Task { await search() } }
-                    .disabled(isLoading || query.trimmed.isEmpty)
+            Section("按原版列表选择") {
+                DatePicker("日期", selection: $selectedDate, displayedComponents: .date)
+                Picker("校区", selection: $campusID) {
+                    ForEach(campuses, id: \.1) { Text($0.0).tag($0.1) }
+                }
+                Picker("教学楼", selection: $buildingID) {
+                    Text("全部教学楼").tag(0)
+                    ForEach(filteredBuildings) { Text($0.nameZh).tag($0.id) }
+                }
+                Picker("楼层", selection: $floor) {
+                    Text("全部楼层").tag(0)
+                    ForEach(1...8, id: \.self) { Text("\($0) 层").tag($0) }
+                }
+                Button("查询空教室", systemImage: "magnifyingglass") { Task { await search() } }
+                    .disabled(isLoading)
             }
             if let errorMessage {
                 Section {
@@ -151,18 +169,18 @@ struct OfficialClassroomSearchView: View {
                     Button("登录合工大教务 API", systemImage: "key.fill") { showingLogin = true }
                 }
             } else if !rooms.isEmpty {
-                Section("教室（\(rooms.count)）") {
+                Section("空教室（\(rooms.count)）") {
                     ForEach(rooms) { room in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(room.nameZh).font(.headline)
-                            Text([
-                                room.building?.campus?.nameZh,
-                                room.building?.nameZh,
-                                room.floor.map { "\($0) 层" },
-                                room.seatsForLesson.map { "\($0) 座" },
-                                room.roomType?.nameZh
-                            ].compactMap { $0 }.joined(separator: " · "))
+                            Text(room.campusNameZh)
                             .font(.caption).foregroundStyle(.secondary)
+                            if let occupied = room.roomOccupationInfoVms, !occupied.isEmpty {
+                                Text(occupied.map { "\($0.startTimeString)-\($0.endTimeString) \($0.activityName)" }.joined(separator: "；"))
+                                    .font(.caption2).foregroundStyle(.orange)
+                            } else {
+                                Text("所选日期暂无占用记录").font(.caption2).foregroundStyle(.green)
+                            }
                         }
                     }
                 }
@@ -171,7 +189,8 @@ struct OfficialClassroomSearchView: View {
         .navigationTitle("教室状态")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在查询官方教室数据…") } }
-        .task { if !query.trimmed.isEmpty { await search() } }
+        .task { await prepare() }
+        .onChange(of: campusID) { _, _ in buildingID = 0 }
         .refreshable { await search() }
         .sheet(isPresented: $showingLogin) {
             OfficialUniAppLoginView {
@@ -183,15 +202,34 @@ struct OfficialClassroomSearchView: View {
 
     @MainActor
     private func search() async {
-        guard !isLoading, !query.trimmed.isEmpty else { return }
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         do {
-            rooms = try await OfficialCampusAPIClient.shared.searchClassrooms(name: query.trimmed)
-            if rooms.isEmpty { errorMessage = "校方接口未查到这个教室。" }
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            rooms = try await OfficialCampusAPIClient.shared.fetchEmptyClassrooms(
+                date: formatter.string(from: selectedDate),
+                campusID: campusID,
+                buildingIDs: buildingID == 0 ? [] : [buildingID],
+                floors: floor == 0 ? [] : [floor]
+            )
+            if rooms.isEmpty { errorMessage = "校方接口未查到符合条件的空教室。" }
         } catch {
             errorMessage = error.localizedDescription
         }
+        isLoading = false
+    }
+
+    @MainActor
+    private func prepare() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        do {
+            buildings = try await OfficialCampusAPIClient.shared.fetchBuildings()
+        } catch { errorMessage = error.localizedDescription }
         isLoading = false
     }
 }

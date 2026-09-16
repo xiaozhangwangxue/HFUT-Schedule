@@ -9,7 +9,7 @@ enum AcademicConnectionMode: String, CaseIterable, Identifiable {
 }
 
 enum AcademicPortal {
-    static let directAcademicRoot = URL(string: "http://jxglstu.hfut.edu.cn/eams5-student/")!
+    static let directAcademicRoot = URL(string: "https://jxglstu.hfut.edu.cn/eams5-student/")!
     static let webVPNAcademicRoot = URL(
         string: "https://webvpn.hfut.edu.cn/http/77726476706e69737468656265737421faef469034247d1e760e9cb8d6502720ede479/eams5-student/"
     )!
@@ -22,7 +22,7 @@ enum AcademicPortal {
         var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
         components.queryItems = [URLQueryItem(
             name: "service",
-            value: "http://jxglstu.hfut.edu.cn/eams5-student/neusoft-sso/login"
+            value: CASLoginClient.service
         )]
         return components.url!
     }

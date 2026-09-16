@@ -53,14 +53,38 @@ final class FeatureCatalogTests: XCTestCase {
             7: .grades,
             8: .failRate,
             12: .bathing,
+            9: .courseSummary,
+            14: .dormitory,
+            18: .program,
+            19: .library,
             24: .classrooms,
+            28: .campusLife,
+            38: .holidays,
             40: .laundry,
             44: .campusCard,
-            45: .secondClass
+            45: .secondClass,
+            49: .express
         ]
         for (id, destination) in expected {
             XCTAssertEqual(FeatureCatalog.all.first(where: { $0.id == id })?.nativeDestination, destination)
         }
+    }
+
+    func testUniAppDefaultPasswordUsesIdentitySuffixAndXRule() {
+        XCTAssertEqual(
+            OfficialCampusAPIClient.defaultUniAppPassword(identityNumber: "340100200001021234"),
+            "Hfut@#$%021234"
+        )
+        XCTAssertEqual(
+            OfficialCampusAPIClient.defaultUniAppPassword(identityNumber: "34010020000102123X"),
+            "Hfut@#$%102123"
+        )
+    }
+
+    func testOriginalExternalServiceRoutesArePreserved() {
+        XCTAssertTrue(CampusServiceClient.alipayCampusCardURL.absoluteString.contains("_4kQhV32216tp7bzlDc3E1k"))
+        XCTAssertTrue(CampusServiceClient.pinduoduoExpressURL.absoluteString.contains("identificationCode"))
+        XCTAssertTrue(CampusServiceClient.taobaoExpressURL.absoluteString.contains("identity-code"))
     }
 
     func testLifeServiceModelsDecodeAndroidPayloads() throws {
@@ -94,6 +118,17 @@ final class FeatureCatalogTests: XCTestCase {
             WebVPNURLConverter.convert(direct)?.absoluteString,
             AcademicPortal.webVPNAcademicRoot.absoluteString
         )
+    }
+
+    func testDirectAcademicRoutesUseCurrentSecureOfficialOrigin() {
+        XCTAssertEqual(AcademicPortal.directAcademicRoot.scheme, "https")
+        XCTAssertEqual(
+            CASLoginClient.service,
+            "http://jxglstu.hfut.edu.cn/eams5-student/neusoft-sso/login"
+        )
+        XCTAssertFalse(FeatureCatalog.all.contains { feature in
+            feature.url?.host == "jxglstu.hfut.edu.cn" && feature.url?.scheme == "http"
+        })
     }
 
     func testFeatureIDsAreUnique() {

@@ -71,6 +71,63 @@ struct OfficialLocalizedName: Decodable, Hashable {
     let nameZh: String?
 }
 
+struct OfficialBuilding: Decodable, Identifiable, Hashable {
+    let nameZh: String
+    let id: Int
+    let campusAssoc: Int
+}
+
+struct OfficialEmptyClassroom: Decodable, Identifiable, Hashable {
+    let id: Int
+    let nameZh: String
+    let campusNameZh: String
+    let roomOccupationInfoVms: [Occupation]?
+
+    struct Occupation: Decodable, Hashable {
+        let date: String
+        let startTimeString: String
+        let endTimeString: String
+        let activityType: String
+        let activityName: String
+        let teacherName: String?
+    }
+}
+
+struct OfficialDormitory: Decodable, Hashable {
+    let dormitory: String
+    let campus: String
+    let room: String
+}
+
+struct OfficialDormitoryMember: Decodable, Identifiable, Hashable {
+    let username: String
+    let realname: String
+    var id: String { username }
+}
+
+struct OfficialDormitoryScore: Decodable, Identifiable, Hashable {
+    let title: String
+    let value: String
+    var id: String { title }
+}
+
+struct OfficialLibraryBook: Decodable, Identifiable, Hashable {
+    let title: String
+    let publishers: String?
+    let year: Int
+    let abstract: String?
+    let isbn: String
+    let author: [String]
+    let gc: [Position]?
+
+    var id: String { "\(isbn)|\(title)" }
+    struct Position: Decodable, Hashable {
+        let cp: String
+        let `in`: String
+        let js: String?
+    }
+}
+
 final class OfficialCampusAPIClient: @unchecked Sendable {
     static let shared = OfficialCampusAPIClient()
 
@@ -99,6 +156,22 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
 
     var hasUniAppToken: Bool { SecureTokenStore.read(uniAppTokenAccount) != nil }
     var hasCommunityToken: Bool { SecureTokenStore.read(communityTokenAccount) != nil }
+
+    /// The UniApp account is intentionally separate from CAS. HFUT initializes
+    /// it from the identity number and the Android client applies the same rule.
+    static func defaultUniAppPassword(identityNumber: String) -> String? {
+        let normalized = identityNumber
+            .replacingOccurrences(of: " ", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalized.count >= 6 else { return nil }
+        let suffix: String
+        if normalized.last?.lowercased() == "x", normalized.count >= 7 {
+            suffix = String(normalized.dropLast().suffix(6))
+        } else {
+            suffix = String(normalized.suffix(6))
+        }
+        return "Hfut@#$%" + suffix
+    }
 
     @discardableResult
     func loginUniApp(username: String, password: String) async throws -> String {
@@ -135,6 +208,67 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
         let url = URL(string: "https://jwglapp.hfut.edu.cn/eams-micro-server/api/v1/lesson/student/class-mates/\(lessonID)")!
         let data = try await authorizedUniAppData(url: url, token: token)
         return try JSONDecoder().decode(ClassmatesEnvelope.self, from: data).data ?? []
+    }
+
+    func fetchGrades() async throws -> [AcademicGradeTerm] {
+        let data = try await uniAppData(path: "eams-micro-server/api/v1/grade/student/grades")
+        let values = try JSONDecoder().decode(UniAppGradeEnvelope.self, from: data).data
+        let grouped = Dictionary(grouping: values, by: { $0.semester.nameZh ?? "未知学期" })
+        return grouped.keys.sorted(by: >).map { term in
+            AcademicGradeTerm(term: term, grades: grouped[term, default: []].map { grade in
+                AcademicGrade(
+                    courseName: grade.courseNameZh,
+                    credits: grade.credits.formatted(.number.precision(.fractionLength(0...2))),
+                    gpa: grade.gp.formatted(.number.precision(.fractionLength(0...2))),
+                    score: grade.finalGrade ?? (grade.passed ? "通过" : "未通过"),
+                    detail: grade.gradeDetail.replacingOccurrences(of: ";", with: " "),
+                    lessonCode: grade.lessonCode
+                )
+            })
+        }
+    }
+
+    func fetchExams() async throws -> [AcademicExam] {
+        let data = try await uniAppData(path: "eams-micro-server/api/v1/exam/student/exam")
+        return try JSONDecoder().decode(UniAppExamEnvelope.self, from: data).data.map { exam in
+            AcademicExam(
+                name: exam.courseNameZh,
+                dateTime: "\(exam.examDate) \(Self.time(exam.startTime))~\(Self.time(exam.endTime))",
+                place: exam.place?.split(separator: " ").last.map(String.init) ?? ""
+            )
+        }.sorted { $0.dateTime < $1.dateTime }
+    }
+
+    func fetchBuildings() async throws -> [OfficialBuilding] {
+        let data = try await uniAppData(path: "eams-micro-server/api/v1/room/place/building")
+        return try JSONDecoder().decode(BuildingEnvelope.self, from: data).data
+            .filter { [2, 3, 6].contains($0.campusAssoc) }
+            .map { OfficialBuilding(nameZh: $0.nameZh.replacingOccurrences(of: "（宣城）", with: "").replacingOccurrences(of: "(宣)", with: ""), id: $0.id, campusAssoc: $0.campusAssoc) }
+    }
+
+    func fetchEmptyClassrooms(
+        date: String,
+        campusID: Int?,
+        buildingIDs: [Int],
+        floors: [Int],
+        page: Int = 1
+    ) async throws -> [OfficialEmptyClassroom] {
+        let campusValue: Any
+        if let campusID { campusValue = campusID } else { campusValue = NSNull() }
+        let body = try JSONSerialization.data(withJSONObject: [
+            "currentPage": page,
+            "date": date,
+            "campusAssoc": campusValue,
+            "buildingIds": buildingIDs.isEmpty ? NSNull() : buildingIDs,
+            "floors": floors.isEmpty ? NSNull() : floors,
+            "pageSize": 30
+        ])
+        let data = try await uniAppData(
+            path: "eams-micro-server/api/v1/room/place/rooms",
+            method: "POST",
+            body: body
+        )
+        return try JSONDecoder().decode(EmptyClassroomEnvelope.self, from: data).data.data
     }
 
     func searchClassrooms(name: String, page: Int = 1) async throws -> [OfficialClassroom] {
@@ -210,6 +344,42 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
         }
     }
 
+    func fetchDormitory() async throws -> (OfficialDormitory, [OfficialDormitoryMember], [OfficialDormitoryScore]) {
+        let dormData = try await communityData(path: "api//mobile/community/dormitoryHygiene/getLoginUserDormitory")
+        guard let dorm = try JSONDecoder().decode(DormitoryEnvelope.self, from: dormData).result else {
+            throw OfficialCampusAPIError.invalidData("智慧社区没有返回住宿信息")
+        }
+        var components = URLComponents(string: "https://community.hfut.edu.cn/api//mobile/profileDormitory/list")!
+        components.queryItems = [
+            URLQueryItem(name: "campus", value: dorm.campus),
+            URLQueryItem(name: "room", value: dorm.room),
+            URLQueryItem(name: "dormitory", value: dorm.dormitory)
+        ]
+        let membersURL = components.url!
+        async let membersData = communityData(url: membersURL)
+        async let scoresData = communityData(path: "api//mobile/community/dormitoryHygiene/public/gridManagementDormitoryCheck")
+        let (memberPayload, scorePayload) = try await (membersData, scoresData)
+        let profiles = try JSONDecoder().decode(DormitoryMemberEnvelope.self, from: memberPayload).result?.profileList ?? []
+        let members = profiles.flatMap(\.userList)
+        let scores = try JSONDecoder().decode(DormitoryScoreEnvelope.self, from: scorePayload).result
+        return (dorm, members, scores)
+    }
+
+    func searchLibrary(keyword: String, page: Int = 1) async throws -> [OfficialLibraryBook] {
+        var request = URLRequest(url: URL(string: "https://lib.hfut.edu.cn/svc/space/mate/search")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "page": page,
+            "size": 30,
+            "sort": 1,
+            "conditions": [["value": keyword]]
+        ])
+        let (data, response) = try await self.data(for: request)
+        guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }
+        return try JSONDecoder().decode(LibrarySearchEnvelope.self, from: data).data.rows
+    }
+
     private func authorizedUniAppData(url: URL, token: String) async throws -> Data {
         var request = URLRequest(url: url)
         request.setValue(token, forHTTPHeaderField: "Authorization")
@@ -220,6 +390,47 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
         }
         guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }
         return data
+    }
+
+    private func communityData(path: String) async throws -> Data {
+        try await communityData(url: URL(string: path, relativeTo: URL(string: "https://community.hfut.edu.cn/")!)!.absoluteURL)
+    }
+
+    private func communityData(url: URL) async throws -> Data {
+        let token: String
+        if let saved = SecureTokenStore.read(communityTokenAccount) { token = saved }
+        else { token = try await refreshCommunityToken() }
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "X-Access-Token")
+        let (data, response) = try await self.data(for: request)
+        if response.statusCode == 401 || response.statusCode == 403 {
+            SecureTokenStore.delete(communityTokenAccount)
+            throw OfficialCampusAPIError.communityAuthenticationRequired
+        }
+        guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }
+        return data
+    }
+
+    private func uniAppData(path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        guard let token = SecureTokenStore.read(uniAppTokenAccount) else {
+            throw OfficialCampusAPIError.uniAppAuthenticationRequired
+        }
+        var request = URLRequest(url: URL(string: path, relativeTo: URL(string: "https://jwglapp.hfut.edu.cn/")!)!.absoluteURL)
+        request.httpMethod = method
+        request.httpBody = body
+        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        request.setValue(token, forHTTPHeaderField: "Authorization")
+        let (data, response) = try await self.data(for: request)
+        if response.statusCode == 401 || response.statusCode == 403 {
+            SecureTokenStore.delete(uniAppTokenAccount)
+            throw OfficialCampusAPIError.uniAppAuthenticationRequired
+        }
+        guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }
+        return data
+    }
+
+    private static func time(_ value: Int) -> String {
+        String(format: "%02d:%02d", value / 100, value % 100)
     }
 
     private func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -253,8 +464,44 @@ private struct UniAppLoginEnvelope: Decodable { let data: DataValue; struct Data
 private struct UniAppLoginFailure: Decodable { let message: String }
 private struct ClassmatesEnvelope: Decodable { let data: [OfficialClassmate]? }
 private struct ClassroomEnvelope: Decodable { let data: Page; struct Page: Decodable { let data: [OfficialClassroom] } }
+private struct BuildingEnvelope: Decodable { let data: [OfficialBuilding] }
+private struct EmptyClassroomEnvelope: Decodable { let data: Page; struct Page: Decodable { let data: [OfficialEmptyClassroom] } }
+private struct UniAppGradeEnvelope: Decodable {
+    let data: [Grade]
+    struct Grade: Decodable {
+        let courseNameZh: String
+        let lessonCode: String
+        let semester: OfficialLocalizedName
+        let passed: Bool
+        let finalGrade: String?
+        let gradeDetail: String
+        let credits: Double
+        let gp: Double
+    }
+}
+private struct UniAppExamEnvelope: Decodable {
+    let data: [Exam]
+    struct Exam: Decodable {
+        let courseNameZh: String
+        let examDate: String
+        let startTime: Int
+        let endTime: Int
+        let place: String?
+    }
+}
 private struct CommunityLoginEnvelope: Decodable { let result: ResultValue; struct ResultValue: Decodable { let token: String? } }
 private struct FailRateEnvelope: Decodable { let result: ResultValue; struct ResultValue: Decodable { let records: [OfficialFailRateRecord] } }
+private struct DormitoryEnvelope: Decodable { let result: OfficialDormitory? }
+private struct DormitoryMemberEnvelope: Decodable {
+    let result: ResultValue?
+    struct ResultValue: Decodable { let profileList: [Profile] }
+    struct Profile: Decodable { let userList: [OfficialDormitoryMember] }
+}
+private struct DormitoryScoreEnvelope: Decodable { let result: [OfficialDormitoryScore] }
+private struct LibrarySearchEnvelope: Decodable {
+    let data: DataValue
+    struct DataValue: Decodable { let rows: [OfficialLibraryBook] }
+}
 
 private enum SecureTokenStore {
     private static let service = "com.xiaozhangwangxue.hfutschedule.official-api"

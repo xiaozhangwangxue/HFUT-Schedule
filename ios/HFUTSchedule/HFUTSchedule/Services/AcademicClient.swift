@@ -1,5 +1,13 @@
 import Foundation
 
+struct AcademicProgramSummary: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let requiredCredits: Double?
+    let courseCount: Int
+    let remark: String?
+}
+
 struct AcademicClient {
     private let mode: AcademicConnectionMode
     private let session: URLSession
@@ -94,6 +102,17 @@ struct AcademicClient {
         )
     }
 
+    func fetchProgram() async throws -> [AcademicProgramSummary] {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/program/root-module-json/\(context.studentID)")
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw AcademicClientError.invalidData("培养方案返回格式无法识别")
+        }
+        let items = Self.programItems(root, path: "0")
+        guard !items.isEmpty else { throw AcademicClientError.invalidData("培养方案中没有可识别的模块") }
+        return items
+    }
+
     func searchCourses(
         semesterID: Int,
         courseName: String? = nil,
@@ -185,6 +204,28 @@ struct AcademicClient {
               let match = expression.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let range = Range(match.range(at: 1), in: text) else { return nil }
         return Int(text[range])
+    }
+
+    private static func programItems(_ node: [String: Any], path: String) -> [AcademicProgramSummary] {
+        var values: [AcademicProgramSummary] = []
+        let type = node["type"] as? [String: Any]
+        let title = (type?["nameZh"] as? String) ?? (node["nameZh"] as? String)
+        let require = node["requireInfo"] as? [String: Any]
+        let credits = (require?["requiredCredits"] as? NSNumber)?.doubleValue
+        let planCourses = node["planCourses"] as? [[String: Any]] ?? []
+        if let title, !title.isEmpty {
+            values.append(AcademicProgramSummary(
+                id: path,
+                title: title,
+                requiredCredits: credits,
+                courseCount: planCourses.count,
+                remark: node["remark"] as? String
+            ))
+        }
+        for (index, child) in (node["children"] as? [[String: Any]] ?? []).enumerated() {
+            values += programItems(child, path: "\(path).\(index)")
+        }
+        return values
     }
 
     private static func decodingDescription(_ error: Error) -> String {

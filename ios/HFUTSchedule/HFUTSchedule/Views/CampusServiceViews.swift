@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CampusCardServiceView: View {
+    @Environment(\.openURL) private var openURL
     @State private var cards: [HuiXinCard] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -8,6 +9,15 @@ struct CampusCardServiceView: View {
 
     var body: some View {
         List {
+            Section {
+                Button("支付宝校园卡充值", systemImage: "arrow.up.forward.app.fill") {
+                    openURL(CampusServiceClient.alipayCampusCardURL) { accepted in
+                        if !accepted { openURL(CampusServiceClient.alipayCampusCardFallbackURL) }
+                    }
+                }
+            } footer: {
+                Text("与 Android 原版一致，优先直达支付宝校园卡充值页面。")
+            }
             if !cards.isEmpty {
                 ForEach(cards) { card in
                     Section(card.name) {
@@ -60,6 +70,9 @@ struct ElectricityServiceView: View {
     @EnvironmentObject private var appState: AppState
     @AppStorage("electricityBuilding") private var building = ""
     @AppStorage("electricityRoom") private var room = ""
+    @AppStorage("electricityRegion") private var region = "11"
+    @State private var buildings: [HuiXinSelectionOption] = []
+    @State private var rooms: [HuiXinSelectionOption] = []
     @State private var results: [String: String] = [:]
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -71,9 +84,34 @@ struct ElectricityServiceView: View {
         List {
             Section("\(appState.campus.rawValue)寝室电费") {
                 if appState.campus == .hefei {
-                    TextField("楼栋编号", text: $building)
+                    Picker("楼栋", selection: $building) {
+                        Text("请选择楼栋").tag("")
+                        ForEach(buildings) { option in Text(option.name).tag(option.value) }
+                    }
+                    .onChange(of: building) { _, _ in
+                        room = ""
+                        Task { await loadRooms() }
+                    }
+                    Picker("房间", selection: $room) {
+                        Text("请选择房间").tag("")
+                        ForEach(rooms) { option in Text(option.name).tag(option.value) }
+                    }
+                } else {
+                    Picker("楼栋", selection: $building) {
+                        Text("请选择楼栋").tag("")
+                        ForEach(1...10, id: \.self) { Text("\($0)号楼").tag(String($0)) }
+                    }
+                    Picker("房间", selection: $room) {
+                        Text("请选择房间").tag("")
+                        ForEach(Self.xuanchengRooms, id: \.self) { Text($0).tag($0) }
+                    }
+                    Picker("电表区域", selection: $region) {
+                        Text("南边照明").tag("11")
+                        Text("南边空调").tag("12")
+                        Text("北边照明").tag("21")
+                        Text("北边空调").tag("22")
+                    }
                 }
-                TextField("寝室编号", text: $room)
                 Button("查询电费", systemImage: "bolt.meter") { Task { await query() } }
                     .disabled(isLoading || room.trimmed.isEmpty || (appState.campus == .hefei && building.trimmed.isEmpty))
             }
@@ -101,6 +139,9 @@ struct ElectricityServiceView: View {
         .navigationTitle("宿舍电费")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在查询电费…") } }
+        .task(id: appState.campus.rawValue) {
+            if appState.campus == .hefei { await loadBuildings() }
+        }
         .sheet(isPresented: $showingLogin) { NavigationStack { LoginPortalView() } }
     }
 
@@ -112,11 +153,32 @@ struct ElectricityServiceView: View {
         do {
             let kind: HuiXinFeeKind = appState.campus == .hefei
                 ? .electricHefei(building: building.trimmed, room: room.trimmed)
-                : .electricXuancheng(room: room.trimmed)
+                : .electricXuancheng(room: "300\(building.trimmed)\(room.trimmed)\(region)")
             results = try await CampusServiceClient.shared.fetchFee(kind)
         } catch { errorMessage = error.localizedDescription }
         isLoading = false
     }
+
+    @MainActor
+    private func loadBuildings() async {
+        do {
+            buildings = try await CampusServiceClient.shared.fetchHefeiElectricOptions()
+            if !building.isEmpty { await loadRooms() }
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    @MainActor
+    private func loadRooms() async {
+        guard !building.isEmpty else { rooms = []; return }
+        do { rooms = try await CampusServiceClient.shared.fetchHefeiElectricOptions(building: building) }
+        catch { errorMessage = error.localizedDescription }
+    }
+
+    private static let xuanchengRooms: [String] = {
+        (1...6).flatMap { floor in
+            (1...30).map { room in String(format: "%d%02d", floor, room) }
+        }
+    }()
 }
 
 struct CampusNetworkServiceView: View {
@@ -280,6 +342,7 @@ struct BathingServiceView: View {
 }
 
 struct LaundryServiceView: View {
+    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appState: AppState
     @State private var locations: [LaundryLocation] = []
     @State private var category = "全部"
@@ -299,6 +362,17 @@ struct LaundryServiceView: View {
 
     var body: some View {
         List {
+            Section("充值与支付") {
+                Button("打开微信小程序支付", systemImage: "message.fill") {
+                    openURL(URL(string: "weixin://")!)
+                }
+                Text("微信打开后搜索“海乐生活”或“智慧笑联”；设备支付必须在对应官方小程序内完成。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                if let url = CampusServiceClient.shared.savedHuiXinChargeURL(itemID: 26) {
+                    NavigationLink("慧新易校洗衣充值") { PortalWebView(url: url) }
+                }
+            }
             Section {
                 Picker("设备类型", selection: $category) {
                     ForEach(categories, id: \.self) { Text($0) }
@@ -314,13 +388,9 @@ struct LaundryServiceView: View {
                     LabeledContent("可预约", value: location.enableReserve ? "\(location.reserveNum) 台" : "不支持")
                     LabeledContent("地址", value: location.address)
                     LabeledContent("开放时间", value: location.workTime)
-                }
-            }
-            Section("合肥校区官方充值") {
-                if let url = CampusServiceClient.shared.savedHuiXinChargeURL(itemID: 26) {
-                    NavigationLink("打开慧新易校洗衣入口") { PortalWebView(url: url) }
-                } else {
-                    Button("登录后打开充值入口") { showingLogin = true }
+                    NavigationLink("查看各楼层设备与空闲状态") {
+                        LaundryDeviceListView(location: location)
+                    }
                 }
             }
         }
@@ -342,6 +412,56 @@ struct LaundryServiceView: View {
                 categoryCode: categoryCode
             )
         } catch { errorMessage = error.localizedDescription }
+        isLoading = false
+    }
+}
+
+private struct LaundryDeviceListView: View {
+    let location: LaundryLocation
+    @Environment(\.openURL) private var openURL
+    @State private var categoryCode = "00"
+    @State private var devices: [LaundryDevice] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private let categories = [("洗衣机", "00"), ("洗鞋机", "01"), ("烘干机", "02")]
+
+    var body: some View {
+        List {
+            Section {
+                Button("打开微信小程序支付", systemImage: "message.fill") { openURL(URL(string: "weixin://")!) }
+                Picker("设备类型", selection: $categoryCode) {
+                    ForEach(categories, id: \.1) { Text($0.0).tag($0.1) }
+                }
+                .pickerStyle(.segmented)
+            }
+            if let errorMessage { ContentUnavailableView("设备读取失败", systemImage: "washer", description: Text(errorMessage)) }
+            ForEach(devices) { device in
+                HStack(spacing: 12) {
+                    Image(systemName: device.state == 1 ? "checkmark.circle.fill" : "washer")
+                        .foregroundStyle(device.state == 1 ? .green : .orange)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(device.name).font(.headline)
+                        if let finishTime = device.finishTime { Text("预计 \(finishTime) 完成").font(.caption).foregroundStyle(.secondary) }
+                    }
+                    Spacer()
+                    Text(device.stateText).font(.subheadline.weight(.semibold))
+                }
+            }
+        }
+        .navigationTitle(location.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay { if isLoading { ProgressView("正在读取设备…") } }
+        .task(id: categoryCode) { await load() }
+        .refreshable { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        isLoading = true
+        errorMessage = nil
+        do { devices = try await CampusServiceClient.shared.fetchLaundryDevices(positionID: location.id, categoryCode: categoryCode) }
+        catch { errorMessage = error.localizedDescription }
         isLoading = false
     }
 }

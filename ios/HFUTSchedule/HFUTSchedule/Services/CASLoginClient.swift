@@ -8,6 +8,9 @@ struct CASLoginPreparation {
 }
 
 final class CASLoginClient: @unchecked Sendable {
+    // CAS only accepts the service identifier registered by HFUT. Although the
+    // academic portal now supports HTTPS, the registered CAS callback remains
+    // HTTP and changing its scheme produces the CAS "unauthorized service" page.
     static let service = "http://jxglstu.hfut.edu.cn/eams5-student/neusoft-sso/login"
     private static let webVPNRoot = "https://webvpn.hfut.edu.cn/"
     private static let webVPNCASPrefix = "http/77726476706e69737468656265737421f3f652d22f367d44300d8db9d6562d/cas/"
@@ -185,7 +188,17 @@ final class CASLoginClient: @unchecked Sendable {
     }
 
     private func data(for request: URLRequest, accepted: Range<Int>) async throws -> (Data, HTTPURLResponse) {
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            let nsError = error as NSError
+            let failingURL = (nsError.userInfo[NSURLErrorFailingURLStringErrorKey] as? String)
+                ?? request.url?.absoluteString
+                ?? "未知地址"
+            throw CASLoginError.network(failingURL, error.localizedDescription)
+        }
         guard let response = response as? HTTPURLResponse else { throw CASLoginError.invalidResponse }
         guard accepted.contains(response.statusCode) else { throw CASLoginError.http(response.statusCode) }
         return (data, response)
@@ -283,6 +296,7 @@ enum CASLoginError: LocalizedError {
     case invalidCredentials(String)
     case missingAcademicSession
     case missingWebVPNTicket
+    case network(String, String)
 
     var errorDescription: String? {
         switch self {
@@ -295,6 +309,7 @@ enum CASLoginError: LocalizedError {
         case .invalidCredentials(let message): message
         case .missingAcademicSession: "CAS 登录成功，但教务系统没有返回 SESSION。请确认当前网络可以访问教务系统。"
         case .missingWebVPNTicket: "未获取到 WebVPN 会话，请重新打开校外访问并重试。"
+        case .network(let url, let message): "访问校方服务失败：\(message)\n\n地址：\(url)"
         }
     }
 }
