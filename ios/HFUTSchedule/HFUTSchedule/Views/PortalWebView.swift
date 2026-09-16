@@ -65,8 +65,24 @@ private struct WebViewRepresentable: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = true
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
-        webView.load(URLRequest(url: url))
+        load(url, in: webView)
         return webView
+    }
+
+    private func load(_ url: URL, in webView: WKWebView) {
+        let cookies = HTTPCookieStorage.shared.cookies(for: url) ?? []
+        guard !cookies.isEmpty else {
+            webView.load(URLRequest(url: url))
+            return
+        }
+        let group = DispatchGroup()
+        for cookie in cookies {
+            group.enter()
+            webView.configuration.websiteDataStore.httpCookieStore.setCookie(cookie) { group.leave() }
+        }
+        group.notify(queue: .main) {
+            webView.load(URLRequest(url: url))
+        }
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {

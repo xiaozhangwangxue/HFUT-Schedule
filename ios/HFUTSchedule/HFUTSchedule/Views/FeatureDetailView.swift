@@ -2,6 +2,11 @@ import SwiftUI
 
 struct FeatureDetailView: View {
     let feature: CampusFeature
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+
+    private var selectedConnectionMode: AcademicConnectionMode {
+        AcademicConnectionMode(rawValue: connectionMode) ?? .direct
+    }
 
     var body: some View {
         Group {
@@ -32,7 +37,8 @@ struct FeatureDetailView: View {
 
     @ViewBuilder
     private var portalOrUnavailable: some View {
-        if let url = feature.url {
+        if let originalURL = feature.url {
+            let url = WebVPNURLConverter.convertedIfNeeded(originalURL, mode: selectedConnectionMode)
             if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
                 PortalWebView(url: url)
             } else {

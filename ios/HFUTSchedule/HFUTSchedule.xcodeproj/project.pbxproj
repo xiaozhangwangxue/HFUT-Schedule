@@ -11,11 +11,13 @@
 		1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B76EDDB25B66726ADAC9524 /* AppTheme.swift */; };
 		1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839B072306659B2A53C5E287 /* RootView.swift */; };
 		1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */; };
+		296A64E9AABE1021F17589A0 /* TimetableGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD40303895B0A8B2481787B3 /* TimetableGridView.swift */; };
 		2C1E67D687D8D240EA372E94 /* ServicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0F020B95A60E658FCAD4CB /* ServicesView.swift */; };
 		2D8941CD276C37F2996529D4 /* AcademicRecordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */; };
 		301D3230C6E1F5A1C14023ED /* AcademicRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */; };
 		32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */; };
 		350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */; };
+		3A6B73F5083A4B1F96D22E01 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */; };
 		4E0A19E8D4B4E2F51DEA8DF5 /* AcademicStudentInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */; };
 		4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */; };
 		511E0A9F822BACD83D23A9EC /* AcademicScheduleSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */; };
@@ -24,6 +26,7 @@
 		72DA1158E53A551EDCB508BD /* CASLoginClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E31F42B6CE0D1A6A764B55 /* CASLoginClient.swift */; };
 		83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44D706B873C376660720FE /* ScheduleView.swift */; };
 		8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */; };
+		8EB74BE1D436DCDA74247798 /* WebVPNURLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */; };
 		95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BBD76AF5494A92805F31C3 /* PortalWebView.swift */; };
 		9DD211D2A48B03B0D9D7D5EA /* AcademicScheduleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850A144603AEC626B2078445 /* AcademicScheduleModels.swift */; };
 		A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */; };
@@ -66,6 +69,7 @@
 		3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleSyncView.swift; sourceTree = "<group>"; };
 		3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3D44D706B873C376660720FE /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseDetailView.swift; sourceTree = "<group>"; };
 		4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HFUTScheduleApp.swift; sourceTree = "<group>"; };
 		48BBD76AF5494A92805F31C3 /* PortalWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebView.swift; sourceTree = "<group>"; };
 		4ADF53983339A1298C10365C /* GlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSurface.swift; sourceTree = "<group>"; };
@@ -80,6 +84,7 @@
 		839B072306659B2A53C5E287 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		850A144603AEC626B2078445 /* AcademicScheduleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleModels.swift; sourceTree = "<group>"; };
 		8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureDetailView.swift; sourceTree = "<group>"; };
+		A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNURLConverter.swift; sourceTree = "<group>"; };
 		AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		AF3FAC60EC560DFB8387F65B /* NativeCASLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCASLoginView.swift; sourceTree = "<group>"; };
 		B6F50F664FD3999D8BF74147 /* AcademicPortal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicPortal.swift; sourceTree = "<group>"; };
@@ -92,6 +97,7 @@
 		F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCatalogTests.swift; sourceTree = "<group>"; };
 		F75FBE5E0DF9831524029CC4 /* AcademicStudentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicStudentStore.swift; sourceTree = "<group>"; };
 		FC0F020B95A60E658FCAD4CB /* ServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServicesView.swift; sourceTree = "<group>"; };
+		FD40303895B0A8B2481787B3 /* TimetableGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableGridView.swift; sourceTree = "<group>"; };
 		FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginPortalView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -155,6 +161,7 @@
 				1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */,
 				82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */,
 				81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */,
+				A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -191,6 +198,7 @@
 				05BC4332D571BE061D11515E /* AcademicRecordsView.swift */,
 				3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */,
 				674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */,
+				3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */,
 				3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */,
 				8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */,
 				FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */,
@@ -200,6 +208,7 @@
 				0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */,
 				3D44D706B873C376660720FE /* ScheduleView.swift */,
 				FC0F020B95A60E658FCAD4CB /* ServicesView.swift */,
+				FD40303895B0A8B2481787B3 /* TimetableGridView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -323,6 +332,7 @@
 				0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */,
 				32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */,
 				D40893D53C715F270D34712D /* Course.swift in Sources */,
+				3A6B73F5083A4B1F96D22E01 /* CourseDetailView.swift in Sources */,
 				B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */,
 				1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */,
 				350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */,
@@ -339,6 +349,8 @@
 				83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */,
 				E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */,
 				2C1E67D687D8D240EA372E94 /* ServicesView.swift in Sources */,
+				296A64E9AABE1021F17589A0 /* TimetableGridView.swift in Sources */,
+				8EB74BE1D436DCDA74247798 /* WebVPNURLConverter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

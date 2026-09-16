@@ -3,47 +3,46 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var studentStore: AcademicStudentStore
+    @State private var section = 0
 
-    private let columns = [GridItem(.adaptive(minimum: 102), spacing: 12)]
+    private let serviceColumns = [GridItem(.flexible()), GridItem(.flexible())]
 
     private var todayIndex: Int {
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        return ((weekday + 5) % 7) + 1
+        Calendar.current.component(.weekday, from: Date()).mondayBasedWeekday
     }
 
     private var todayCourses: [Course] {
-        scheduleStore.courses(on: todayIndex)
+        scheduleStore.courses(on: todayIndex).sorted { $0.startTime < $1.startTime }
+    }
+
+    private var currentWeek: Int {
+        ScheduleCalendar.currentWeek(termStart: ScheduleCalendar.termStart(from: scheduleStore.courses))
     }
 
     private var quickFeatures: [CampusFeature] {
-        [1, 4, 6, 7, 19, 24].compactMap { id in
+        [1, 3, 4, 6, 7, 15, 19, 24].compactMap { id in
             FeatureCatalog.all.first { $0.id == id }
         }
     }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 22) {
-                hero
-
-                VStack(spacing: 12) {
-                    SectionHeader(title: "今天", subtitle: Course.weekdayNames[todayIndex - 1])
-                    if todayCourses.isEmpty {
-                        emptySchedule
-                    } else {
-                        ForEach(todayCourses.prefix(3)) { course in
-                            CourseRow(course: course)
-                        }
-                    }
+            VStack(spacing: 12) {
+                Picker("聚焦内容", selection: $section) {
+                    Text("重要安排").tag(0)
+                    Text("其他事项").tag(1)
                 }
+                .pickerStyle(.segmented)
 
-                VStack(spacing: 12) {
-                    SectionHeader(title: "常用服务", subtitle: "触手可及的校园入口")
-                    LazyVGrid(columns: columns, spacing: 12) {
+                if section == 0 {
+                    campusSnapshot
+                    courseList
+                } else {
+                    LazyVGrid(columns: serviceColumns, spacing: 10) {
                         ForEach(quickFeatures) { feature in
                             NavigationLink(value: feature) {
-                                QuickFeatureCard(feature: feature)
+                                focusService(feature)
                             }
                             .buttonStyle(.plain)
                         }
@@ -51,144 +50,156 @@ struct DashboardView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 8)
             .padding(.bottom, 32)
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle("聚在工大")
+        .navigationTitle(dateTitle)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink(value: feature(39)) { Image(systemName: "icloud") }
+                NavigationLink(value: feature(15)) { Image(systemName: "bell") }
+                NavigationLink(value: feature(42)) { Image(systemName: "rectangle.portrait.and.arrow.right") }
+            }
+        }
         .navigationDestination(for: CampusFeature.self) { feature in
             FeatureDetailView(feature: feature)
         }
     }
 
-    private var hero: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [AppTheme.accent, AppTheme.violet, AppTheme.cyan],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(.white.opacity(0.18))
-                        .frame(width: 150)
-                        .blur(radius: 2)
-                        .offset(x: 38, y: -54)
-                }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Label(appState.campus.rawValue, systemImage: "location.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.86))
-                Text(greeting)
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white)
-                Text(todayCourses.isEmpty ? "把课程加入课表，今天的安排会在这里出现。" : "今天有 \(todayCourses.count) 节课，按自己的节奏出发。")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.86))
+    private var campusSnapshot: some View {
+        LazyVGrid(columns: serviceColumns, spacing: 8) {
+            NavigationLink(value: feature(1)) {
+                snapshotItem("一卡通", value: "点击查看", icon: "creditcard")
             }
-            .padding(24)
+            NavigationLink(value: feature(3)) {
+                snapshotItem("宿舍电费", value: "点击查询", icon: "bolt")
+            }
+            snapshotItem(greetingTitle, value: greetingValue, icon: "face.smiling")
+            NavigationLink(value: feature(4)) {
+                snapshotItem("校园网", value: "查看状态", icon: "globe")
+            }
         }
-        .frame(height: 210)
-        .shadow(color: AppTheme.accent.opacity(0.28), radius: 24, y: 14)
-        .accessibilityElement(children: .combine)
-        .animation(reduceMotion ? nil : .spring(response: 0.42, dampingFraction: 0.92), value: todayCourses.count)
+        .padding(10)
+        .adaptiveGlass(cornerRadius: 22, tint: AppTheme.accent.opacity(0.035))
     }
 
-    private var emptySchedule: some View {
-        Button {
-            appState.selectedTab = .schedule
-        } label: {
-            HStack(spacing: 14) {
-                GlassIcon(systemName: "calendar.badge.plus")
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("添加第一节课程")
-                        .font(.headline)
-                    Text("支持离线查看和导出到系统日历")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var courseList: some View {
+        if todayCourses.isEmpty {
+            ContentUnavailableView("今天没有课程", systemImage: "calendar.badge.checkmark")
+                .frame(minHeight: 180)
+                .adaptiveGlass(cornerRadius: 22)
+        } else {
+            ForEach(todayCourses) { course in
+                NavigationLink {
+                    CourseDetailView(course: course)
+                } label: {
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: "clock")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 34)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(course.startTime)-\(course.endTime)")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            Text(course.name).font(.title3.weight(.medium)).foregroundStyle(.primary)
+                            if let place = course.location.nonEmpty {
+                                Text(place).font(.subheadline).foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                        Text(status(for: course))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .adaptiveGlass(cornerRadius: 22, tint: AppTheme.accent.opacity(0.025), interactive: true)
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.tertiary)
+                .buttonStyle(.plain)
             }
-            .padding(16)
-            .contentShape(Rectangle())
-            .adaptiveGlass(cornerRadius: 22, interactive: true)
         }
-        .buttonStyle(.plain)
     }
 
-    private var greeting: String {
+    private func snapshotItem(_ title: String, value: String, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.caption).foregroundStyle(.secondary)
+                Text(value).font(.body).foregroundStyle(.primary).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private func focusService(_ feature: CampusFeature) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: feature.systemImage).foregroundStyle(.secondary).frame(width: 24)
+            Text(feature.title).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 58)
+        .adaptiveGlass(cornerRadius: 14, interactive: true)
+    }
+
+    private var dateTitle: String {
+        let date = Date().formatted(.dateTime.month(.twoDigits).day(.twoDigits))
+        return "\(date) 第\(currentWeek)周 \(Course.weekdayNames[todayIndex - 1])"
+    }
+
+    private var greetingTitle: String {
         switch Calendar.current.component(.hour, from: Date()) {
-        case 0..<6: "夜深了"
+        case 0..<6: "今晚"
+        case 6..<11: "今天"
+        case 11..<14: "中午"
+        case 14..<18: "下午"
+        default: "今晚"
+        }
+    }
+
+    private var greetingValue: String {
+        let name = studentStore.info?.name.nonEmpty
+        return name.map { "\($0)，\(shortGreeting)" } ?? shortGreeting
+    }
+
+    private var shortGreeting: String {
+        switch Calendar.current.component(.hour, from: Date()) {
+        case 0..<6: "早点休息"
         case 6..<11: "早上好"
-        case 11..<14: "中午好"
-        case 14..<18: "下午好"
+        case 11..<14: "午安"
+        case 14..<18: "继续加油"
         default: "晚上好"
         }
     }
-}
 
-private struct QuickFeatureCard: View {
-    let feature: CampusFeature
+    private func status(for course: Course) -> String {
+        let now = Date().formatted(date: .omitted, time: .shortened)
+        if now < course.startTime { return "未开始" }
+        if now <= course.endTime { return "进行中" }
+        return "已结束"
+    }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            GlassIcon(systemName: feature.systemImage, size: 42)
-            Text(feature.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            Text(feature.subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(14)
-        .frame(minHeight: 135, alignment: .topLeading)
-        .adaptiveGlass(cornerRadius: 22, interactive: true)
+    private func feature(_ id: Int) -> CampusFeature {
+        FeatureCatalog.all.first { $0.id == id } ?? FeatureCatalog.all[0]
     }
 }
 
-struct CourseRow: View {
-    let course: Course
+private extension Int {
+    var mondayBasedWeekday: Int { self == 1 ? 7 : self - 1 }
+}
 
-    private let colors: [Color] = [AppTheme.accent, AppTheme.violet, AppTheme.mint, .orange, .pink]
-
-    var body: some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(colors[abs(course.colorIndex) % colors.count])
-                .frame(width: 5, height: 56)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(course.name)
-                    .font(.headline)
-                Label(course.location.isEmpty ? "地点待定" : course.location, systemImage: "mappin.and.ellipse")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let weeks = course.weekDescription {
-                    Text(weeks)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(course.startTime)
-                    .font(.subheadline.monospacedDigit().weight(.semibold))
-                Text(course.endTime)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(16)
-        .adaptiveGlass(cornerRadius: 22)
-        .accessibilityElement(children: .combine)
+private extension String {
+    var nonEmpty: String? {
+        let value = trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 }

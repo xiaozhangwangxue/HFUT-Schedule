@@ -7,17 +7,19 @@ struct AcademicSyncPayload: Decodable {
 
 struct AcademicTermResponse: Decodable {
     let lessonIds: [Int]
+    let lessons: [AcademicLesson]
     let timeTableLayoutId: Int?
     let currentWeek: Int?
 
-    init(lessonIds: [Int], timeTableLayoutId: Int?, currentWeek: Int?) {
+    init(lessonIds: [Int], lessons: [AcademicLesson] = [], timeTableLayoutId: Int?, currentWeek: Int?) {
         self.lessonIds = lessonIds
+        self.lessons = lessons
         self.timeTableLayoutId = timeTableLayoutId
         self.currentWeek = currentWeek
     }
 
     private enum CodingKeys: String, CodingKey {
-        case lessonIds, timeTableLayoutId, currentWeek
+        case lessonIds, lessons, timeTableLayoutId, currentWeek
     }
 
     init(from decoder: Decoder) throws {
@@ -27,6 +29,7 @@ struct AcademicTermResponse: Decodable {
         } else {
             lessonIds = try values.decode([String].self, forKey: .lessonIds).compactMap(Int.init)
         }
+        lessons = ((try? values.decode([LossyValue<AcademicLesson>].self, forKey: .lessons)) ?? []).compactMap(\.value)
         timeTableLayoutId = values.flexibleInt(forKey: .timeTableLayoutId)
         currentWeek = values.flexibleInt(forKey: .currentWeek)
     }
@@ -57,20 +60,133 @@ struct AcademicDatum: Decodable {
 struct AcademicLesson: Decodable {
     let courseName: String
     let id: String
+    let className: String?
+    let remark: String?
+    let suggestedWeeks: String?
+    let courseTypeName: String?
+    let classmatesCount: Int?
+    let credits: Double?
+    let teachers: [AcademicTeacherAssignment]
+    let departmentName: String?
+    let examModeName: String?
+    let code: String?
+    let semesterName: String?
+    let scheduleText: String?
 
     init(courseName: String, id: String) {
         self.courseName = courseName
         self.id = id
+        className = nil
+        remark = nil
+        suggestedWeeks = nil
+        courseTypeName = nil
+        classmatesCount = nil
+        credits = nil
+        teachers = []
+        departmentName = nil
+        examModeName = nil
+        code = nil
+        semesterName = nil
+        scheduleText = nil
     }
 
-    private enum CodingKeys: String, CodingKey { case courseName, name, id }
+    private enum CodingKeys: String, CodingKey {
+        case courseName, name, nameZh, id, remark, suggestScheduleWeekInfo, courseTypeName
+        case stdCount, course, courseType, openDepartment, examMode, scheduleWeeksInfo
+        case teacherAssignmentList, semester, code, scheduleText
+    }
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
+        let course = try? values.decode(AcademicCourseInfo.self, forKey: .course)
         courseName = (try? values.decode(String.self, forKey: .courseName))
             ?? (try? values.decode(String.self, forKey: .name))
+            ?? course?.nameZh
             ?? ""
         id = values.flexibleString(forKey: .id) ?? ""
+        className = values.flexibleString(forKey: .nameZh)
+        remark = values.flexibleString(forKey: .remark)
+        suggestedWeeks = values.flexibleString(forKey: .scheduleWeeksInfo)
+            ?? values.flexibleString(forKey: .suggestScheduleWeekInfo)
+        courseTypeName = (try? values.decode(AcademicLocalizedName.self, forKey: .courseType))?.nameZh
+            ?? values.flexibleString(forKey: .courseTypeName)
+        classmatesCount = values.flexibleInt(forKey: .stdCount)
+        credits = course?.credits
+        teachers = ((try? values.decode([LossyValue<AcademicTeacherAssignment>].self, forKey: .teacherAssignmentList)) ?? []).compactMap(\.value)
+        departmentName = (try? values.decode(AcademicLocalizedName.self, forKey: .openDepartment))?.nameZh
+        examModeName = (try? values.decode(AcademicLocalizedName.self, forKey: .examMode))?.nameZh
+        code = values.flexibleString(forKey: .code) ?? course?.code
+        semesterName = (try? values.decode(AcademicSemester.self, forKey: .semester))?.nameZh
+        scheduleText = (try? values.decode(AcademicScheduleText.self, forKey: .scheduleText))?.text
+    }
+}
+
+struct AcademicTeacherAssignment: Decodable {
+    let name: String
+    let age: Int?
+    let title: String?
+    let type: String?
+
+    private enum CodingKeys: String, CodingKey { case name, age, titleName, person, teacher }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        let person = try? values.decode(AcademicLocalizedName.self, forKey: .person)
+        let teacher = try? values.decode(AcademicTeacherInfo.self, forKey: .teacher)
+        name = person?.nameZh
+            ?? values.flexibleString(forKey: .name)
+            ?? teacher?.person?.nameZh
+            ?? ""
+        age = values.flexibleInt(forKey: .age)
+        title = values.flexibleString(forKey: .titleName) ?? teacher?.title?.nameZh
+        type = teacher?.type?.nameZh
+    }
+}
+
+private struct AcademicCourseInfo: Decodable {
+    let nameZh: String?
+    let credits: Double?
+    let code: String?
+
+    private enum CodingKeys: String, CodingKey { case nameZh, credits, code }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        nameZh = values.flexibleString(forKey: .nameZh)
+        if let value = try? values.decodeIfPresent(Double.self, forKey: .credits) {
+            credits = value
+        } else if let value = values.flexibleString(forKey: .credits) {
+            credits = Double(value)
+        } else {
+            credits = nil
+        }
+        code = values.flexibleString(forKey: .code)
+    }
+}
+
+private struct AcademicTeacherInfo: Decodable {
+    let person: AcademicLocalizedName?
+    let title: AcademicLocalizedName?
+    let type: AcademicLocalizedName?
+}
+
+private struct AcademicSemester: Decodable {
+    let nameZh: String?
+}
+
+private struct AcademicScheduleText: Decodable {
+    let text: String?
+
+    private enum CodingKeys: String, CodingKey { case dateTimePlacePersonText }
+    private enum TextCodingKeys: String, CodingKey { case textZh }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        guard let nested = try? values.nestedContainer(keyedBy: TextCodingKeys.self, forKey: .dateTimePlacePersonText) else {
+            text = nil
+            return
+        }
+        text = try? nested.decodeIfPresent(String.self, forKey: .textZh)
     }
 }
 
@@ -138,7 +254,9 @@ struct AcademicLocalizedName: Decodable {
 
 extension AcademicSyncPayload {
     func courses() -> [Course] {
-        let names = Dictionary(uniqueKeysWithValues: datum.result.lessonList.map { ($0.id, $0.courseName) })
+        let names = Dictionary(datum.result.lessonList.map { ($0.id, $0.courseName) }, uniquingKeysWith: { first, _ in first })
+        let termLessons = Dictionary(term.lessons.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let datumLessons = Dictionary(datum.result.lessonList.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let validSchedules = datum.result.scheduleList.filter {
             $0.lessonId > 0 && (1...7).contains($0.weekday) && $0.weekIndex > 0 && $0.startTime > 0 && $0.endTime > 0
         }
@@ -154,8 +272,9 @@ extension AcademicSyncPayload {
         }
 
         return grouped.map { key, schedules in
-            Course(
-                name: names[String(key.lessonID)] ?? String(key.lessonID),
+            let lesson = termLessons[String(key.lessonID)] ?? datumLessons[String(key.lessonID)]
+            return Course(
+                name: lesson?.courseName.nonEmpty ?? names[String(key.lessonID)]?.nonEmpty ?? String(key.lessonID),
                 teacher: key.teacher,
                 location: key.room,
                 weekday: key.weekday,
@@ -164,7 +283,25 @@ extension AcademicSyncPayload {
                 colorIndex: abs(key.lessonID) % 5,
                 weekIndices: Array(Set(schedules.map(\.weekIndex))).sorted(),
                 dates: Array(Set(schedules.map(\.date))).sorted(),
-                source: "academic"
+                source: "academic",
+                details: CourseDetails(
+                    lessonID: key.lessonID,
+                    type: lesson?.courseTypeName?.nonEmpty,
+                    weeksText: lesson?.suggestedWeeks?.nonEmpty,
+                    classmatesCount: lesson?.classmatesCount,
+                    credits: lesson?.credits,
+                    teachers: lesson?.teachers.compactMap { teacher -> CourseTeacher? in
+                        guard let name = teacher.name.nonEmpty else { return nil }
+                        return CourseTeacher(name: name, age: teacher.age, title: teacher.title?.nonEmpty, type: teacher.type?.nonEmpty)
+                    } ?? [],
+                    department: lesson?.departmentName?.nonEmpty,
+                    examMode: lesson?.examModeName?.nonEmpty,
+                    code: lesson?.code?.nonEmpty,
+                    semester: lesson?.semesterName?.nonEmpty,
+                    className: lesson?.className?.nonEmpty,
+                    scheduleText: lesson?.scheduleText?.nonEmpty,
+                    remark: lesson?.remark?.nonEmpty
+                )
             )
         }
         .sorted {
@@ -177,6 +314,13 @@ extension AcademicSyncPayload {
         let hour = time / 100
         let minute = time % 100
         return String(format: "%02d:%02d", hour, minute)
+    }
+}
+
+private extension String {
+    var nonEmpty: String? {
+        let value = trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 }
 

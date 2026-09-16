@@ -9,6 +9,14 @@ final class FeatureCatalogTests: XCTestCase {
         )
     }
 
+    func testWebVPNConversionMatchesAndroidConverter() {
+        let direct = URL(string: "http://jxglstu.hfut.edu.cn/eams5-student/")!
+        XCTAssertEqual(
+            WebVPNURLConverter.convert(direct)?.absoluteString,
+            AcademicPortal.webVPNAcademicRoot.absoluteString
+        )
+    }
+
     func testFeatureIDsAreUnique() {
         let ids = FeatureCatalog.all.map(\.id)
         XCTAssertEqual(ids.count, Set(ids).count)
@@ -100,6 +108,50 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(payload.courses().first?.name, "高等数学")
         XCTAssertEqual(payload.courses().first?.location, "翠十二教 101")
         XCTAssertEqual(payload.courses().first?.startTime, "08:00")
+    }
+
+    func testAcademicSchedulePreservesOriginalCourseDetails() throws {
+        let termJSON = """
+        {
+          "lessonIds": [42], "timeTableLayoutId": 1, "currentWeek": 2,
+          "lessons": [{
+            "id": 42, "nameZh": "自动化26-1班", "remark": "课堂要求",
+            "scheduleWeeksInfo": "2~17周", "stdCount": 186,
+            "course": {"nameZh": "高等数学A（上）", "credits": 6.0, "code": "1400211B"},
+            "courseType": {"nameZh": "通识必修课"},
+            "openDepartment": {"nameZh": "数学学院"},
+            "examMode": {"nameZh": "考试"},
+            "code": "1400211B-028",
+            "semester": {"nameZh": "2026-2027学年第一学期"},
+            "teacherAssignmentList": [{
+              "person": {"nameZh": "李慧民"}, "age": 45,
+              "teacher": {"title": {"nameZh": "教授"}, "type": {"nameZh": "专任教师"}}
+            }],
+            "scheduleText": {"dateTimePlacePersonText": {"textZh": "2~17周 周一 第一节~第二节 翠五教304"}}
+          }]
+        }
+        """.data(using: .utf8)!
+        let term = try JSONDecoder().decode(AcademicTermResponse.self, from: termJSON)
+        let payload = AcademicSyncPayload(
+            term: term,
+            datum: AcademicDatumResponse(result: AcademicDatum(
+                lessonList: [AcademicLesson(courseName: "高等数学A（上）", id: "42")],
+                scheduleList: [AcademicSchedule(
+                    lessonId: 42, room: AcademicLocalizedName(nameZh: "翠五教304"), weekday: 1,
+                    personName: "李慧民", weekIndex: 2, startTime: 800, endTime: 940, date: "2026-09-14"
+                )]
+            ))
+        )
+
+        let details = try XCTUnwrap(payload.courses().first?.details)
+        XCTAssertEqual(details.type, "通识必修课")
+        XCTAssertEqual(details.classmatesCount, 186)
+        XCTAssertEqual(details.credits, 6.0)
+        XCTAssertEqual(details.teachers.first?.name, "李慧民")
+        XCTAssertEqual(details.department, "数学学院")
+        XCTAssertEqual(details.code, "1400211B-028")
+        XCTAssertEqual(details.className, "自动化26-1班")
+        XCTAssertEqual(details.scheduleText, "2~17周 周一 第一节~第二节 翠五教304")
     }
 
     func testLegacyCourseBackupStillDecodes() throws {

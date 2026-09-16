@@ -6,27 +6,27 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             NavigationStack {
-                DashboardView()
-            }
-            .tabItem { Label("首页", systemImage: "house.fill") }
-            .tag(AppTab.home)
-
-            NavigationStack {
                 ScheduleView()
             }
-            .tabItem { Label("课表", systemImage: "calendar") }
+            .tabItem { Label("课程表", systemImage: "calendar") }
             .tag(AppTab.schedule)
+
+            NavigationStack {
+                DashboardView()
+            }
+            .tabItem { Label("聚焦", systemImage: "lightbulb.fill") }
+            .tag(AppTab.home)
 
             NavigationStack {
                 ServicesView()
             }
-            .tabItem { Label("服务", systemImage: "square.grid.2x2.fill") }
+            .tabItem { Label("查询中心", systemImage: "square.grid.2x2.fill") }
             .tag(AppTab.services)
 
             NavigationStack {
                 ProfileView()
             }
-            .tabItem { Label("我的", systemImage: "person.crop.circle.fill") }
+            .tabItem { Label("选项", systemImage: "shippingbox.fill") }
             .tag(AppTab.me)
         }
         .onAppear { appState.consumePendingDestination() }
