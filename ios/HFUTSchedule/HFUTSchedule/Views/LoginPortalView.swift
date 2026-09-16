@@ -10,13 +10,28 @@ struct LoginPortalView: View {
     @State private var isSyncing = false
     @State private var syncMessage = "登录成功后将自动同步学籍、课表、成绩与考试"
     @State private var resultMessage: String?
+    @State private var usesWebLoginFallback = false
 
     private var selectedMode: AcademicConnectionMode {
         AcademicConnectionMode(rawValue: connectionMode) ?? .direct
     }
 
     var body: some View {
-        NativeCASLoginView(mode: selectedMode, onAuthenticated: synchronizeAll)
+        Group {
+            if usesWebLoginFallback {
+                PortalWebView(
+                    url: AcademicPortal.loginURL(for: selectedMode),
+                    academicMode: selectedMode,
+                    onAcademicAuthenticated: synchronizeFromWebLogin
+                )
+            } else {
+                NativeCASLoginView(
+                    mode: selectedMode,
+                    onAuthenticated: synchronizeAll,
+                    onPreparationFailure: recoverFromPreparationFailure
+                )
+            }
+        }
             .id(selectedMode)
             .safeAreaInset(edge: .top) {
                 Picker("访问方式", selection: $connectionMode) {
@@ -43,6 +58,17 @@ struct LoginPortalView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(
+                        usesWebLoginFallback ? "原生登录" : "网页登录",
+                        systemImage: usesWebLoginFallback ? "bolt.horizontal.circle" : "safari"
+                    ) {
+                        usesWebLoginFallback.toggle()
+                        syncMessage = usesWebLoginFallback
+                            ? "请在校方页面登录，完成后将自动同步"
+                            : "正在获取原生 CAS 登录参数"
+                    }
+                }
             }
             .alert("统一身份认证", isPresented: Binding(
                 get: { resultMessage != nil },
@@ -55,7 +81,7 @@ struct LoginPortalView: View {
             }
     }
 
-    private func synchronizeAll(cookies: [HTTPCookie]) {
+    private func synchronizeAll(cookies: [HTTPCookie], username: String, password: String) {
         guard !isSyncing else { return }
         isSyncing = true
         syncMessage = "正在读取本学期教务数据"
@@ -92,6 +118,22 @@ struct LoginPortalView: View {
                 completed.append("考试")
             } catch { failures.append("考试：\(error.localizedDescription)") }
 
+            if !password.isEmpty {
+                do {
+                    _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: password)
+                    completed.append("合工大教务 API")
+                } catch {
+                    failures.append("合工大教务 API：\(error.localizedDescription)（若教务密码与信息门户不同，可在同班同学或教室页单独登录一次）")
+                }
+            }
+
+            do {
+                _ = try await OfficialCampusAPIClient.shared.refreshCommunityToken()
+                completed.append("智慧社区 API")
+            } catch {
+                failures.append("智慧社区 API：\(error.localizedDescription)")
+            }
+
             await MainActor.run {
                 isSyncing = false
                 if failures.isEmpty {
@@ -104,5 +146,29 @@ struct LoginPortalView: View {
                 }
             }
         }
+    }
+
+    private func recoverFromPreparationFailure(_ error: Error) {
+        guard isConnectivityFailure(error) else { return }
+        if selectedMode == .direct {
+            syncMessage = "原生直连不可达，已切换 WebVPN 网页安全登录"
+            connectionMode = AcademicConnectionMode.webVPN.rawValue
+        } else {
+            syncMessage = "原生请求不可达，已切换 WebVPN 网页安全登录"
+        }
+        usesWebLoginFallback = true
+    }
+
+    private func synchronizeFromWebLogin(_ cookies: [HTTPCookie]) {
+        synchronizeAll(cookies: cookies, username: "", password: "")
+    }
+
+    private func isConnectivityFailure(_ error: Error) -> Bool {
+        let code = (error as? URLError)?.code
+            ?? ((error as NSError).domain == NSURLErrorDomain ? URLError.Code(rawValue: (error as NSError).code) : nil)
+        return [
+            .timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost,
+            .notConnectedToInternet, .dnsLookupFailed, .secureConnectionFailed
+        ].contains(code)
     }
 }

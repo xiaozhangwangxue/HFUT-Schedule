@@ -66,27 +66,27 @@ private struct CompactFeatureTile: View {
     let feature: CampusFeature
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 7) {
             Image(systemName: feature.systemImage)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
-                .frame(width: 25)
-            VStack(alignment: .leading, spacing: 2) {
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
                 Text(feature.title)
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 Text(feature.subtitle)
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 8.5))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .padding(.horizontal, 9)
+        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
         .contentShape(Rectangle())
-        .adaptiveGlass(cornerRadius: 13, tint: AppTheme.accent.opacity(0.025), interactive: true)
+        .adaptiveGlass(cornerRadius: 10, tint: AppTheme.accent.opacity(0.025), interactive: true)
         .accessibilityElement(children: .combine)
     }
 }

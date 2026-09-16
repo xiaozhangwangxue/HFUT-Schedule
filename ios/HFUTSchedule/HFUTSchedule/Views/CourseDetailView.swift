@@ -3,11 +3,9 @@ import UIKit
 
 struct CourseDetailView: View {
     let course: Course
-    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
     @State private var copiedCode = false
 
     private var details: CourseDetails { course.details ?? CourseDetails() }
-    private var mode: AcademicConnectionMode { AcademicConnectionMode(rawValue: connectionMode) ?? .direct }
 
     var body: some View {
         ScrollView {
@@ -27,9 +25,16 @@ struct CourseDetailView: View {
         .navigationTitle(course.name)
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(for: CoursePortalPage.self) { page in
-            PortalWebView(url: WebVPNURLConverter.convertedIfNeeded(page.url(mode: mode), mode: mode))
-                .navigationTitle(page.title)
-                .navigationBarTitleDisplayMode(.inline)
+            switch page {
+            case .classmates(let lessonID):
+                OfficialClassmatesView(lessonID: lessonID)
+            case .otherClasses(let name, let code):
+                OfficialCourseSearchView(courseName: name, code: code)
+            case .classroom(let room):
+                OfficialClassroomSearchView(query: room)
+            case .failRate(let name):
+                OfficialFailRateView(courseName: name)
+            }
         }
         .alert("已复制课程代码", isPresented: $copiedCode) {
             Button("好", role: .cancel) {}
@@ -41,10 +46,14 @@ struct CourseDetailView: View {
             detailCell("类型", value: details.type ?? "课程", icon: "star")
             detailCell("周数", value: details.weeksText ?? course.weekDescription ?? "未提供", icon: "calendar")
             if let count = details.classmatesCount {
-                NavigationLink(value: CoursePortalPage.classmates) {
+                if let lessonID = details.lessonID {
+                    NavigationLink(value: CoursePortalPage.classmates(lessonID)) {
+                        detailCell("同班同学", value: "\(count)人", icon: "person.2")
+                    }
+                    .buttonStyle(.plain)
+                } else {
                     detailCell("同班同学", value: "\(count)人", icon: "person.2")
                 }
-                .buttonStyle(.plain)
             } else {
                 detailCell("同班同学", value: "暂无数据", icon: "person.2")
             }
@@ -119,7 +128,7 @@ struct CourseDetailView: View {
 
     private var actionCard: some View {
         VStack(spacing: 0) {
-            NavigationLink(value: CoursePortalPage.otherClasses) {
+            NavigationLink(value: CoursePortalPage.otherClasses(course.name, details.code ?? "")) {
                 actionRow("其他教学班开课查询", icon: "magnifyingglass")
             }
             Divider().padding(.leading, 54)
@@ -127,7 +136,7 @@ struct CourseDetailView: View {
                 actionRow("教室状态查询", subtitle: course.location.nonEmpty, icon: "door.left.hand.open")
             }
             Divider().padding(.leading, 54)
-            NavigationLink(value: CoursePortalPage.failRate) {
+            NavigationLink(value: CoursePortalPage.failRate(course.name)) {
                 actionRow("挂科率查询", icon: "chart.pie")
             }
         }
@@ -208,32 +217,10 @@ struct CourseDetailView: View {
 }
 
 private enum CoursePortalPage: Hashable {
-    case classmates
-    case otherClasses
+    case classmates(Int)
+    case otherClasses(String, String)
     case classroom(String)
-    case failRate
-
-    var title: String {
-        switch self {
-        case .classmates: "同班同学"
-        case .otherClasses: "其他教学班"
-        case .classroom: "教室状态"
-        case .failRate: "挂科率"
-        }
-    }
-
-    func url(mode: AcademicConnectionMode) -> URL {
-        switch self {
-        case .otherClasses:
-            AcademicPortal.url("for-std/lesson-search", mode: mode)
-        case .classmates:
-            URL(string: "https://jwglapp.hfut.edu.cn/")!
-        case .classroom:
-            URL(string: "https://jwglapp.hfut.edu.cn/")!
-        case .failRate:
-            URL(string: "https://community.hfut.edu.cn/")!
-        }
-    }
+    case failRate(String)
 }
 
 private extension String {

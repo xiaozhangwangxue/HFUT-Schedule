@@ -25,8 +25,8 @@ final class CASLoginClient: @unchecked Sendable {
         configuration.httpCookieStorage = cookieStorage
         configuration.httpCookieAcceptPolicy = .always
         configuration.httpShouldSetCookies = true
-        configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 60
+        configuration.timeoutIntervalForRequest = 12
+        configuration.timeoutIntervalForResource = 20
         configuration.httpAdditionalHeaders = [
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.17"
         ]
@@ -112,16 +112,21 @@ final class CASLoginClient: @unchecked Sendable {
 
         let (_, response) = try await data(for: request, accepted: 200..<400)
         if response.statusCode == 401 { throw CASLoginError.invalidCredentials("账号或密码错误") }
-        guard response.statusCode == 302 || response.statusCode == 303,
-              let locationText = response.value(forHTTPHeaderField: "Location"),
-              locationText.contains("ticket=") else {
-            throw CASLoginError.invalidCredentials("CAS 未返回登录票据，请检查账号、密码或验证码")
-        }
 
         let nextStartURL: URL?
         if mode == .webVPN {
+            // 原版在 WebVPN 模式下把代理 CAS 的 HTTP 200 视为成功，随后再访问
+            // 代理教务登录入口使虚拟 Cookie 生效；这里不能强制要求 302 ticket。
+            guard response.statusCode == 200 || response.statusCode == 302 || response.statusCode == 303 else {
+                throw CASLoginError.invalidCredentials("WebVPN CAS 登录失败，请检查账号、密码或验证码")
+            }
             nextStartURL = URL(string: Self.webVPNAcademicLogin)
         } else {
+            guard response.statusCode == 302 || response.statusCode == 303,
+                  let locationText = response.value(forHTTPHeaderField: "Location"),
+                  locationText.contains("ticket=") else {
+                throw CASLoginError.invalidCredentials("CAS 未返回登录票据，请检查账号、密码或验证码")
+            }
             nextStartURL = URL(string: locationText, relativeTo: response.url)?.absoluteURL
         }
         var nextURL = nextStartURL

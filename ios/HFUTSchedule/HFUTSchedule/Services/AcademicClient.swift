@@ -94,6 +94,45 @@ struct AcademicClient {
         )
     }
 
+    func searchCourses(
+        semesterID: Int,
+        courseName: String? = nil,
+        className: String? = nil,
+        code: String? = nil
+    ) async throws -> [OfficialCourseSearchResult] {
+        let context = try await loadStudentContext()
+        let query = [
+            URLQueryItem(name: "nameZhLike", value: className?.nilIfBlank),
+            URLQueryItem(name: "queryPage__", value: "1,30"),
+            URLQueryItem(name: "courseNameZhLike", value: courseName?.nilIfBlank),
+            URLQueryItem(name: "codeLike", value: code?.nilIfBlank)
+        ].filter { $0.value != nil }
+        let data = try await get(
+            "for-std/lesson-search/semester/\(semesterID)/search/\(context.studentID)",
+            query: query
+        )
+        let response: AcademicCourseSearchEnvelope
+        do {
+            response = try JSONDecoder().decode(AcademicCourseSearchEnvelope.self, from: data)
+        } catch {
+            throw AcademicClientError.invalidData("开课查询解析失败：\(Self.decodingDescription(error))")
+        }
+        return response.data.compactMap { entry in
+            guard let lessonID = Int(entry.lesson.id), !entry.lesson.courseName.isEmpty else { return nil }
+            return OfficialCourseSearchResult(
+                id: lessonID,
+                courseName: entry.lesson.courseName,
+                className: entry.lesson.className?.nilIfBlank,
+                code: entry.lesson.code?.nilIfBlank,
+                teachers: entry.lesson.teachers.map(\.name).filter { !$0.isEmpty },
+                department: entry.lesson.departmentName?.nilIfBlank,
+                credits: entry.lesson.credits,
+                weeks: entry.lesson.suggestedWeeks?.nilIfBlank,
+                schedule: entry.lesson.scheduleText?.nilIfBlank
+            )
+        }
+    }
+
     private func loadStudentContext() async throws -> StudentContext {
         let (data, response) = try await data(for: URLRequest(url: AcademicPortal.url("for-std/course-table", mode: mode)))
         guard AcademicPortal.isAcademicPage(response.url, mode: mode) else {
@@ -175,6 +214,11 @@ struct AcademicClient {
     }
 }
 
+private struct AcademicCourseSearchEnvelope: Decodable {
+    let data: [Entry]
+    struct Entry: Decodable { let lesson: AcademicLesson }
+}
+
 enum AcademicClientError: LocalizedError {
     case authenticationRequired
     case invalidResponse
@@ -188,6 +232,13 @@ enum AcademicClientError: LocalizedError {
         case .http(let code): "教务系统请求失败（HTTP \(code)）。"
         case .invalidData(let message): message
         }
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? {
+        let value = trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 }
 

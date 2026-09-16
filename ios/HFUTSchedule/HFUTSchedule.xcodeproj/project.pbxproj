@@ -16,8 +16,8 @@
 		2D8941CD276C37F2996529D4 /* AcademicRecordsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */; };
 		301D3230C6E1F5A1C14023ED /* AcademicRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */; };
 		32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */; };
+		34E8A0C9E28B3F81E7AA8999 /* OfficialCampusAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6099C2CFD92F26F36EF43E0D /* OfficialCampusAPIClient.swift */; };
 		350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */; };
-		3A6B73F5083A4B1F96D22E01 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */; };
 		4E0A19E8D4B4E2F51DEA8DF5 /* AcademicStudentInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */; };
 		4F0803915AD47FC0AD696894 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */; };
 		511E0A9F822BACD83D23A9EC /* AcademicScheduleSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */; };
@@ -29,11 +29,13 @@
 		8EB74BE1D436DCDA74247798 /* WebVPNURLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */; };
 		95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48BBD76AF5494A92805F31C3 /* PortalWebView.swift */; };
 		9DD211D2A48B03B0D9D7D5EA /* AcademicScheduleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850A144603AEC626B2078445 /* AcademicScheduleModels.swift */; };
+		A736EAB22EA96B47F3B03A14 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F0E3911F4C88C4F38BEDE4 /* CourseDetailView.swift */; };
 		A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */; };
 		AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C31E16CE43EAF7ACA3328B /* AppState.swift */; };
 		B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */; };
 		B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADF53983339A1298C10365C /* GlassSurface.swift */; };
 		C1F569CE2ECC5673AA49A0A6 /* LoginPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */; };
+		CADD806DF8E784963D6C7D59 /* OfficialCampusViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33FA276642E6377DAF29C755 /* OfficialCampusViews.swift */; };
 		CCD751A0C27C754C43B40686 /* AcademicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59CC42C9774F1D615D57118B /* AcademicClient.swift */; };
 		D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */; };
 		D40893D53C715F270D34712D /* Course.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA33B515BDFC62F529434E96 /* Course.swift */; };
@@ -65,11 +67,11 @@
 		1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcuts.swift; sourceTree = "<group>"; };
 		28C31E16CE43EAF7ACA3328B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		2CDD62C425563B3C6DCA848A /* AcademicRecordsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecordsStore.swift; sourceTree = "<group>"; };
+		33FA276642E6377DAF29C755 /* OfficialCampusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialCampusViews.swift; sourceTree = "<group>"; };
 		35AEED7C9AF26FD0866503B1 /* CampusFeature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusFeature.swift; sourceTree = "<group>"; };
 		3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleSyncView.swift; sourceTree = "<group>"; };
 		3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3D44D706B873C376660720FE /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
-		3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseDetailView.swift; sourceTree = "<group>"; };
 		4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HFUTScheduleApp.swift; sourceTree = "<group>"; };
 		48BBD76AF5494A92805F31C3 /* PortalWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortalWebView.swift; sourceTree = "<group>"; };
 		4ADF53983339A1298C10365C /* GlassSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassSurface.swift; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 		56C449DEFB153FC3EAAB8391 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		594A872EB0360AC8D4B51844 /* HFUTScheduleTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = HFUTScheduleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		59CC42C9774F1D615D57118B /* AcademicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicClient.swift; sourceTree = "<group>"; };
+		6099C2CFD92F26F36EF43E0D /* OfficialCampusAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialCampusAPIClient.swift; sourceTree = "<group>"; };
 		674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicStudentInfoView.swift; sourceTree = "<group>"; };
 		6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecords.swift; sourceTree = "<group>"; };
 		81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleStore.swift; sourceTree = "<group>"; };
@@ -92,6 +95,7 @@
 		C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
 		D4622359506E21C63B8B6737 /* HFUTSchedule.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HFUTSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExporter.swift; sourceTree = "<group>"; };
+		E4F0E3911F4C88C4F38BEDE4 /* CourseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseDetailView.swift; sourceTree = "<group>"; };
 		EA33B515BDFC62F529434E96 /* Course.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Course.swift; sourceTree = "<group>"; };
 		F63E7F4E7F025381234C540A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCatalogTests.swift; sourceTree = "<group>"; };
@@ -159,6 +163,7 @@
 				D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */,
 				C1E31F42B6CE0D1A6A764B55 /* CASLoginClient.swift */,
 				1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */,
+				6099C2CFD92F26F36EF43E0D /* OfficialCampusAPIClient.swift */,
 				82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */,
 				81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */,
 				A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */,
@@ -198,11 +203,12 @@
 				05BC4332D571BE061D11515E /* AcademicRecordsView.swift */,
 				3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */,
 				674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */,
-				3A6B73F5083A4B1F96D22E02 /* CourseDetailView.swift */,
+				E4F0E3911F4C88C4F38BEDE4 /* CourseDetailView.swift */,
 				3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */,
 				8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */,
 				FE45D1352FD2E3218B0EDF2B /* LoginPortalView.swift */,
 				AF3FAC60EC560DFB8387F65B /* NativeCASLoginView.swift */,
+				33FA276642E6377DAF29C755 /* OfficialCampusViews.swift */,
 				48BBD76AF5494A92805F31C3 /* PortalWebView.swift */,
 				AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */,
 				0EA2D3757CE83E7ABC27EA37 /* ScannerView.swift */,
@@ -332,7 +338,7 @@
 				0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */,
 				32F11CF98350E1833EF1EABA /* CampusFeature.swift in Sources */,
 				D40893D53C715F270D34712D /* Course.swift in Sources */,
-				3A6B73F5083A4B1F96D22E01 /* CourseDetailView.swift in Sources */,
+				A736EAB22EA96B47F3B03A14 /* CourseDetailView.swift in Sources */,
 				B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */,
 				1E15A291EBA98CE8070F9BD1 /* DashboardView.swift in Sources */,
 				350846A11DE3C6A41FEA62D2 /* FeatureDetailView.swift in Sources */,
@@ -340,6 +346,8 @@
 				8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */,
 				C1F569CE2ECC5673AA49A0A6 /* LoginPortalView.swift in Sources */,
 				E4D1D09D23B8460E80592B52 /* NativeCASLoginView.swift in Sources */,
+				34E8A0C9E28B3F81E7AA8999 /* OfficialCampusAPIClient.swift in Sources */,
+				CADD806DF8E784963D6C7D59 /* OfficialCampusViews.swift in Sources */,
 				95CFA9DB2FAB3BA2D9C9CBA9 /* PortalWebView.swift in Sources */,
 				D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */,
 				1488F06A28630B2B1803A6E7 /* RootView.swift in Sources */,
@@ -452,7 +460,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = K6T9P3LS8V;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -560,7 +570,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = K6T9P3LS8V;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

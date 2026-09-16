@@ -14,6 +14,7 @@ final class AppState: ObservableObject {
     }
     @Published var selectedTab: AppTab = .home
     @Published var pendingFeatureID: Int?
+    @Published var shouldPresentLogin = false
     @Published var prefersHaptics: Bool {
         didSet { UserDefaults.standard.set(prefersHaptics, forKey: "prefersHaptics") }
     }
@@ -44,6 +45,51 @@ final class AppState: ObservableObject {
         defer { pendingFeatureID = nil }
         guard let pendingFeatureID else { return nil }
         return FeatureCatalog.all.first { $0.id == pendingFeatureID }
+    }
+
+    func open(_ url: URL) {
+        guard ["hfut-schedule", "hfut_schedule"].contains(url.scheme?.lowercased() ?? "") else { return }
+
+        if let mode = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "mode" })?.value?.lowercased(),
+           [AcademicConnectionMode.direct.rawValue.lowercased(), "webvpn"].contains(mode) {
+            UserDefaults.standard.set(
+                mode == "webvpn" ? AcademicConnectionMode.webVPN.rawValue : AcademicConnectionMode.direct.rawValue,
+                forKey: "academicConnectionMode"
+            )
+        }
+        if URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.contains(where: { $0.name == "login" && $0.value == "1" }) == true {
+            shouldPresentLogin = true
+        }
+        if let featureText = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "feature" })?.value,
+           let featureID = Int(featureText), FeatureCatalog.all.contains(where: { $0.id == featureID }) {
+            pendingFeatureID = featureID
+            selectedTab = .services
+        }
+
+        let destination = [url.host, url.pathComponents.dropFirst().first]
+            .compactMap { $0?.lowercased() }
+            .first { !$0.isEmpty }
+
+        switch destination {
+        case "schedule", "timetable", "课程表":
+            selectedTab = .schedule
+        case "home", "focus", "聚焦":
+            selectedTab = .home
+        case "services", "query", "查询中心":
+            selectedTab = .services
+        case "profile", "options", "选项":
+            selectedTab = .me
+        default:
+            break
+        }
+    }
+
+    func consumeLoginRequest() -> Bool {
+        defer { shouldPresentLogin = false }
+        return shouldPresentLogin
     }
 }
 

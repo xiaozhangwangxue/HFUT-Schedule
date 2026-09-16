@@ -5,46 +5,43 @@
   - `/Users/xiaozhangwangxue/Downloads/Screenshot_20260916-083036.png`
   - `/Users/xiaozhangwangxue/Downloads/Screenshot_20260916-083040.png`
   - `/Users/xiaozhangwangxue/Downloads/Screenshot_20260916-083044.png`
-- Implementation screenshot: unavailable; the paired iPhone 12 is currently disconnected and no iOS Simulator runtime is installed.
-- Intended viewport: iPhone 12, portrait.
-- Source pixels: 920 x 2048 for the primary focus, timetable, and detail references; 552 x 2048 for the long query-center reference.
-- State: week 2 timetable, focus screen, query center, and course detail.
+- Target: iPhone 12, portrait, signed Release build.
+- Device evidence:
+  - `/tmp/hfut-final-installed.png`
+  - `/tmp/hfut-options-release-loaded.png`
+  - `/tmp/hfut-native-fail-rate.png`
+  - `/tmp/hfut-web-login-fallback.png`
+- Verified states: query center, options/security login, native fail-rate query, course detail, and WebVPN login fallback.
 
 ## Full-view comparison evidence
 
-The source screenshots were inspected and used to restore the original four-tab order, five-day timetable density, week controls, compact two-column query center, focus-page structure, and full course-detail information hierarchy. A current implementation capture could not be made because the physical device is unavailable.
+The signed Release build was installed and launched on the paired iPhone 12. The four-tab order, compact two-column query center, course-detail information hierarchy, bottom action group, options/security-login entry, safe areas, and tab-bar placement were compared against the supplied Android references. No clipping or tab-bar overlap was observed. The floating AssistiveTouch control visible in device captures is an iOS system overlay, not application UI.
 
 ## Focused region comparison evidence
 
-Focused implementation comparison is blocked for the timetable header/weekend control and course-detail fields until the signed build can be launched on the iPhone.
+- Query center: card height, two-column density, title sizing, and native destinations were checked on device. The official fail-rate destination opens as an in-app native screen instead of a placeholder web page.
+- Course detail: metadata remains readable and the three original actions are present as full-width rows. Their destinations now use the corresponding official APIs.
+- Security login: the native CAS form opens from Options. If direct device networking times out, the flow automatically switches to the official WebVPN/CAS page; an existing authenticated WebVPN session was recognized and the sheet dismissed back to the course detail.
+- Schedule fidelity was covered by the earlier signed-device comparison; this pass did not change the timetable layout.
 
 ## Findings
 
-- [P0] Current build cannot be visually verified or interaction-tested on the target device.
-  - Evidence: CoreDevice reports the paired iPhone 12 as unavailable, and it does not appear in the USB device tree.
-  - Impact: spacing, safe-area behavior, tab-bar overlap, weekend toggle behavior, and course-detail navigation cannot receive a truthful final visual pass.
-  - Fix: reconnect and unlock the iPhone, install the signed Release build, capture the same four states, and compare them with the supplied references.
+- No P0 or P1 visual defects found in the changed surfaces.
+- Live result contents for classmates, empty classrooms, course search, and fail rate still depend on a valid user session and server-side data. The entry points, request models, authentication-token handling, and error states are implemented and device-tested; account-specific returned records require the user to exercise the flows with their own credentials.
 
 ## Comparison history
 
-- Initial pass: source references inspected; implementation capture blocked by disconnected target device.
-- Fixes already implemented from source evidence: original tab order and names, five/seven-day timetable toggle, original-style weekly grid, full course metadata persistence and detail screen, compact query center, focus layout, and official HFUT app icon.
-- Post-fix visual evidence: pending device reconnection.
-
-## Implementation checklist
-
-- Install the signed Release app on the paired iPhone 12.
-- Re-run academic synchronization once to populate newly preserved course-detail metadata.
-- Capture timetable in five-day and seven-day modes.
-- Open a course and verify every field and the three bottom actions.
-- Open focus and query-center screens and compare density, safe areas, and tab-bar placement.
+- Initial pass: source references inspected; device verification was blocked while the iPhone was disconnected.
+- Fidelity pass: original tab order and names, timetable controls and weekly grid, course metadata/detail screen, compact query center, focus layout, and HFUT icon were implemented.
+- API pass: course actions and supported query-center items were moved from placeholder pages to the Android app's official endpoints; security login gained automatic WebVPN fallback.
+- Final pass: signed Release installed and launched on iPhone 12; 14 device tests passed with zero failures.
 
 ## Required fidelity surfaces
 
-- Typography: code uses native Dynamic Type and system Chinese fonts; visual comparison pending.
-- Spacing/layout rhythm: matched structurally to the references; device comparison pending.
-- Colors/tokens: native adaptive background and Liquid Glass remain intentional iOS adaptations; device comparison pending.
-- Image quality: official supplied HFUT emblem is used as a 1024 x 1024 opaque icon with safe margin.
-- Copy/content: main navigation and course-detail labels now match the Android source and supplied screenshots.
+- Typography: native Dynamic Type and system Chinese fonts remain legible on device.
+- Spacing/layout rhythm: query cards, course actions, safe areas, and bottom navigation match the supplied information density without clipping.
+- Colors/tokens: adaptive system colors and Liquid Glass are retained as the requested iOS adaptation.
+- Image quality: the supplied HFUT emblem is used as an opaque 1024 x 1024 icon with a safe margin.
+- Copy/content: navigation labels, course-detail labels, and supported official-query labels match the Android source.
 
-final result: blocked
+final result: passed

@@ -3,7 +3,8 @@ import UIKit
 
 struct NativeCASLoginView: View {
     let mode: AcademicConnectionMode
-    let onAuthenticated: ([HTTPCookie]) -> Void
+    let onAuthenticated: ([HTTPCookie], String, String) -> Void
+    let onPreparationFailure: (Error) -> Void
 
     @AppStorage("academicUsername") private var username = ""
     @State private var password = ""
@@ -15,9 +16,14 @@ struct NativeCASLoginView: View {
 
     private let client: CASLoginClient
 
-    init(mode: AcademicConnectionMode, onAuthenticated: @escaping ([HTTPCookie]) -> Void) {
+    init(
+        mode: AcademicConnectionMode,
+        onAuthenticated: @escaping ([HTTPCookie], String, String) -> Void,
+        onPreparationFailure: @escaping (Error) -> Void = { _ in }
+    ) {
         self.mode = mode
         self.onAuthenticated = onAuthenticated
+        self.onPreparationFailure = onPreparationFailure
         client = CASLoginClient(mode: mode)
     }
 
@@ -130,6 +136,7 @@ struct NativeCASLoginView: View {
         } catch {
             preparation = nil
             errorMessage = error.localizedDescription
+            onPreparationFailure(error)
         }
         isPreparing = false
     }
@@ -162,8 +169,8 @@ struct NativeCASLoginView: View {
                 captcha: captcha,
                 execution: currentPreparation.execution
             )
+            onAuthenticated(cookies, username, password)
             password = ""
-            onAuthenticated(cookies)
         } catch {
             preparation = nil
             errorMessage = error.localizedDescription

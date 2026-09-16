@@ -63,6 +63,8 @@ struct ProfileView: View {
             Text(backupMessage ?? "")
         }
         .task { await notificationManager.refresh() }
+        .onAppear { presentRequestedLogin() }
+        .onChange(of: appState.shouldPresentLogin) { _, _ in presentRequestedLogin() }
     }
 
     private var accountCard: some View {
@@ -86,6 +88,10 @@ struct ProfileView: View {
         }
         .padding(20)
         .adaptiveGlass(cornerRadius: 26)
+    }
+
+    private func presentRequestedLogin() {
+        if appState.consumeLoginRequest() { showingLogin = true }
     }
 
     private var accountSubtitle: String {
@@ -279,7 +285,7 @@ private struct AboutView: View {
                     Link("查看上游仓库", destination: URL(string: "https://github.com/Chiu-xaH/HFUT-Schedule")!)
                 }
                 Section("隐私") {
-                    Text("校园登录在校方网页中完成。网页会话由系统 WebKit 数据存储管理；应用不读取或记录登录密码。")
+                    Text("登录凭据仅发送到合肥工业大学官方 CAS 与教务接口；应用不保存密码。校方返回的短期令牌保存在本机系统钥匙串中。")
                 }
             }
             .navigationTitle("关于")

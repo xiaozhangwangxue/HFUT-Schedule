@@ -2,6 +2,49 @@ import XCTest
 @testable import HFUTSchedule
 
 final class FeatureCatalogTests: XCTestCase {
+    @MainActor
+    func testDeepLinksOpenOriginalMainSections() {
+        let state = AppState()
+
+        state.open(URL(string: "hfut-schedule://schedule")!)
+        XCTAssertEqual(state.selectedTab, .schedule)
+
+        state.open(URL(string: "hfut-schedule://focus")!)
+        XCTAssertEqual(state.selectedTab, .home)
+
+        state.open(URL(string: "hfut-schedule://services")!)
+        XCTAssertEqual(state.selectedTab, .services)
+
+        state.open(URL(string: "hfut-schedule://options")!)
+        XCTAssertEqual(state.selectedTab, .me)
+
+        state.open(URL(string: "hfut-schedule://options?mode=webvpn&login=1")!)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "academicConnectionMode"), AcademicConnectionMode.webVPN.rawValue)
+        XCTAssertTrue(state.consumeLoginRequest())
+        XCTAssertFalse(state.consumeLoginRequest())
+        UserDefaults.standard.removeObject(forKey: "academicConnectionMode")
+
+        state.open(URL(string: "hfut-schedule://services?feature=8")!)
+        XCTAssertEqual(state.selectedTab, .services)
+        XCTAssertEqual(state.consumePendingFeature()?.title, "挂科率")
+    }
+
+    func testOfficialAPIModelsDecodeAndroidEndpointPayloads() throws {
+        let classmatesJSON = """
+        {"data":[{"code":"2026123456","nameZh":"测试同学","adminclass":"软件2601","gender":"男","telephone":null}]}
+        """.data(using: .utf8)!
+        struct ClassmateEnvelope: Decodable { let data: [OfficialClassmate] }
+        let classmate = try XCTUnwrap(JSONDecoder().decode(ClassmateEnvelope.self, from: classmatesJSON).data.first)
+        XCTAssertEqual(classmate.className, "软件2601")
+
+        let failRateJSON = """
+        {"courseName":"高等数学","courseMetaId":"MATH1001","courseFailRateDTOList":[{"xn":"2026-2027","xq":"1","avgScore":78.5,"totalCount":100,"failCount":8,"successRate":0.92}]}
+        """.data(using: .utf8)!
+        let failRate = try JSONDecoder().decode(OfficialFailRateRecord.self, from: failRateJSON)
+        XCTAssertEqual(failRate.terms.first?.failCount, 8)
+        XCTAssertEqual(failRate.terms.first?.successRate, 0.92)
+    }
+
     func testCASEncryptionMatchesAndroidAES() throws {
         XCTAssertEqual(
             try CASLoginClient.encryptAES("password", key: "1234567890123456"),

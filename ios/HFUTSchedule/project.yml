@@ -41,7 +41,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xiaozhangwangxue.hfutschedule.ios.tests
         GENERATE_INFOPLIST_FILE: YES
-        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: K6T9P3LS8V
 schemes:
   HFUTSchedule:
     build:

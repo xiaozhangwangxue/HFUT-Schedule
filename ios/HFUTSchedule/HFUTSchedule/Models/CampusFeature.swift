@@ -19,6 +19,9 @@ enum NativeDestination: String, Hashable {
     case grades
     case exams
     case personInfo
+    case courseSearch
+    case classrooms
+    case failRate
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -45,7 +48,7 @@ enum FeatureCatalog {
         .init(id: 5, title: "校园邮箱", subtitle: "合工大邮箱", systemImage: "envelope.fill", category: .campus, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 6, title: "考试安排", subtitle: "考试时间、地点与提醒", systemImage: "doc.text.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .exams),
         .init(id: 7, title: "成绩", subtitle: "成绩查询与分析", systemImage: "chart.bar.fill", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .grades),
-        .init(id: 8, title: "挂科率", subtitle: "课程通过情况", systemImage: "percent", category: .study, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 8, title: "挂科率", subtitle: "课程通过情况", systemImage: "percent", category: .study, urlString: "https://community.hfut.edu.cn/", nativeDestination: .failRate),
         .init(id: 9, title: "课程汇总", subtitle: "学期课程与教材", systemImage: "books.vertical.fill", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
         .init(id: 10, title: "个人信息", subtitle: "学籍与校园身份", systemImage: "person.text.rectangle.fill", category: .campus, urlString: nil, nativeDestination: .personInfo),
         .init(id: 11, title: "网址导航", subtitle: "实验室与常用站点", systemImage: "folder.fill", category: .tools, urlString: "https://one.hfut.edu.cn/", nativeDestination: nil),
@@ -60,13 +63,13 @@ enum FeatureCatalog {
         .init(id: 20, title: "校车", subtitle: "校车时刻与路线", systemImage: "bus.fill", category: .campus, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 21, title: "智慧后勤", subtitle: "报修与服务", systemImage: "wrench.and.screwdriver.fill", category: .campus, urlString: "http://zhhq.hfut.edu.cn/school/", nativeDestination: nil),
         .init(id: 23, title: "饮水热水", subtitle: "热水与设备服务", systemImage: "drop.fill", category: .life, urlString: "alipays://platformapi/startapp?appId=20000067", nativeDestination: nil),
-        .init(id: 24, title: "空教室", subtitle: "空闲教室查询", systemImage: "door.left.hand.open", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 24, title: "空教室", subtitle: "空闲教室查询", systemImage: "door.left.hand.open", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .classrooms),
         .init(id: 25, title: "体育与体测", subtitle: "体测、校园跑与体育课", systemImage: "figure.run", category: .campus, urlString: "https://bdlp.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 26, title: "校历", subtitle: "作息、学期与放假安排", systemImage: "calendar", category: .study, urlString: "https://www.hfut.edu.cn/", nativeDestination: .calendar),
         .init(id: 27, title: "学信网", subtitle: "学籍与学历档案", systemImage: "graduationcap.fill", category: .study, urlString: "https://my.chsi.com.cn/archive/wap/gdjy/index.action", nativeDestination: nil),
         .init(id: 28, title: "校园生活", subtitle: "地图、天气与学期报告", systemImage: "leaf.fill", category: .life, urlString: "https://www.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 29, title: "转专业", subtitle: "申请与进度", systemImage: "arrow.triangle.swap", category: .study, urlString: "http://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: nil),
-        .init(id: 30, title: "全校课程", subtitle: "课程检索", systemImage: "magnifyingglass", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 30, title: "全校课程", subtitle: "课程检索", systemImage: "magnifyingglass", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .courseSearch),
         .init(id: 31, title: "教师查询", subtitle: "教师与研究方向", systemImage: "person.crop.square.filled.and.at.rectangle", category: .study, urlString: "http://121.251.19.138/", nativeDestination: nil),
         .init(id: 32, title: "费用中心", subtitle: "学费与欠费查询", systemImage: "yensign.circle.fill", category: .campus, urlString: "http://pay.hfut.edu.cn/payment/mobileOnlinePay", nativeDestination: nil),
         .init(id: 34, title: "校友服务", subtitle: "校友平台", systemImage: "person.3.fill", category: .campus, urlString: "https://xypt.hfut.edu.cn/", nativeDestination: nil),

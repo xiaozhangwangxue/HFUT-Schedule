@@ -18,6 +18,7 @@ struct HFUTScheduleApp: App {
                 .environmentObject(academicRecordsStore)
                 .environmentObject(academicStudentStore)
                 .tint(AppTheme.accent)
+                .onOpenURL { appState.open($0) }
         }
     }
 }
