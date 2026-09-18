@@ -55,3 +55,47 @@ struct GlassIcon: View {
             .accessibilityHidden(true)
     }
 }
+
+/// A navigation link whose destination grows from the exact control that was
+/// tapped on systems that support SwiftUI's zoom navigation transition.
+///
+/// Each link owns its namespace so reused identifiers in separate view trees
+/// cannot collide. Reduced Motion and pre-iOS 18 systems retain ordinary,
+/// fully interactive navigation.
+struct SourceAnchoredNavigationLink<Destination: View, Label: View>: View {
+    let sourceID: String
+    private let destination: Destination
+    private let label: Label
+
+    @Namespace private var namespace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(
+        sourceID: String,
+        @ViewBuilder destination: () -> Destination,
+        @ViewBuilder label: () -> Label
+    ) {
+        self.sourceID = sourceID
+        self.destination = destination()
+        self.label = label()
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if #available(iOS 18.0, *), !reduceMotion {
+            NavigationLink {
+                destination
+                    .navigationTransition(.zoom(sourceID: sourceID, in: namespace))
+            } label: {
+                label
+                    .matchedTransitionSource(id: sourceID, in: namespace)
+            }
+        } else {
+            NavigationLink {
+                destination
+            } label: {
+                label
+            }
+        }
+    }
+}

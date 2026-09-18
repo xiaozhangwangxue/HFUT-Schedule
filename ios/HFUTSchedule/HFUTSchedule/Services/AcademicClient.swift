@@ -8,12 +8,79 @@ struct AcademicProgramSummary: Identifiable, Hashable {
     let remark: String?
 }
 
+struct AcademicCourseSelectionTurn: Decodable, Identifiable, Hashable {
+    let id: Int
+    let name: String
+    let bulletin: String
+    let selectDateTimeText: String
+    let addRulesText: [String]
+}
+
+struct AcademicSelectableLesson: Identifiable, Hashable {
+    let id: Int
+    let code: String
+    let courseName: String
+    let className: String
+    let teachers: [String]
+    let limitCount: Int
+    let remark: String?
+    let schedule: String?
+}
+
+struct AcademicSurveyLesson: Identifiable, Hashable {
+    struct Teacher: Identifiable, Hashable {
+        let id: Int
+        let name: String
+        let submitted: Bool
+    }
+
+    let code: String
+    let courseName: String
+    let department: String
+    let deadline: String?
+    let teachers: [Teacher]
+    var id: String { code }
+}
+
+/// 转专业批次（对应 Android 版 for-std/change-major-apply/index 页面解析结果）。
+struct TransferBatch: Identifiable, Hashable {
+    let title: String
+    let batchID: String
+    let applicationDate: String
+    let admissionDate: String
+    var id: String { batchID }
+}
+
+/// 转专业申请里的专业条目。
+struct TransferApplication: Identifiable, Hashable {
+    let id: Int
+    let major: String
+    let department: String
+    let conditions: String
+    let preparedCount: Int
+    let applyCount: Int
+    let applyStart: String
+    let applyEnd: String
+    let batchName: String
+}
+
+/// 我的转专业申请。
+struct TransferMyApply: Identifiable, Hashable {
+    let id: Int
+    let major: String
+    let department: String
+    let status: String
+}
+
 struct AcademicClient {
     private let mode: AcademicConnectionMode
     private let session: URLSession
+    private let noRedirectSession: URLSession
+    private let initialCookies: [HTTPCookie]
 
     init(mode: AcademicConnectionMode, cookies: [HTTPCookie]) {
         self.mode = mode
+        initialCookies = cookies
 
         let storage = HTTPCookieStorage.shared
         for cookie in cookies {
@@ -30,6 +97,11 @@ struct AcademicClient {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140 Safari/537.36"
         ]
         session = URLSession(configuration: configuration)
+        noRedirectSession = URLSession(
+            configuration: configuration,
+            delegate: AcademicNoRedirectDelegate.shared,
+            delegateQueue: nil
+        )
     }
 
     func fetchSchedule(semesterID: Int) async throws -> AcademicSyncPayload {
@@ -113,6 +185,77 @@ struct AcademicClient {
         return items
     }
 
+    func fetchCourseSelectionTurns() async throws -> [AcademicCourseSelectionTurn] {
+        let context = try await loadStudentContext()
+        _ = try await get("for-std/course-select")
+        let data = try await formPost(
+            "ws/for-std/course-select/open-turns",
+            fields: [("bizTypeId", String(context.bizTypeID)), ("studentId", String(context.studentID))]
+        )
+        do {
+            return try JSONDecoder().decode([AcademicCourseSelectionTurn].self, from: data)
+        } catch {
+            throw AcademicClientError.invalidData("选课入口解析失败：\(Self.decodingDescription(error))")
+        }
+    }
+
+    func fetchSelectableLessons(turnID: Int) async throws -> [AcademicSelectableLesson] {
+        _ = try await loadStudentContext()
+        let data = try await formPost(
+            "ws/for-std/course-select/addable-lessons",
+            fields: [("turnId", String(turnID))]
+        )
+        guard let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            throw AcademicClientError.invalidData("选课课程列表返回格式无法识别")
+        }
+        return rows.compactMap { row in
+            guard let id = Self.int(row["id"]), let code = row["code"] as? String else { return nil }
+            let course = row["course"] as? [String: Any]
+            let teachers = (row["teachers"] as? [[String: Any]] ?? []).compactMap { $0["nameZh"] as? String }
+            return AcademicSelectableLesson(
+                id: id,
+                code: code,
+                courseName: course?["nameZh"] as? String ?? (row["nameZh"] as? String ?? code),
+                className: row["nameZh"] as? String ?? "",
+                teachers: teachers,
+                limitCount: Self.int(row["limitCount"]) ?? 0,
+                remark: row["remark"] as? String,
+                schedule: (row["dateTimePlace"] as? [String: Any])?["textZh"] as? String
+            )
+        }
+    }
+
+    func fetchTeachingSurveys(semesterID: Int) async throws -> [AcademicSurveyLesson] {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/lesson-survey/\(semesterID)/search/\(context.studentID)")
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let rows = root["forStdLessonSurveySearchVms"] as? [[String: Any]] else {
+            throw AcademicClientError.invalidData("评教列表返回格式无法识别")
+        }
+        return rows.compactMap { row in
+            guard let code = row["code"] as? String else { return nil }
+            let course = row["course"] as? [String: Any]
+            let department = row["openDepartment"] as? [String: Any]
+            let teachers = (row["lessonSurveyTasks"] as? [[String: Any]] ?? []).compactMap { task -> AcademicSurveyLesson.Teacher? in
+                guard let id = Self.int(task["id"]) else { return nil }
+                let teacher = task["teacher"] as? [String: Any]
+                let person = teacher?["person"] as? [String: Any]
+                return .init(
+                    id: id,
+                    name: person?["nameZh"] as? String ?? "教师",
+                    submitted: task["submitted"] as? Bool ?? false
+                )
+            }
+            return AcademicSurveyLesson(
+                code: code,
+                courseName: course?["nameZh"] as? String ?? code,
+                department: department?["nameZh"] as? String ?? "",
+                deadline: row["openEndTimeContent"] as? String,
+                teachers: teachers
+            )
+        }
+    }
+
     func searchCourses(
         semesterID: Int,
         courseName: String? = nil,
@@ -153,14 +296,35 @@ struct AcademicClient {
     }
 
     private func loadStudentContext() async throws -> StudentContext {
-        let (data, response) = try await data(for: URLRequest(url: AcademicPortal.url("for-std/course-table", mode: mode)))
-        guard AcademicPortal.isAcademicPage(response.url, mode: mode) else {
+        // Match the Android client: do not follow this redirect. The numeric
+        // dataId exists in the Location header and is not the public student
+        // number, so losing the 302 makes every academic endpoint unusable.
+        let landingURL = AcademicPortal.url("for-std/course-table", mode: mode)
+        var landingRequest = URLRequest(url: landingURL)
+        attachCookies(to: &landingRequest)
+        let (landingData, rawResponse) = try await noRedirectSession.data(for: landingRequest)
+        guard let response = rawResponse as? HTTPURLResponse else {
+            throw AcademicClientError.invalidResponse
+        }
+        CampusSessionStore.shared.persist(HTTPCookieStorage.shared.cookies ?? initialCookies)
+        guard (200..<400).contains(response.statusCode) else {
+            throw AcademicClientError.http(response.statusCode)
+        }
+
+        let location = response.value(forHTTPHeaderField: "Location") ?? ""
+        if location.localizedCaseInsensitiveContains("/cas/login")
+            || location.localizedCaseInsensitiveContains("/eams5-student/login") {
             throw AcademicClientError.authenticationRequired
         }
-        let urlText = response.url?.absoluteString ?? ""
-        guard let studentID = Self.firstInteger(in: urlText, pattern: #"course-table/info/(\d+)"#) else {
-            throw AcademicClientError.invalidData("未获取到教务学生标识，请重新登录")
+        let landingHTML = String(data: landingData, encoding: .utf8) ?? ""
+        let candidates = [location, response.url?.absoluteString ?? "", landingHTML]
+        guard let studentID = candidates.lazy.compactMap({
+            Self.firstInteger(in: $0, pattern: #"course-table/info/(\d+)"#)
+        }).first else {
+            throw AcademicClientError.invalidData("未获取到教务学生标识（course-table 未返回原版所需的 302 Location）")
         }
+
+        let data = try await get("for-std/course-table/info/\(studentID)")
         guard let html = String(data: data, encoding: .utf8),
               let bizTypeID = Self.firstInteger(in: html, pattern: #"bizTypeId\s*:\s*(\d+)"#) else {
             throw AcademicClientError.invalidData("未获取到教务业务标识")
@@ -174,6 +338,105 @@ struct AcademicClient {
         return try await request(components.url!, method: "GET", body: nil)
     }
 
+    // MARK: - 转专业
+
+    func fetchTransferBatches() async throws -> [TransferBatch] {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/change-major-apply/index/\(context.studentID)")
+        return Self.parseTransferBatches(String(decoding: data, as: UTF8.self))
+    }
+
+    func fetchTransferApplications(batchID: String) async throws -> [TransferApplication] {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/change-major-apply/get-applies", query: [
+            URLQueryItem(name: "batchId", value: batchID),
+            URLQueryItem(name: "studentId", value: String(context.studentID)),
+            URLQueryItem(name: "auto", value: "false")
+        ])
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let list = root["data"] as? [[String: Any]] else {
+            throw AcademicClientError.invalidData("转专业列表格式无法识别")
+        }
+        return list.compactMap { item in
+            guard let id = item["id"] as? Int else { return nil }
+            let batch = item["changeMajorBatch"] as? [String: Any] ?? [:]
+            return TransferApplication(
+                id: id,
+                major: Self.localizedName(item["major"]),
+                department: Self.localizedName(item["department"]),
+                conditions: (item["registrationConditions"] as? String) ?? "",
+                preparedCount: item["preparedStdCount"] as? Int ?? 0,
+                applyCount: item["applyStdCount"] as? Int ?? 0,
+                applyStart: (batch["applyStartTime"] as? String) ?? "",
+                applyEnd: (batch["applyEndTime"] as? String) ?? "",
+                batchName: (batch["nameZh"] as? String) ?? ""
+            )
+        }
+    }
+
+    func fetchMyTransferApplications(batchID: String) async throws -> [TransferMyApply] {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/change-major-apply/get-my-applies", query: [
+            URLQueryItem(name: "batchId", value: batchID),
+            URLQueryItem(name: "studentId", value: String(context.studentID))
+        ])
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let list = root["models"] as? [[String: Any]] else { return [] }
+        return list.compactMap { item in
+            guard let id = item["id"] as? Int,
+                  let submit = item["changeMajorSubmit"] as? [String: Any] else { return nil }
+            return TransferMyApply(
+                id: id,
+                major: Self.localizedName(submit["major"]),
+                department: Self.localizedName(submit["department"]),
+                status: Self.transferStatusText((item["applyStatus"] as? String) ?? "")
+            )
+        }
+    }
+
+    private static func localizedName(_ value: Any?) -> String {
+        guard let dictionary = value as? [String: Any] else { return "" }
+        return (dictionary["nameZh"] as? String) ?? (dictionary["name"] as? String) ?? ""
+    }
+
+    private static func transferStatusText(_ raw: String) -> String {
+        switch raw {
+        case "ACCEPTED": return "已录取"
+        case "REJECTED": return "未录取"
+        case "PENDING": return "待审核"
+        case "": return "已提交"
+        default: return raw
+        }
+    }
+
+    /// 解析 .turn-panel 卡片：标题、批次号、申请时间、录取时间。
+    static func parseTransferBatches(_ html: String) -> [TransferBatch] {
+        var batches: [TransferBatch] = []
+        let panels = html.components(separatedBy: "turn-panel")
+        for panel in panels.dropFirst() {
+            guard let batchID = firstMatch(in: panel, pattern: "change-major-enter[^>]*data=\"([^\"]+)\"")
+                ?? firstMatch(in: panel, pattern: "data=\"([^\"]+)\"[^>]*change-major-enter") else { continue }
+            let title = firstMatch(in: panel, pattern: "turn-title[^>]*>\\s*(?:<span[^>]*>)?([^<]+)")
+            let application = firstMatch(in: panel, pattern: "open-date[\\s\\S]*?text-primary[^>]*>\\s*([^<]+)")
+            let admission = firstMatch(in: panel, pattern: "select-date[\\s\\S]*?text-warning[^>]*>\\s*([^<]+)")
+            batches.append(TransferBatch(
+                title: (title ?? "转专业批次").trimmingCharacters(in: .whitespacesAndNewlines),
+                batchID: batchID,
+                applicationDate: (application ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+                admissionDate: (admission ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            ))
+        }
+        return batches
+    }
+
+    private static func firstMatch(in text: String, pattern: String) -> String? {
+        guard let expression = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else { return nil }
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = expression.firstMatch(in: text, range: range), match.numberOfRanges > 1,
+              let captured = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[captured])
+    }
+
     private func request(_ path: String, method: String, body: Data?) async throws -> Data {
         try await request(AcademicPortal.url(path, mode: mode), method: method, body: body)
     }
@@ -183,11 +446,42 @@ struct AcademicClient {
         request.httpMethod = method
         request.httpBody = body
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        attachCookies(to: &request)
         let (data, response) = try await data(for: request)
         guard AcademicPortal.isAcademicPage(response.url, mode: mode) else {
             throw AcademicClientError.authenticationRequired
         }
         return data
+    }
+
+    private func formPost(_ path: String, fields: [(String, String)]) async throws -> Data {
+        var request = URLRequest(url: AcademicPortal.url(path, mode: mode))
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._~"))
+        request.httpBody = fields.map { key, value in
+            let encodedKey = key.addingPercentEncoding(withAllowedCharacters: allowed) ?? key
+            let encodedValue = value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
+            return "\(encodedKey)=\(encodedValue)"
+        }.joined(separator: "&").data(using: .utf8)
+        attachCookies(to: &request)
+        let (data, response) = try await data(for: request)
+        guard AcademicPortal.isAcademicPage(response.url, mode: mode) else {
+            throw AcademicClientError.authenticationRequired
+        }
+        return data
+    }
+
+    private func attachCookies(to request: inout URLRequest) {
+        guard let host = request.url?.host?.lowercased() else { return }
+        let liveCookies = HTTPCookieStorage.shared.cookies ?? initialCookies
+        let matching = liveCookies.filter { cookie in
+            let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            return host == domain || host.hasSuffix("." + domain)
+        }
+        guard !matching.isEmpty else { return }
+        let fields = HTTPCookie.requestHeaderFields(with: matching)
+        if let value = fields["Cookie"] { request.setValue(value, forHTTPHeaderField: "Cookie") }
     }
 
     private func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -204,6 +498,13 @@ struct AcademicClient {
               let match = expression.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let range = Range(match.range(at: 1), in: text) else { return nil }
         return Int(text[range])
+    }
+
+    private static func int(_ value: Any?) -> Int? {
+        if let value = value as? Int { return value }
+        if let value = value as? NSNumber { return value.intValue }
+        if let value = value as? String { return Int(value) }
+        return nil
     }
 
     private static func programItems(_ node: [String: Any], path: String) -> [AcademicProgramSummary] {
@@ -255,6 +556,20 @@ struct AcademicClient {
     }
 }
 
+private final class AcademicNoRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    static let shared = AcademicNoRedirectDelegate()
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
+    }
+}
+
 private struct AcademicCourseSearchEnvelope: Decodable {
     let data: [Entry]
     struct Entry: Decodable { let lesson: AcademicLesson }
@@ -295,6 +610,14 @@ enum AcademicHTMLParser {
             let value = clean(pair.1)
             guard !key.isEmpty, !value.isEmpty else { continue }
             fields[key] = value
+        }
+
+        // The Android app reads this value from the list item rather than the
+        // dt/dd block. Preserve it so the official UniApp password can be
+        // derived without ever reusing the CAS password.
+        if let identity = labeledSpan(in: html, label: "证件号")
+            ?? labeledSpan(in: html, label: "身份证号") {
+            fields["证件号"] = identity
         }
 
         let studentID = labeledSpan(in: html, label: "学号") ?? fallbackStudentID

@@ -1,168 +1,108 @@
-# 聚在工大（HFUT-Schedule）
-![封面](/src/img/cover.png)
+# 聚在工大 · iOS（HFUT-Schedule）
 
-## 下载
-### 正式版
-<div align="center">
+> 合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本。
+> 本仓库基于原 Android 项目 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码，iOS 端使用 SwiftUI 重写界面与交互，并复用原项目整理的全部校方接口。
 
-[![GitHub](https://img.shields.io/github/v/release/Chiu-xaH/HFUT-Schedule?logo=github&label=GitHub&style=for-the-badge)](https://github.com/Chiu-xaH/HFUT-Schedule/releases/latest)
-[![F-Droid](https://img.shields.io/f-droid/v/com.hfut.schedule?logo=fdroid&style=for-the-badge)](https://f-droid.org/packages/com.hfut.schedule)
-[![F-Droid](https://img.shields.io/github/v/release/Chiu-xaH/HFUT-Schedule?logo=gitee&label=Gitee&style=for-the-badge)](https://gitee.com/chiu-xah/HFUT-Schedule/releases/tag/Android)
+![周课表小组件](ios/HFUTSchedule/docs/widget-preview.png)
 
-</div>
+## 下载与安装
 
-> F-Droid 发行的版本经过重签名（无法与其他渠道版本更新覆盖安装 Apk），且节奏较慢，不推荐 ；
-> 
-> Github 发行的版本有三个 Apk，分别对应 arm64, x86_64, 通用包（universal），按需选择安装（一般选 arm64）；
-> 
-> Gitee 发行的版本只有 arm64，且只有 arm64 版本支持增量更新。
+- 最新 IPA：[Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)（`ios-*` 标签）
+- 仓库内也直接提供构建产物：[`ios/HFUTSchedule/dist/`](ios/HFUTSchedule/dist)
 
-### [开发版（Dev）](https://github.com/Chiu-xaH/HFUT-Schedule/releases/tag/Devevlop)
-> 供尝鲜正在开发中的版本，每次随代码 Push 而更新发行的 Apk，不代表最终正式版。
+IPA 使用**免费个人团队临时签名**，有效期 7 天；过期后重新安装即可。可用 SideStore / iLoader / AltStore 等工具重新签名安装到自己的设备。
 
-### 资源包（可选）
-- 图片验证码识别模型（应用内下载，位于【选项-偏好与配置-图片验证码自动填充】）
-> 为减少 Apk 包体大小，验证码识别模型（约 11MB）拆分出来并支持可选下载；
-- 游客体验专用数据包（应用内下载，位于【选项-偏好与配置-备份与恢复】）
-> 为让其他开发者也可体验本应用，提供了游客数据包，导入后可解锁更多功能，但并非所有功能均可用，如有相关需求可联系开发者。
+## 功能
 
-## 简介
-为合肥⼯业⼤学（HFUT）本科⽣开发的校园服务聚合类 Android 应⽤，覆盖了教学、⽣活、校内服务等 40+ 场景与功能，⽀持离⽹使⽤；使⽤现代的技术栈开发，提供全⾯、简洁、⾼效的使⽤体验。
+### 课表
+- 周课表：周次切换、隐藏周六日、今天高亮、课程块按真实时间比例排布
+- 课程卡片点击进入详情：教师、学分、周次、上课安排、同班同学、教室状态、挂科率、开课查询
+- 离线手动课表、课表备份与恢复、导出到系统日历、上课提醒、系统快捷指令
+- 大号**桌面小组件「周课表」**：一屏显示周一到周五全部课程，顶部显示日期／周次／星期与实时时钟，今天用强调色高亮
 
-界面展示（v4.20.1.3,实际以最新版本为准）：
+### 教务（统一身份认证后自动同步）
+- 统一身份认证（CAS），一次登录复用会话，无需每个栏目重复登录
+- 教务系统：课表同步、成绩、考试安排、培养方案、选课、评教、课程汇总、转专业、全校课程查询
+- 支持「校园网直连」与「校外 WebVPN」两种连接方式
 
-![截图](/src/img/ui.jpg)
+### 查询中心（48 项校园服务）
+- 一卡通余额与流水、宿舍电费、校园网、洗浴、洗衣（智慧笑联）、第二课堂
+- 图书馆检索／在借书籍、空教室、挂科率、同班同学、智慧社区、今日校园
+- 慧新易校（校园卡、电费、洗浴、洗衣聚合平台）、费用中心（欠费明细与缴费二维码）
+- 作息与校历、节假日调休、网址导航（收藏夹 + 实验室）、WebVPN、快递取件码、校园地图、学期报告
 
-## 亮点
-界面: 使用着色器、实时模糊等特效，与 Material Design 3 融合，简约高效
+## 环境要求
 
-动效：自研第二代全局转场动画体系，符合直觉的一镜到底动效
+- iOS 17.0 及以上
+- Xcode 16 及以上（当前在 Xcode 27.2 beta 上验证）
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`
 
-更新：250+ 版本迭代，平均每周至少更新一次，带来新的功能、重构及优化
+## 构建
 
-性能：冷启动迅速，开屏即展示关键信息；内存与存储占用适中
+```bash
+cd ios/HFUTSchedule
+xcodegen generate
+xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
+  -sdk iphoneos -configuration Release \
+  CODE_SIGNING_ALLOWED=NO build
+```
 
-## 开始使用
-### 要求
-Android 8.0 (SDK26+) 及以上，接入互联网
-### 初次使用
-保证接入互联网的环境下，填入学号与信息门户密码，登录，等待出现加载完成(底栏由暗变正常)，即可使用
-### 刷新登陆
-登陆后会获取所需的数据，自动缓存(例如课程表教务源、课程汇总等)，由于平台限制，有些平台不支持持久登录，在登录时会将过期的平台选择性地刷新
-### 软件升级
-在启动时自动检查更新，如有更新会在首页底栏【选项】显示小红点，选项界面会有下载提示，下载完成后点击安装，授权安装未知应用权限即可
+一键生成临时签名 IPA 并安装到已连接设备：
 
-## 文档库
-### [更新日志](docs/update)
+```bash
+./ios/HFUTSchedule/scripts/build_temporary_signed_ipa.sh <设备 UDID> yes
+```
 
-### [开发文档](docs/Developer.md) 
-正在佛系完善，方便参与本项目（Pull Request）时能方便地知晓各处轮子地用法
+其它脚本：
 
-### [Pull Request 规范](/docs/Rule.md)
-如需参与本项目，请阅读
+- `scripts/finish_widget_install.sh`：刷新小组件快照 → 申请描述文件 → 签名 → 安装 → 输出 IPA
+- `scripts/sync_widget_snapshot.sh`：从真机拉取课表并写入小组件包内快照
+- `scripts/render_widget_preview.swift`：把小组件视图渲染成 PNG，便于在不装机的情况下检查排版
 
-### [DeepLink](docs/DeepLink.md)
-如有需要跳转其他场景的需求，可发 issue
+## 目录结构
 
-### [Aidl](docs/Aidl.md)
-暂时停更，如有接入需求，可发 issue 使其重启
+```
+HFUT-Schedule
+├── app/                     # 上游 Android 应用源码（未改动）
+├── network-api/             # 上游网络层：校方接口定义与数据模型
+├── common-logic/ common-ui/ # 上游公共模块
+├── docs/                    # 上游文档，含 docs/HfutApi.md 校内接口收集
+└── ios/HFUTSchedule/        # iOS 工程（本仓库新增）
+    ├── HFUTSchedule/        # SwiftUI 应用源码
+    ├── HFUTScheduleWidget/  # 桌面周课表小组件
+    ├── Shared/              # 主应用与小组件共享的数据通道与视图
+    ├── HFUTScheduleTests/   # 单元测试（接口解析、目录、密码规则等）
+    ├── scripts/             # 构建 / 签名 / 小组件脚本
+    ├── docs/                # 小组件预览图
+    ├── dist/                # 构建产物（IPA）
+    └── project.yml          # XcodeGen 工程定义（工程文件的唯一来源）
+```
 
-### [校内 Api 收集](docs/HfutApi.md)
-已停更，大部分核心接口已写好，因 AI 的发展，其余接口可直接让 AI 从代码中梳理即可
+## 小组件数据通道
 
-### [功能差异化](/docs/FeatureAvailable.md)
-因安卓版本不同以及不同厂商定制系统，聚在工大某些功能呈现会有差异
+免费个人团队不支持 App Groups，因此小组件按优先级使用三级数据通道：
 
-### [统计报表](/docs/Chart.md)
-仓库代码体量、用户量及日流量（通过 Supabase 平台托管，安全统计，无隐私数据，不定期更新）
+1. App Group（付费团队签名时自动生效）
+2. 共享钥匙串（免费团队描述文件自带 `TEAM.*` keychain 分组）
+3. 包内 `ScheduleSnapshot.json`（构建时从真机拉取的课表快照，保证任何时候都有内容）
 
-### 开发纪实
-本主题随缘更新，都是自己在开发项目时候的一些经历（但我对于写文章很懒，佛系更新...）
+主应用每次保存、导入或同步课表都会刷新前两条通道并请求 `WidgetCenter` 重载时间线。
 
-#### [开发纪实：包体缩减](/docs/technical/PackageLess.md)
-如何让聚在工大从巅峰期的 49MB 缩减至目前的 26MB
+## 已知说明
 
-#### [开发纪实：容器共享](/docs/technical/ContainerShared.md) 
-对官方库的改造再封装，以及无奈妥协，最终决定自制SharedNav
+- 校方接口随时可能调整，如遇某个栏目提示登录失败或数据为空，请先在「选项 → 安全登录」重新完成一次统一身份认证
+- 临时签名版本 7 天后失效，属免费开发者账号限制
+- 校内地址（如 `121.251.19.62`、`jxglstu.hfut.edu.cn`）在校外需要开启 WebVPN
 
-#### [开发纪实：KMP 改造](/docs/technical/ToKmp.md) 
-待开发，等买了 MacBook
+## 上游项目
 
-#### [开发纪实：聚在工大的 UI&UX 设计](/docs/technical/Design.md) (待更新)
+Android 版本与全部校方接口文档来自 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule)，其文档同样适用于本仓库的上游部分：
 
-#### [开发纪实：聚在工大的背景与前世今生](/docs/technical/Background.md) (待更新)
+- [更新日志](docs/update)
+- [开发者文档](docs/Developer.md)
+- [校内 Api 收集](docs/HfutApi.md)
+- [DeepLink 说明](docs/DeepLink.md)
 
+## 许可
 
-## [联系方式](zsh0908@outlook.com)
-开发者: zsh0908@outlook.com
-
-## [其他工具](/tools)
-[图片验证码训练模型](/tools/Captcha-Ocr)
-
-[校园网登录](/tools/Login-Web-Python)
-
-[WebVpn](tools/WebVpn)
-
-[PC版(集成WebVpn、校园网等工具)](/tools/Lite-For-PC) (待开发)
-
-## 鸣谢
-### 第三方库
-[OkHttp](https://github.com/square/okhttp) 网络请求
-
-[Retrofit](https://github.com/square/retrofit) 网络请求
-
-[Gson](https://github.com/google/gson) JSON解析
-
-[Jsoup](https://github.com/jhy/jsoup) XML/HTML解析
-
-[Zxing](https://github.com/zxing/zxing) 二维码
-
-[Haze](https://github.com/chrisbanes/haze) 层级模糊
-
-[Accompanist](https://github.com/google/accompanist) 扩展工具包
-
-[Glide](https://github.com/bumptech/glide) 图片
-
-[EdDSA Java](https://github.com/str4d/ed25519-java) 加密(供和风天气API使用)
-
-[Konfetti](https://github.com/DanielMartinus/Konfetti) 礼花动画
-
-[Tesseract4Android](https://github.com/adaptech-cz/Tesseract4Android) 封装Tesseract (供识别图片验证码)
-
-[MaterialKolor](https://github.com/jordond/MaterialKolor) 取色
-
-[Reorderable](https://github.com/Calvin-LL/Reorderable) 列表拖拽
-
-[LeakCanary](https://github.com/square/leakcanary) 内存泄漏工具
-
-[AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) 液态玻璃
-
-[DeviceCompat](https://github.com/getActivity/DeviceCompat) 设备识别 (供判断鸿蒙NEXT环境)
-
-### 从本App解耦的库
-
-[DiffUpdater](https://github.com/Chiu-xaH/DiffUpdater) 增量更新
-
-[SharedNav](https://github.com/Chiu-xaH/SharedNav) 页面管理、容器共享、浮窗体系
-
-[Mirror-Android](https://github.com/Chiu-xaH/Mirror-Android) 镜面效果（着色器）
-
-### 开源项目
-[holiday-cn](https://github.com/NateScarlet/holiday-cn) 节假日数据源
-
-[webvpn-dlut](https://github.com/ESWZY/webvpn-dlut) WebVpn转换
-
-[Tesseract](https://github.com/tesseract-ocr/tesseract) 用于训练OCR识别验证码的[基础模型](https://github.com/tesseract-ocr/tessdata)
-
-[Supabase](https://github.com/supabase/supabase) 托管供提供数据库
-
-### 开源社区
-初期参考了 Space 课表(微信小程序)的一些功能设计，后期参考了若干开源 App (例如 [师韵-SmartHNU](https://github.com/JiaLiFuNia/SmartHNU))，还有对一些移动操作系统的借鉴，在此不一一列举了
-
-感谢其他高校开发者对本项目的肯定与参考，在此不一一列举了
-
-若干开发者和用户的帮助：
-- linsui 帮助上架 F-Droid
-- James-Zhang2 提供 GPA 评定数据源
-- tinyvan,Today1337, zxbmmmmmmmmm, Junpgle 提交 RR 助力开发
-- 其他用户帮助推广、通过邮件、issue 等提供功能建议与反馈等，在此不一一列举了
+本仓库沿用上游 [Apache License 2.0](LICENSE)。接口与数据均来自学校公开系统，仅供学习交流使用。

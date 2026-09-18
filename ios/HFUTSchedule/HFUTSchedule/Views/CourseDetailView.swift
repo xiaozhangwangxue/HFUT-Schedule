@@ -4,6 +4,8 @@ import UIKit
 struct CourseDetailView: View {
     let course: Course
     @State private var copiedCode = false
+    @State private var copyToastTask: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var details: CourseDetails { course.details ?? CourseDetails() }
 
@@ -24,20 +26,24 @@ struct CourseDetailView: View {
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle(course.name)
         .navigationBarTitleDisplayMode(.large)
-        .navigationDestination(for: CoursePortalPage.self) { page in
-            switch page {
-            case .classmates(let lessonID):
-                OfficialClassmatesView(lessonID: lessonID)
-            case .otherClasses(let name, let code):
-                OfficialCourseSearchView(courseName: name, code: code)
-            case .classroom(let room):
-                OfficialClassroomSearchView(query: room)
-            case .failRate(let name):
-                OfficialFailRateView(courseName: name)
+        .overlay(alignment: .bottom) {
+            if copiedCode {
+                Label("已复制课程代码", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 18)
+                    .frame(minHeight: 48)
+                    .adaptiveGlass(cornerRadius: 18, tint: AppTheme.mint.opacity(0.14))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .transition(toastTransition)
             }
         }
-        .alert("已复制课程代码", isPresented: $copiedCode) {
-            Button("好", role: .cancel) {}
+        .onDisappear {
+            copyToastTask?.cancel()
+            copyToastTask = nil
         }
     }
 
@@ -47,7 +53,9 @@ struct CourseDetailView: View {
             detailCell("周数", value: details.weeksText ?? course.weekDescription ?? "未提供", icon: "calendar")
             if let count = details.classmatesCount {
                 if let lessonID = details.lessonID {
-                    NavigationLink(value: CoursePortalPage.classmates(lessonID)) {
+                    SourceAnchoredNavigationLink(sourceID: "course-\(course.id.uuidString)-classmates") {
+                        OfficialClassmatesView(lessonID: lessonID)
+                    } label: {
                         detailCell("同班同学", value: "\(count)人", icon: "person.2")
                     }
                     .buttonStyle(.plain)
@@ -103,8 +111,7 @@ struct CourseDetailView: View {
     private var facts: some View {
         if let code = details.code?.nonEmpty {
             Button {
-                UIPasteboard.general.string = code
-                copiedCode = true
+                copyCourseCode(code)
             } label: {
                 wideDetailCell("课程代码--教学班", value: code, icon: "number")
             }
@@ -128,15 +135,24 @@ struct CourseDetailView: View {
 
     private var actionCard: some View {
         VStack(spacing: 0) {
-            NavigationLink(value: CoursePortalPage.otherClasses(course.name, details.code ?? "")) {
+            SourceAnchoredNavigationLink(sourceID: "course-\(course.id.uuidString)-other-classes") {
+                OfficialCourseSearchView(courseName: course.name, code: details.code ?? "")
+            } label: {
                 actionRow("其他教学班开课查询", icon: "magnifyingglass")
             }
             Divider().padding(.leading, 54)
-            NavigationLink(value: CoursePortalPage.classroom(course.location)) {
+            SourceAnchoredNavigationLink(sourceID: "course-\(course.id.uuidString)-classroom") {
+                OfficialClassroomSearchView(query: course.location)
+            } label: {
                 actionRow("教室状态查询", subtitle: course.location.nonEmpty, icon: "door.left.hand.open")
             }
             Divider().padding(.leading, 54)
-            NavigationLink(value: CoursePortalPage.failRate(course.name)) {
+            SourceAnchoredNavigationLink(sourceID: "course-\(course.id.uuidString)-fail-rate") {
+                OfficialFailRateView(
+                    courseName: course.name,
+                    lessonCode: details.code?.components(separatedBy: "--").first
+                )
+            } label: {
                 actionRow("挂科率查询", icon: "chart.pie")
             }
         }
@@ -214,13 +230,28 @@ struct CourseDetailView: View {
     private static func creditText(_ value: Double) -> String {
         value.rounded() == value ? String(format: "%.1f", value) : String(value)
     }
-}
 
-private enum CoursePortalPage: Hashable {
-    case classmates(Int)
-    case otherClasses(String, String)
-    case classroom(String)
-    case failRate(String)
+    private var toastTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity)
+    }
+
+    private func copyCourseCode(_ code: String) {
+        UIPasteboard.general.string = code
+        UIAccessibility.post(notification: .announcement, argument: "已复制课程代码")
+
+        copyToastTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) {
+            copiedCode = true
+        }
+        copyToastTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.6))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                copiedCode = false
+            }
+            copyToastTask = nil
+        }
+    }
 }
 
 private extension String {

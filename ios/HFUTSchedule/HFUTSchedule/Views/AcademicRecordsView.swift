@@ -13,6 +13,9 @@ struct AcademicRecordsView: View {
     let kind: AcademicRecordKind
     @EnvironmentObject private var store: AcademicRecordsStore
     @State private var showingSync = false
+    @State private var showingGradeRemark = false
+    @State private var gradeQuery = ""
+    @State private var compactGrades = false
 
     var body: some View {
         Group {
@@ -24,6 +27,14 @@ struct AcademicRecordsView: View {
         }
         .background(AppTheme.background.ignoresSafeArea())
         .toolbar {
+            if kind == .grades {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button("成绩说明", systemImage: "info.circle") { showingGradeRemark = true }
+                    Button(compactGrades ? "展开明细" : "紧凑显示", systemImage: compactGrades ? "list.bullet" : "rectangle.compress.vertical") {
+                        compactGrades.toggle()
+                    }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button("同步", systemImage: "arrow.triangle.2.circlepath") {
                     showingSync = true
@@ -34,6 +45,7 @@ struct AcademicRecordsView: View {
             AcademicRecordsSyncView(kind: kind)
                 .environmentObject(store)
         }
+        .sheet(isPresented: $showingGradeRemark) { GradeRemarkView() }
     }
 
     @ViewBuilder
@@ -42,30 +54,32 @@ struct AcademicRecordsView: View {
             emptyContent(description: "登录教务系统后同步历学期成绩，数据会保存在本机。")
         } else {
             List {
-                if let average = scoreAverage {
-                    Section {
+                Section("成绩分析") {
+                    SourceAnchoredNavigationLink(sourceID: "grades-analysis") {
+                        GradeAnalysisView(grades: visibleTerms.flatMap(\.grades))
+                    } label: {
                         HStack {
-                            Label("已出分课程", systemImage: "checkmark.seal.fill")
+                            Label("平均成绩", systemImage: "chart.line.uptrend.xyaxis")
                             Spacer()
-                            Text("\(scoredGrades.count) 门")
-                        }
-                        HStack {
-                            Label("平均分", systemImage: "chart.line.uptrend.xyaxis")
-                            Spacer()
-                            Text(average.formatted(.number.precision(.fractionLength(2))))
+                            Text(analysisSummary)
                                 .font(.headline.monospacedDigit())
                         }
                     }
                 }
-                ForEach(store.gradeTerms) { term in
+                ForEach(visibleTerms) { term in
                     Section(term.term) {
-                        ForEach(term.grades) { grade in
-                            GradeRow(grade: grade)
+                        ForEach(sortedGrades(term.grades)) { grade in
+                            SourceAnchoredNavigationLink(sourceID: "grade-\(term.id)-\(grade.id)") {
+                                GradeDetailView(grade: grade)
+                            } label: {
+                                GradeRow(grade: grade, compact: compactGrades)
+                            }
                         }
                     }
                 }
             }
             .scrollContentBackground(.hidden)
+            .searchable(text: $gradeQuery, prompt: "搜索 课程名、代码")
         }
     }
 
@@ -104,46 +118,180 @@ struct AcademicRecordsView: View {
         }
     }
 
-    private var scoredGrades: [AcademicGrade] {
-        store.gradeTerms.flatMap(\.grades).filter { Double($0.score) != nil }
+    private var visibleTerms: [AcademicGradeTerm] {
+        let query = gradeQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return store.gradeTerms.compactMap { term in
+            let grades = term.grades.filter {
+                query.isEmpty || "\($0.courseName) \($0.lessonCode)".localizedCaseInsensitiveContains(query)
+            }
+            return grades.isEmpty ? nil : AcademicGradeTerm(term: term.term, grades: grades)
+        }
     }
 
-    private var scoreAverage: Double? {
-        let values = scoredGrades.compactMap { Double($0.score) }
-        guard !values.isEmpty else { return nil }
-        return values.reduce(0, +) / Double(values.count)
+    private func sortedGrades(_ grades: [AcademicGrade]) -> [AcademicGrade] {
+        grades.sorted {
+            let lhsFailed = (Double($0.score) ?? 100) < 60
+            let rhsFailed = (Double($1.score) ?? 100) < 60
+            return lhsFailed == rhsFailed ? $0.courseName < $1.courseName : lhsFailed
+        }
+    }
+
+    private var analysisSummary: String {
+        let grades = visibleTerms.flatMap(\.grades)
+        let score = GradeStatistics.weightedScore(grades)
+        let gpa = GradeStatistics.weightedGPA(grades)
+        if let score, let gpa { return "\(score.formatted(.number.precision(.fractionLength(2)))) | \(gpa.formatted(.number.precision(.fractionLength(2))))" }
+        return "查看分析"
     }
 }
 
 private struct GradeRow: View {
     let grade: AcademicGrade
+    let compact: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(grade.courseName)
-                    .font(.headline)
-                Text([grade.lessonCode, "\(grade.credits) 学分", "绩点 \(grade.gpa)"].filter { !$0.isEmpty }.joined(separator: " · "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if !grade.detail.isEmpty {
-                    Text(grade.detail)
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(2)
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(grade.courseName)
+                        .font(.headline)
+                    Text([grade.lessonCode, "\(grade.credits) 学分", "绩点 \(grade.gpa)"].filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if compact, !grade.detail.isEmpty {
+                        Text(grade.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(2)
+                    }
+                }
+                Spacer()
+                Image(systemName: isFailed ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                    .foregroundStyle(isFailed ? .red : .secondary)
+                Text(grade.score)
+                    .font(.title3.bold().monospacedDigit())
+                    .foregroundStyle(scoreColor)
+            }
+            if !compact, !detailComponents.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(Array(detailComponents.enumerated()), id: \.offset) { _, text in
+                            Text(text)
+                                .font(.caption2)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(.secondary.opacity(0.12), in: Capsule())
+                        }
+                    }
                 }
             }
-            Spacer()
-            Text(grade.score)
-                .font(.title3.bold().monospacedDigit())
-                .foregroundStyle(scoreColor)
         }
         .padding(.vertical, 4)
     }
 
+    private var detailComponents: [String] {
+        grade.detail.split(separator: " ").map(String.init)
+    }
+
+    private var isFailed: Bool { (Double(grade.score) ?? 100) < 60 }
+
     private var scoreColor: Color {
         guard let value = Double(grade.score) else { return .primary }
         return value < 60 ? .red : .primary
+    }
+}
+
+private enum GradeStatistics {
+    static func weightedScore(_ grades: [AcademicGrade]) -> Double? {
+        weighted(grades) { Double($0.score) }
+    }
+
+    static func weightedGPA(_ grades: [AcademicGrade]) -> Double? {
+        weighted(grades) { Double($0.gpa) }
+    }
+
+    static func totalCredits(_ grades: [AcademicGrade]) -> Double {
+        grades.compactMap { Double($0.credits) }.reduce(0, +)
+    }
+
+    private static func weighted(_ grades: [AcademicGrade], value: (AcademicGrade) -> Double?) -> Double? {
+        let pairs = grades.compactMap { grade -> (Double, Double)? in
+            guard let metric = value(grade), let credits = Double(grade.credits), credits > 0 else { return nil }
+            return (metric, credits)
+        }
+        let credits = pairs.reduce(0) { $0 + $1.1 }
+        guard credits > 0 else { return nil }
+        return pairs.reduce(0) { $0 + $1.0 * $1.1 } / credits
+    }
+}
+
+private struct GradeAnalysisView: View {
+    let grades: [AcademicGrade]
+
+    var body: some View {
+        List {
+            Section("总览") {
+                LabeledContent("课程数", value: "\(grades.count) 门")
+                LabeledContent("总学分", value: GradeStatistics.totalCredits(grades).formatted(.number.precision(.fractionLength(0...2))))
+                LabeledContent("平均成绩", value: GradeStatistics.weightedScore(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
+                LabeledContent("平均绩点", value: GradeStatistics.weightedGPA(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
+                LabeledContent("未通过", value: "\(grades.filter { (Double($0.score) ?? 100) < 60 }.count) 门")
+            }
+        }
+        .navigationTitle("成绩分析")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct GradeDetailView: View {
+    let grade: AcademicGrade
+
+    private var detailItems: [(String, String)] {
+        grade.detail.split(separator: " ").map { component in
+            let parts = component.split(separator: ":", maxSplits: 1).map(String.init)
+            return (parts.first ?? String(component), parts.count > 1 ? parts[1] : "")
+        }
+    }
+
+    var body: some View {
+        List {
+            Section("课程成绩") {
+                LabeledContent("最终成绩", value: grade.score)
+                LabeledContent("绩点", value: grade.gpa)
+                LabeledContent("学分", value: grade.credits)
+                LabeledContent("课程代码", value: grade.lessonCode)
+            }
+            if !detailItems.isEmpty {
+                Section("成绩组成") {
+                    ForEach(Array(detailItems.enumerated()), id: \.offset) { _, item in
+                        LabeledContent(item.0, value: item.1.isEmpty ? "--" : item.1)
+                    }
+                }
+            }
+        }
+        .navigationTitle(grade.courseName)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct GradeRemarkView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("数据来源") {
+                    Text("成绩页优先使用合工大教务 API，安全登录后会自动同步，并将最近一次结果保存在本机。")
+                }
+                Section("计算方式") {
+                    Text("平均成绩和平均绩点均按课程学分加权；未返回数字成绩或有效学分的课程不参与对应平均值计算。")
+                }
+            }
+            .navigationTitle("成绩说明")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { Button("完成") { dismiss() } }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

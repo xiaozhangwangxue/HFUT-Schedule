@@ -125,7 +125,11 @@ struct TimetableGridView: View {
                     let top = y(for: Self.decimalTime(item.course.startTime))
                     let bottom = y(for: Self.decimalTime(item.course.endTime))
 
-                    Button { onSelect(item.course) } label: {
+                    SourceAnchoredNavigationLink(
+                        sourceID: "timetable-course-\(item.course.id.uuidString)"
+                    ) {
+                        CourseDetailView(course: item.course)
+                    } label: {
                         TimetableCourseCard(course: item.course)
                     }
                     .buttonStyle(.plain)

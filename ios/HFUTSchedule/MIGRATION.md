@@ -20,5 +20,5 @@
 | 上课通知 | 可用 | UserNotifications，可选提前 5–60 分钟 |
 | 考试提醒 | 迁移中 | 待随考试数据同步接入 |
 | Android 快捷设置磁贴 | 可用 | 已替换为 App Intents / 快捷指令 |
-| Android 桌面小组件 | 迁移中 | 将改为 WidgetKit |
+| Android 桌面小组件 | 已完成（待真机验证） | WidgetKit 大号周课表，周一到周五全课程 |
 | APK 增量更新 | 已替换 | iOS 采用 TestFlight/App Store 版本分发 |

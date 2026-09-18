@@ -50,18 +50,25 @@ final class FeatureCatalogTests: XCTestCase {
             1: .campusCard,
             3: .electricity,
             4: .campusNetwork,
+            5: .campusMail,
             7: .grades,
             8: .failRate,
             12: .bathing,
             9: .courseSummary,
+            11: .webNavigation,
             14: .dormitory,
             18: .program,
             19: .library,
             24: .classrooms,
+            26: .workRest,
             28: .campusLife,
+            29: .transferMajor,
+            31: .teacherSearch,
+            32: .fee,
+            35: .todayCampus,
             38: .holidays,
             40: .laundry,
-            44: .campusCard,
+            44: .huiXin,
             45: .secondClass,
             49: .express
         ]
@@ -323,6 +330,7 @@ final class FeatureCatalogTests: XCTestCase {
         let info = """
         <li class="list-group-item text-right">学号 <span>2026123456</span></li>
         <li class="list-group-item text-right">中文姓名 <span>测试同学</span></li>
+        <li class="list-group-item text-right">证件号 <span>34010120010123456X</span></li>
         <dl><dt>院系</dt><dd>计算机与信息学院</dd><dt>专业</dt><dd>软件工程</dd><dt>行政班</dt><dd>软件 2601</dd></dl>
         """
         let profile = """
@@ -336,6 +344,11 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(student.major, "软件工程")
         XCTAssertEqual(student.className, "软件 2601")
         XCTAssertEqual(student.fields["邮箱"], "student@example.edu.cn")
+        XCTAssertEqual(student.fields["证件号"], "34010120010123456X")
+        XCTAssertEqual(
+            OfficialCampusAPIClient.defaultUniAppPassword(identityNumber: student.fields["证件号"] ?? ""),
+            "Hfut@#$%123456"
+        )
 
         let gradesHTML = """
         <h3>2026~2027年第1学期</h3><table class="student-grade-table"><tr><td>高等数学</td><td></td><td>MATH1001</td><td>5</td><td>3.8</td><td>期末</td><td>92</td></tr></table>
@@ -351,5 +364,114 @@ final class FeatureCatalogTests: XCTestCase {
         <table><tbody><tr><td>高等数学</td><td>2027-01-08 08:00~10:00</td><td>翠十二教 101</td></tr></tbody></table>
         """
         XCTAssertEqual(AcademicHTMLParser.exams(from: examsHTML).first?.place, "翠十二教 101")
+    }
+
+    func testLibraryDiscoveryResultAllowsElectronicBookWithoutAuthor() throws {
+        let json = """
+        {
+          "title": "<span class='keywords'>高等数学</span>",
+          "publishers": "合肥工业大学出版社",
+          "year": 2024,
+          "abstract": "教材简介",
+          "isbn": "978-7-5650-6406-7",
+          "click": 30,
+          "ds": [{"tName": "电子图书"}],
+          "gc": [{"cp": "电子仓储", "in": "O13"}]
+        }
+        """.data(using: .utf8)!
+
+        let book = try JSONDecoder().decode(OfficialLibraryBook.self, from: json)
+
+        XCTAssertEqual(book.author, [])
+        XCTAssertEqual(book.ds?.first?.tName, "电子图书")
+        XCTAssertEqual(book.gc?.first?.cp, "电子仓储")
+    }
+
+    func testLaundryDeviceStillDecodesWhenLiveAPILeavesOutReserveCount() throws {
+        let json = """
+        {
+          "id": 287337,
+          "name": "2楼01号洗衣机",
+          "floorCode": "2",
+          "state": 1,
+          "finishTime": null,
+          "enableReserve": true
+        }
+        """.data(using: .utf8)!
+
+        let device = try JSONDecoder().decode(LaundryDevice.self, from: json)
+
+        XCTAssertEqual(device.id, 287337)
+        XCTAssertEqual(device.floorText, "2 楼")
+        XCTAssertEqual(device.stateText, "空闲")
+        XCTAssertEqual(device.reserveNum, 0)
+    }
+
+    func testLaundryDeviceUsesFinishTimeAsOccupiedAndShowsRemainingTime() throws {
+        let json = """
+        {
+          "id": 287338,
+          "name": "2楼02号洗衣机",
+          "floorCode": "2",
+          "state": 3,
+          "finishTime": "2099-09-17 09:30:00",
+          "enableReserve": false
+        }
+        """.data(using: .utf8)!
+
+        let device = try JSONDecoder().decode(LaundryDevice.self, from: json)
+
+        XCTAssertEqual(device.stateText, "占用")
+        XCTAssertNotNil(device.finishDate)
+        XCTAssertTrue(device.remainingUsageText?.hasPrefix("预计剩余 ") == true)
+    }
+
+    func testLaundryDeviceReportsStateThreeWithoutFinishTimeAsOffline() throws {
+        let json = """
+        {
+          "id": 287339,
+          "name": "2楼03号洗衣机",
+          "floorCode": "2",
+          "state": 3,
+          "finishTime": null,
+          "enableReserve": false
+        }
+        """.data(using: .utf8)!
+
+        let device = try JSONDecoder().decode(LaundryDevice.self, from: json)
+
+        XCTAssertEqual(device.stateText, "离线/故障")
+        XCTAssertNil(device.remainingUsageText)
+    }
+
+    func testAppointmentMatchesAndroidDevelopingDestination() throws {
+        let feature = try XCTUnwrap(FeatureCatalog.all.first { $0.id == 46 })
+        XCTAssertEqual(feature.nativeDestination, .appointment)
+        XCTAssertNil(feature.url)
+    }
+
+    func testClassroomRequestsMatchAndroidRetrofitShape() throws {
+        XCTAssertEqual(
+            OfficialCampusAPIClient.buildingsURL.absoluteString,
+            "https://jwglapp.hfut.edu.cn/eams-micro-server/api/v1/room/place/building?campusAssoc="
+        )
+
+        let data = try OfficialCampusAPIClient.emptyClassroomRequestBody(
+            date: "2026-09-17",
+            campusID: 3,
+            buildingIDs: [],
+            floors: []
+        )
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(json["campusAssoc"] as? Int, 3)
+        XCTAssertEqual(json["buildingIds"] as? [Int], [])
+        XCTAssertEqual(json["floors"] as? [Int], [])
+        XCTAssertEqual(json["pageSize"] as? Int, 30)
+    }
+
+    func testRepairUsesAndroidStyleNativeCampusChooser() throws {
+        let feature = try XCTUnwrap(FeatureCatalog.all.first { $0.id == 21 })
+        XCTAssertEqual(feature.nativeDestination, .repair)
+        XCTAssertNil(feature.url)
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 @MainActor
 final class ScheduleStore: ObservableObject {
@@ -13,6 +14,7 @@ final class ScheduleStore: ObservableObject {
         fileURL = directory.appendingPathComponent("courses.json")
         load()
         removeLegacyPreviewDataIfNeeded()
+        syncWidgetSnapshot()
     }
 
     func courses(on weekday: Int) -> [Course] {
@@ -56,6 +58,12 @@ final class ScheduleStore: ObservableObject {
     private func save() {
         guard let data = try? JSONEncoder().encode(courses) else { return }
         try? data.write(to: fileURL, options: .atomic)
+        syncWidgetSnapshot()
+    }
+
+    private func syncWidgetSnapshot() {
+        WidgetSnapshotStore.store(courses.map(WidgetCourseSnapshot.init))
+        WidgetCenter.shared.reloadTimelines(ofKind: WidgetScheduleBridge.widgetKind)
     }
 
     private func removeLegacyPreviewDataIfNeeded() {
@@ -75,5 +83,22 @@ final class ScheduleStore: ObservableObject {
     private static func signature(_ course: Course) -> String {
         [course.name, course.teacher, course.location, String(course.weekday), course.startTime, course.endTime]
             .joined(separator: "|")
+    }
+}
+
+private extension WidgetCourseSnapshot {
+    init(course: Course) {
+        self.init(
+            id: course.id,
+            name: course.name,
+            teacher: course.teacher,
+            location: course.location,
+            weekday: course.weekday,
+            startTime: course.startTime,
+            endTime: course.endTime,
+            colorIndex: course.colorIndex,
+            weekIndices: course.weekIndices,
+            dates: course.dates
+        )
     }
 }

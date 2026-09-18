@@ -300,7 +300,7 @@ struct BathingServiceView: View {
         .navigationTitle("洗浴")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在连接洗浴平台…") } }
-        .task { await loadProfile(silently: true) }
+        .task { await loadBalancesAutomatically() }
         .sheet(isPresented: $showingLogin) { NavigationStack { LoginPortalView() } }
     }
 
@@ -324,6 +324,38 @@ struct BathingServiceView: View {
         } catch {
             if !silently { errorMessage = error.localizedDescription }
         }
+        isLoading = false
+    }
+
+    @MainActor
+    private func loadBalancesAutomatically() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        var failures: [String] = []
+
+        if CampusServiceClient.shared.hasSavedShowerCredentials {
+            do {
+                profile = try await CampusServiceClient.shared.fetchShowerProfile()
+                if let profile { phone = profile.phone }
+            } catch {
+                failures.append("洗浴账户：\(error.localizedDescription)")
+            }
+        }
+
+        let savedPhone = phone.trimmed
+        if !savedPhone.isEmpty {
+            do {
+                let kind: HuiXinFeeKind = appState.campus == .hefei
+                    ? .bathingHefei(phone: savedPhone)
+                    : .bathingXuancheng(phone: savedPhone)
+                feeResults = try await CampusServiceClient.shared.fetchFee(kind)
+            } catch {
+                failures.append("洗浴余额：\(error.localizedDescription)")
+            }
+        }
+
+        errorMessage = failures.isEmpty ? nil : failures.joined(separator: "\n")
         isLoading = false
     }
 
@@ -384,8 +416,13 @@ struct LaundryServiceView: View {
             }
             ForEach(locations) { location in
                 Section(location.name) {
-                    LabeledContent("空闲设备", value: "\(location.idleCount) 台")
-                    LabeledContent("可预约", value: location.enableReserve ? "\(location.reserveNum) 台" : "不支持")
+                    if location.enableReserve {
+                        LabeledContent("可预约", value: "\(location.reserveNum)/\(location.idleCount) 台")
+                    } else {
+                        // Android labels idleCount as device count when this
+                        // location does not support reservation.
+                        LabeledContent("设备数", value: "\(location.idleCount) 台")
+                    }
                     LabeledContent("地址", value: location.address)
                     LabeledContent("开放时间", value: location.workTime)
                     NavigationLink("查看各楼层设备与空闲状态") {
@@ -425,6 +462,11 @@ private struct LaundryDeviceListView: View {
     @State private var errorMessage: String?
 
     private let categories = [("洗衣机", "00"), ("洗鞋机", "01"), ("烘干机", "02")]
+    private var groupedDevices: [(String, [LaundryDevice])] {
+        Dictionary(grouping: devices, by: \.floorText)
+            .map { ($0.key, $0.value.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) }
+            .sorted { lhs, rhs in lhs.0.localizedStandardCompare(rhs.0) == .orderedAscending }
+    }
 
     var body: some View {
         List {
@@ -436,16 +478,34 @@ private struct LaundryDeviceListView: View {
                 .pickerStyle(.segmented)
             }
             if let errorMessage { ContentUnavailableView("设备读取失败", systemImage: "washer", description: Text(errorMessage)) }
-            ForEach(devices) { device in
-                HStack(spacing: 12) {
-                    Image(systemName: device.state == 1 ? "checkmark.circle.fill" : "washer")
-                        .foregroundStyle(device.state == 1 ? .green : .orange)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(device.name).font(.headline)
-                        if let finishTime = device.finishTime { Text("预计 \(finishTime) 完成").font(.caption).foregroundStyle(.secondary) }
+            ForEach(groupedDevices, id: \.0) { floor, floorDevices in
+                Section("\(floor) · 空闲 \(floorDevices.filter { $0.state == 1 && $0.finishDate == nil }.count)/\(floorDevices.count)") {
+                    ForEach(floorDevices) { device in
+                        HStack(spacing: 12) {
+                            Image(systemName: device.state == 1 ? "checkmark.circle.fill" : (device.state == 2 ? "timer" : "exclamationmark.triangle.fill"))
+                                .foregroundStyle(device.state == 1 ? .green : (device.state == 2 ? .orange : .red))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(device.name).font(.headline)
+                                if let remaining = device.remainingUsageText {
+                                    Text(remaining).font(.caption).foregroundStyle(.secondary)
+                                    if let finishTime = device.finishTime {
+                                        Text("预计 \(finishTime) 完成").font(.caption2).foregroundStyle(.tertiary)
+                                    }
+                                } else if device.enableReserve {
+                                    Text("可预约 \(device.reserveNum) 台").font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Text(device.stateText).font(.subheadline.weight(.semibold))
+                        }
                     }
-                    Spacer()
-                    Text(device.stateText).font(.subheadline.weight(.semibold))
+                }
+            }
+            if devices.allSatisfy({ $0.state == 3 && $0.finishTime == nil }), !devices.isEmpty {
+                Section {
+                    Label("海乐公开接口中该场所的设备全部处于离线/故障状态，无法推断真实空闲情况。", systemImage: "exclamationmark.triangle")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }

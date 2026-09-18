@@ -127,22 +127,23 @@ struct LoginPortalView: View {
 
             let uniAppUsername = username.isEmpty ? (syncedStudentInfo?.studentID ?? "") : username
             if !uniAppUsername.isEmpty {
-                let candidates = uniAppPasswordCandidates(portalPassword: password, info: syncedStudentInfo)
                 var uniAppError: Error?
                 var uniAppLoggedIn = OfficialCampusAPIClient.shared.hasUniAppToken
-                for candidate in candidates {
+                if !uniAppLoggedIn {
                     do {
-                        _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: uniAppUsername, password: candidate)
+                        _ = try await OfficialCampusAPIClient.shared.ensureUniAppLogin(
+                            studentInfo: syncedStudentInfo,
+                            username: uniAppUsername
+                        )
                         uniAppError = nil
                         uniAppLoggedIn = true
                         completed.append("合工大教务 API")
-                        break
                     } catch {
                         uniAppError = error
                     }
                 }
                 if !uniAppLoggedIn, let uniAppError {
-                    failures.append("合工大教务 API：\(uniAppError.localizedDescription)（若修改过教务默认密码，只需在同班同学或教室页补充一次）")
+                    failures.append("合工大教务 API：\(uniAppError.localizedDescription)")
                 }
 
                 if uniAppLoggedIn, !gradesSynced {
@@ -229,16 +230,4 @@ struct LoginPortalView: View {
         ].contains(code)
     }
 
-    private func uniAppPasswordCandidates(portalPassword: String, info: AcademicStudentInfo?) -> [String] {
-        var candidates: [String] = []
-        if let identity = info?.fields.first(where: { key, _ in
-            key.contains("身份证") || key.contains("证件号")
-        })?.value.replacingOccurrences(of: " ", with: "").uppercased(), identity.count >= 6 {
-            if let password = OfficialCampusAPIClient.defaultUniAppPassword(identityNumber: identity) {
-                candidates.append(password)
-            }
-        }
-        if !portalPassword.isEmpty, !candidates.contains(portalPassword) { candidates.append(portalPassword) }
-        return candidates
-    }
 }

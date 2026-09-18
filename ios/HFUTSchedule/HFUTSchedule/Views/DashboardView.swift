@@ -5,6 +5,8 @@ struct DashboardView: View {
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var section = 0
+    @State private var campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
+    @State private var isRefreshingCampusCardBalance = false
 
     private let serviceColumns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -41,7 +43,9 @@ struct DashboardView: View {
                 } else {
                     LazyVGrid(columns: serviceColumns, spacing: 10) {
                         ForEach(quickFeatures) { feature in
-                            NavigationLink(value: feature) {
+                            SourceAnchoredNavigationLink(sourceID: "dashboard-service-\(feature.id)") {
+                                FeatureDetailView(feature: feature)
+                            } label: {
                                 focusService(feature)
                             }
                             .buttonStyle(.plain)
@@ -58,26 +62,45 @@ struct DashboardView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                NavigationLink(value: feature(39)) { Image(systemName: "icloud") }
-                NavigationLink(value: feature(15)) { Image(systemName: "bell") }
-                NavigationLink(value: feature(42)) { Image(systemName: "rectangle.portrait.and.arrow.right") }
+                SourceAnchoredNavigationLink(sourceID: "dashboard-toolbar-cloud") {
+                    FeatureDetailView(feature: feature(39))
+                } label: {
+                    Image(systemName: "icloud")
+                }
+                SourceAnchoredNavigationLink(sourceID: "dashboard-toolbar-notifications") {
+                    FeatureDetailView(feature: feature(15))
+                } label: {
+                    Image(systemName: "bell")
+                }
+                SourceAnchoredNavigationLink(sourceID: "dashboard-toolbar-login") {
+                    FeatureDetailView(feature: feature(42))
+                } label: {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                }
             }
         }
-        .navigationDestination(for: CampusFeature.self) { feature in
-            FeatureDetailView(feature: feature)
+        .onAppear {
+            campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
+            Task { await refreshCampusCardBalance() }
         }
     }
 
     private var campusSnapshot: some View {
         LazyVGrid(columns: serviceColumns, spacing: 8) {
-            NavigationLink(value: feature(1)) {
-                snapshotItem("一卡通", value: "点击查看", icon: "creditcard")
+            SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-card") {
+                FeatureDetailView(feature: feature(1))
+            } label: {
+                snapshotItem("一卡通", value: campusCardBalanceText, icon: "creditcard")
             }
-            NavigationLink(value: feature(3)) {
+            SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-electricity") {
+                FeatureDetailView(feature: feature(3))
+            } label: {
                 snapshotItem("宿舍电费", value: "点击查询", icon: "bolt")
             }
             snapshotItem(greetingTitle, value: greetingValue, icon: "face.smiling")
-            NavigationLink(value: feature(4)) {
+            SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-network") {
+                FeatureDetailView(feature: feature(4))
+            } label: {
                 snapshotItem("校园网", value: "查看状态", icon: "globe")
             }
         }
@@ -93,7 +116,7 @@ struct DashboardView: View {
                 .adaptiveGlass(cornerRadius: 22)
         } else {
             ForEach(todayCourses) { course in
-                NavigationLink {
+                SourceAnchoredNavigationLink(sourceID: "dashboard-course-\(course.id.uuidString)") {
                     CourseDetailView(course: course)
                 } label: {
                     HStack(alignment: .top, spacing: 14) {
@@ -186,6 +209,31 @@ struct DashboardView: View {
         if now < course.startTime { return "未开始" }
         if now <= course.endTime { return "进行中" }
         return "已结束"
+    }
+
+    private var campusCardBalanceText: String {
+        if let campusCardBalance {
+            return String(format: "¥ %.2f", campusCardBalance)
+        }
+        if isRefreshingCampusCardBalance { return "正在读取" }
+        return CampusServiceClient.shared.savedHuiXinToken == nil ? "登录后同步" : "暂无余额"
+    }
+
+    @MainActor
+    private func refreshCampusCardBalance() async {
+        guard !isRefreshingCampusCardBalance,
+              CampusServiceClient.shared.savedHuiXinToken != nil else { return }
+        isRefreshingCampusCardBalance = true
+        defer { isRefreshingCampusCardBalance = false }
+        do {
+            let cards = try await CampusServiceClient.shared.fetchCampusCards()
+            if let card = cards.first {
+                campusCardBalance = card.balance + card.unsettledAmount
+            }
+        } catch {
+            // A transient refresh failure must not erase the last known balance.
+            campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
+        }
     }
 
     private func feature(_ id: Int) -> CampusFeature {

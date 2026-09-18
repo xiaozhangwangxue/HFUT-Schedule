@@ -17,6 +17,10 @@ targets:
     platform: iOS
     sources:
       - path: HFUTSchedule
+      - path: Shared
+    dependencies:
+      - target: HFUTScheduleWidget
+        embed: true
     settings:
       base:
         INFOPLIST_FILE: HFUTSchedule/Info.plist
@@ -30,6 +34,28 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
         CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_ENTITLEMENTS: HFUTSchedule/HFUTSchedule.entitlements
+  HFUTScheduleWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: HFUTScheduleWidget
+      - path: Shared
+    settings:
+      base:
+        INFOPLIST_FILE: HFUTScheduleWidget/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.xiaozhangwangxue.hfutschedule.ios.widget
+        PRODUCT_NAME: HFUTScheduleWidget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SUPPORTS_MACCATALYST: NO
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+        CODE_SIGNING_ALLOWED: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        CODE_SIGN_ENTITLEMENTS: HFUTScheduleWidget/HFUTScheduleWidget.entitlements
   HFUTScheduleTests:
     type: bundle.unit-test
     platform: iOS

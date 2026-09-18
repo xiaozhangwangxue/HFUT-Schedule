@@ -7,6 +7,7 @@ struct OfficialCourseSearchView: View {
     @State private var results: [OfficialCourseSearchResult] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showingLogin = false
 
     init(courseName: String = "", code: String = "") {
         _courseName = State(initialValue: courseName)
@@ -31,12 +32,18 @@ struct OfficialCourseSearchView: View {
         .overlay { if isLoading { ProgressView("正在查询校方教务…") } }
         .task { if !courseName.trimmed.isEmpty || !code.trimmed.isEmpty { await search() } }
         .refreshable { await search() }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) {
+            NavigationStack { LoginPortalView() }
+        }
     }
 
     @ViewBuilder
     private var resultSection: some View {
         if let errorMessage {
-            Section { ContentUnavailableView("查询失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage)) }
+            Section {
+                ContentUnavailableView("查询失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
+                Button("重新安全登录并同步", systemImage: "lock.shield") { showingLogin = true }
+            }
         } else if !results.isEmpty {
             Section("查询结果（\(results.count)）") {
                 ForEach(results) { item in
@@ -90,7 +97,11 @@ struct OfficialClassmatesView: View {
         List {
             if let errorMessage {
                 ContentUnavailableView("暂时无法读取同班同学", systemImage: "person.2.slash", description: Text(errorMessage))
-                Button("登录合工大教务 API", systemImage: "key.fill") { showingLogin = true }
+                if OfficialCampusAPIClient.shared.requiresManualUniAppPassword {
+                    Button("输入修改后的教务密码", systemImage: "key.fill") { showingLogin = true }
+                } else {
+                    Button("使用默认密码自动重试", systemImage: "arrow.clockwise") { Task { await load() } }
+                }
             } else {
                 ForEach(classmates) { item in
                     VStack(alignment: .leading, spacing: 4) {
@@ -166,7 +177,11 @@ struct OfficialClassroomSearchView: View {
             if let errorMessage {
                 Section {
                     ContentUnavailableView("查询失败", systemImage: "door.left.hand.closed", description: Text(errorMessage))
-                    Button("登录合工大教务 API", systemImage: "key.fill") { showingLogin = true }
+                    if OfficialCampusAPIClient.shared.requiresManualUniAppPassword {
+                        Button("输入修改后的教务密码", systemImage: "key.fill") { showingLogin = true }
+                    } else {
+                        Button("使用默认密码自动重试", systemImage: "arrow.clockwise") { Task { await prepare() } }
+                    }
                 }
             } else if !rooms.isEmpty {
                 Section("空教室（\(rooms.count)）") {
@@ -236,12 +251,16 @@ struct OfficialClassroomSearchView: View {
 
 struct OfficialFailRateView: View {
     @State private var query: String
+    private let lessonCode: String?
     @State private var records: [OfficialFailRateRecord] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLogin = false
 
-    init(courseName: String = "") { _query = State(initialValue: courseName) }
+    init(courseName: String = "", lessonCode: String? = nil) {
+        _query = State(initialValue: courseName)
+        self.lessonCode = lessonCode
+    }
 
     var body: some View {
         List {
@@ -287,7 +306,13 @@ struct OfficialFailRateView: View {
         isLoading = true
         errorMessage = nil
         do {
-            records = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: query.trimmed)
+            let fetched = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: query.trimmed)
+            if let lessonCode, !lessonCode.isEmpty {
+                let exact = fetched.filter { $0.courseCode == lessonCode }
+                records = exact.isEmpty ? fetched : exact
+            } else {
+                records = fetched
+            }
             if records.isEmpty { errorMessage = "智慧社区未返回匹配课程。" }
         } catch {
             errorMessage = error.localizedDescription
@@ -311,7 +336,7 @@ struct OfficialUniAppLoginView: View {
                     TextField("学号", text: $username).keyboardType(.numberPad)
                     SecureField("教务系统密码", text: $password)
                 } footer: {
-                    Text("这是 jwglapp.hfut.edu.cn 官方 API 的独立密码。密码只用于本次登录，应用仅把返回令牌存入系统钥匙串。")
+                    Text("应用已按“ Hfut@#$% + 证件号后六位（末位为 X 时取 X 前六位）”自动尝试 3 次。这里只需输入你后来修改过的教务系统密码；密码不保存，仅保存返回令牌。")
                 }
                 if let errorMessage { Section { Text(errorMessage).foregroundStyle(.red) } }
                 Section {
@@ -336,6 +361,180 @@ struct OfficialUniAppLoginView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+        isLoading = false
+    }
+}
+
+struct AcademicCourseSelectionView: View {
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+    @State private var turns: [AcademicCourseSelectionTurn] = []
+    @State private var manualTurn = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var showingLogin = false
+
+    var body: some View {
+        List {
+            if let errorMessage {
+                ContentUnavailableView("选课入口读取失败", systemImage: "checklist.unchecked", description: Text(errorMessage))
+                Button("重新安全登录", systemImage: "lock.shield") { showingLogin = true }
+            }
+            ForEach(turns) { turn in
+                SourceAnchoredNavigationLink(sourceID: "course-selection-turn-\(turn.id)") {
+                    AcademicCourseSelectionDetailView(turnID: turn.id, title: turn.name)
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack { Text(turn.name).font(.headline); Spacer(); Text("代号 \(turn.id)").font(.caption).foregroundStyle(.secondary) }
+                        Text(turn.selectDateTimeText).font(.subheadline).foregroundStyle(.secondary)
+                        if !turn.bulletin.trimmed.isEmpty { Text(turn.bulletin).font(.caption).lineLimit(3) }
+                        ForEach(turn.addRulesText, id: \.self) { Text($0).font(.caption2).foregroundStyle(.secondary) }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            Section("隐藏入口") {
+                Text("一些不符合自身条件的入口不会显示，可像原版一样输入右上角代号查看。")
+                    .font(.footnote).foregroundStyle(.secondary)
+                TextField("输入数字代号", text: $manualTurn).keyboardType(.numberPad)
+                if let turnID = Int(manualTurn) {
+                    NavigationLink("查看入口 \(turnID)") {
+                        AcademicCourseSelectionDetailView(turnID: turnID, title: "入口 \(turnID)")
+                    }
+                }
+            }
+        }
+        .navigationTitle("选课")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay { if isLoading { ProgressView("正在读取选课入口…") } }
+        .task { await load() }
+        .refreshable { await load() }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await load() } }) {
+            NavigationStack { LoginPortalView() }
+        }
+    }
+
+    @MainActor private func load() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        do {
+            let mode = AcademicConnectionMode(rawValue: connectionMode) ?? .direct
+            turns = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+                .fetchCourseSelectionTurns()
+        } catch { errorMessage = error.localizedDescription }
+        isLoading = false
+    }
+}
+
+private struct AcademicCourseSelectionDetailView: View {
+    let turnID: Int
+    let title: String
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+    @State private var lessons: [AcademicSelectableLesson] = []
+    @State private var query = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    private var mode: AcademicConnectionMode { AcademicConnectionMode(rawValue: connectionMode) ?? .direct }
+    private var visibleLessons: [AcademicSelectableLesson] {
+        query.trimmed.isEmpty ? lessons : lessons.filter { "\($0.courseName) \($0.code) \($0.teachers.joined())".localizedCaseInsensitiveContains(query.trimmed) }
+    }
+
+    var body: some View {
+        List {
+            if let errorMessage { ContentUnavailableView("课程读取失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage)) }
+            ForEach(visibleLessons) { lesson in
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(lesson.courseName).font(.headline)
+                    Text("\(lesson.code) · 限选 \(lesson.limitCount) 人").font(.caption).foregroundStyle(.secondary)
+                    if !lesson.teachers.isEmpty { Text(lesson.teachers.joined(separator: "、")).font(.caption) }
+                    if let schedule = lesson.schedule { Text(schedule).font(.caption2).foregroundStyle(.secondary) }
+                    if let remark = lesson.remark, !remark.isEmpty { Text(remark).font(.caption2) }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .navigationTitle(title)
+        .searchable(text: $query, prompt: "课程、代码、教师")
+        .toolbar {
+            NavigationLink("冲突预览") {
+                PortalWebView(url: AcademicPortal.url("for-std/course-table", mode: mode), academicMode: mode)
+            }
+        }
+        .overlay { if isLoading { ProgressView("正在读取可选课程…") } }
+        .task { await load() }
+        .refreshable { await load() }
+    }
+
+    @MainActor private func load() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        do {
+            lessons = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+                .fetchSelectableLessons(turnID: turnID)
+        } catch { errorMessage = error.localizedDescription }
+        isLoading = false
+    }
+}
+
+struct AcademicTeachingSurveyView: View {
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+    @State private var lessons: [AcademicSurveyLesson] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var showingLogin = false
+
+    private var mode: AcademicConnectionMode { AcademicConnectionMode(rawValue: connectionMode) ?? .direct }
+
+    var body: some View {
+        List {
+            if let errorMessage {
+                ContentUnavailableView("评教列表读取失败", systemImage: "text.bubble", description: Text(errorMessage))
+                Button("重新安全登录", systemImage: "lock.shield") { showingLogin = true }
+            }
+            ForEach(lessons) { lesson in
+                Section {
+                    ForEach(lesson.teachers) { teacher in
+                        if teacher.submitted {
+                            Label("\(teacher.name) · 已评", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
+                        } else {
+                            SourceAnchoredNavigationLink(sourceID: "survey-teacher-\(teacher.id)") {
+                                PortalWebView(
+                                    url: AcademicPortal.url("for-std/lesson-survey/start-survey/\(teacher.id)", mode: mode),
+                                    academicMode: mode
+                                )
+                            } label: {
+                                Label(teacher.name, systemImage: "person.crop.circle.badge.questionmark")
+                            }
+                        }
+                    }
+                } header: {
+                    VStack(alignment: .leading) {
+                        Text(lesson.courseName)
+                        Text([lesson.code, lesson.department, lesson.deadline].compactMap { $0 }.joined(separator: " · "))
+                    }
+                }
+            }
+        }
+        .navigationTitle("教师评教")
+        .navigationBarTitleDisplayMode(.inline)
+        .overlay { if isLoading { ProgressView("正在读取评教状态…") } }
+        .task { await load() }
+        .refreshable { await load() }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await load() } }) {
+            NavigationStack { LoginPortalView() }
+        }
+    }
+
+    @MainActor private func load() async {
+        guard !isLoading else { return }
+        isLoading = true
+        errorMessage = nil
+        do {
+            lessons = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+                .fetchTeachingSurveys(semesterID: AcademicPortal.currentSemesterID)
+        } catch { errorMessage = error.localizedDescription }
         isLoading = false
     }
 }

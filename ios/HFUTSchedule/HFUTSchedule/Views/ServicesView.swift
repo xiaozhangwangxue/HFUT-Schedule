@@ -4,6 +4,9 @@ struct ServicesView: View {
     @EnvironmentObject private var appState: AppState
     @State private var query = ""
     @State private var shortcutFeature: CampusFeature?
+    @State private var serviceOrder: [Int] = []
+    @State private var hiddenServiceIDs: Set<Int> = []
+    @State private var showingEditor = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 8),
@@ -11,18 +14,27 @@ struct ServicesView: View {
     ]
 
     private var filtered: [CampusFeature] {
-        FeatureCatalog.all.filter { feature in
+        orderedFeatures.filter { feature in
             let text = "\(feature.title) \(feature.subtitle) \(feature.category.rawValue)"
             let matchesQuery = query.isEmpty || text.localizedCaseInsensitiveContains(query)
-            return matchesQuery
+            return matchesQuery && (!query.isEmpty || !hiddenServiceIDs.contains(feature.id))
         }
+    }
+
+    private var orderedFeatures: [CampusFeature] {
+        let byID = Dictionary(uniqueKeysWithValues: FeatureCatalog.all.map { ($0.id, $0) })
+        let known = serviceOrder.compactMap { byID[$0] }
+        let knownIDs = Set(known.map(\.id))
+        return known + FeatureCatalog.all.filter { !knownIDs.contains($0.id) }
     }
 
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(filtered) { feature in
-                    NavigationLink(value: feature) {
+                    SourceAnchoredNavigationLink(sourceID: "service-\(feature.id)") {
+                        FeatureDetailView(feature: feature)
+                    } label: {
                         CompactFeatureTile(feature: feature)
                     }
                     .buttonStyle(.plain)
@@ -34,16 +46,48 @@ struct ServicesView: View {
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("查询中心")
-        .searchable(text: $query, prompt: "搜索 48 项校园服务")
-        .navigationDestination(for: CampusFeature.self) { feature in
-            FeatureDetailView(feature: feature)
+        .searchable(text: $query, prompt: "搜索 \(FeatureCatalog.all.count) 项校园服务")
+        .toolbar {
+            Button("编辑", systemImage: "pencil") { showingEditor = true }
+        }
+        .sheet(isPresented: $showingEditor, onDismiss: persistServiceLayout) {
+            NavigationStack {
+                List {
+                    ForEach(orderedFeatures) { feature in
+                        HStack(spacing: 12) {
+                            Image(systemName: feature.systemImage).frame(width: 24)
+                            VStack(alignment: .leading) {
+                                Text(feature.title)
+                                Text(feature.subtitle).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Toggle("显示", isOn: visibilityBinding(for: feature.id)).labelsHidden()
+                        }
+                    }
+                    .onMove(perform: moveServices)
+                }
+                .environment(\.editMode, .constant(.active))
+                .navigationTitle("编辑校园服务")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("恢复默认") {
+                            serviceOrder = FeatureCatalog.all.map(\.id)
+                            hiddenServiceIDs = []
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") { persistServiceLayout(); showingEditor = false }
+                    }
+                }
+            }
         }
         .navigationDestination(isPresented: shortcutFeatureBinding) {
             if let shortcutFeature {
                 FeatureDetailView(feature: shortcutFeature)
             }
         }
-        .onAppear(perform: consumeShortcutFeature)
+        .onAppear { loadServiceLayout(); consumeShortcutFeature() }
         .onChange(of: appState.pendingFeatureID) { _, _ in consumeShortcutFeature() }
     }
 
@@ -58,6 +102,33 @@ struct ServicesView: View {
         if let feature = appState.consumePendingFeature() {
             shortcutFeature = feature
         }
+    }
+
+    private func visibilityBinding(for id: Int) -> Binding<Bool> {
+        Binding(
+            get: { !hiddenServiceIDs.contains(id) },
+            set: { visible in
+                if visible { hiddenServiceIDs.remove(id) }
+                else { hiddenServiceIDs.insert(id) }
+            }
+        )
+    }
+
+    private func moveServices(from offsets: IndexSet, to destination: Int) {
+        var ids = orderedFeatures.map(\.id)
+        ids.move(fromOffsets: offsets, toOffset: destination)
+        serviceOrder = ids
+    }
+
+    private func loadServiceLayout() {
+        if let ids = UserDefaults.standard.array(forKey: "service-order") as? [Int] { serviceOrder = ids }
+        else { serviceOrder = FeatureCatalog.all.map(\.id) }
+        if let ids = UserDefaults.standard.array(forKey: "hidden-services") as? [Int] { hiddenServiceIDs = Set(ids) }
+    }
+
+    private func persistServiceLayout() {
+        UserDefaults.standard.set(orderedFeatures.map(\.id), forKey: "service-order")
+        UserDefaults.standard.set(Array(hiddenServiceIDs), forKey: "hidden-services")
     }
 
 }

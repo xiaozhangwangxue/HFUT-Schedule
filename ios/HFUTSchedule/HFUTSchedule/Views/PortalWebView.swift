@@ -5,17 +5,20 @@ struct PortalWebView: View {
     let url: URL
     var academicMode: AcademicConnectionMode?
     var onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
+    var autoOpenCampusMailbox = false
     @State private var isLoading = true
     @State private var title = ""
 
     init(
         url: URL,
         academicMode: AcademicConnectionMode? = nil,
-        onAcademicAuthenticated: (([HTTPCookie]) -> Void)? = nil
+        onAcademicAuthenticated: (([HTTPCookie]) -> Void)? = nil,
+        autoOpenCampusMailbox: Bool = false
     ) {
         self.url = url
         self.academicMode = academicMode
         self.onAcademicAuthenticated = onAcademicAuthenticated
+        self.autoOpenCampusMailbox = autoOpenCampusMailbox
     }
 
     var body: some View {
@@ -24,6 +27,7 @@ struct PortalWebView: View {
                 url: url,
                 academicMode: academicMode,
                 onAcademicAuthenticated: onAcademicAuthenticated,
+                autoOpenCampusMailbox: autoOpenCampusMailbox,
                 isLoading: $isLoading,
                 pageTitle: $title
             )
@@ -49,6 +53,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
     let url: URL
     let academicMode: AcademicConnectionMode?
     let onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
+    let autoOpenCampusMailbox: Bool
     @Binding var isLoading: Bool
     @Binding var pageTitle: String
 
@@ -58,6 +63,15 @@ private struct WebViewRepresentable: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        if autoOpenCampusMailbox {
+            configuration.userContentController.addUserScript(
+                WKUserScript(
+                    source: Self.openCampusMailboxScript,
+                    injectionTime: .atDocumentEnd,
+                    forMainFrameOnly: true
+                )
+            )
+        }
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
@@ -148,4 +162,29 @@ private struct WebViewRepresentable: UIViewRepresentable {
             return nil
         }
     }
+
+    /// The portal owns the current mailbox route. Follow the same visible
+    /// “未读 N 封” control the user taps on the official page instead of
+    /// hard-coding a mailbox host that may change.
+    private static let openCampusMailboxScript = #"""
+    (() => {
+      if (window.__hfutMailboxLinkWatcher || location.hostname !== 'one.hfut.edu.cn') return;
+      window.__hfutMailboxLinkWatcher = true;
+      let state = { attempts: 0 };
+      const timer = setInterval(() => {
+        state.attempts += 1;
+        const candidate = Array.from(document.querySelectorAll('a, button, [role="button"], span, div'))
+          .find((element) => {
+            const text = (element.innerText || element.textContent || '').replace(/\s+/g, '');
+            return /^未读\d+封/.test(text) && text.length <= 12;
+          });
+        if (candidate) {
+          clearInterval(timer);
+          candidate.click();
+        } else if (state.attempts >= 40) {
+          clearInterval(timer);
+        }
+      }, 300);
+    })();
+    """#
 }
