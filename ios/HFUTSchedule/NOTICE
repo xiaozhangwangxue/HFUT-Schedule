@@ -1,0 +1,13 @@
+HFUT-Schedule iOS port
+
+This directory contains a new SwiftUI implementation derived from the feature
+surface, service definitions, visual identity, and documentation of
+Chiu-xaH/HFUT-Schedule.
+
+Original project: https://github.com/Chiu-xaH/HFUT-Schedule
+Original license: Apache License 2.0
+
+Changes in this derivative work include a native SwiftUI application structure,
+iOS service equivalents, an iOS feature catalog, Liquid Glass presentation,
+local schedule storage, EventKit export, VisionKit scanning, and WKWebView-based
+campus portal access.
