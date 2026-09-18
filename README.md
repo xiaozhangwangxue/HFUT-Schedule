@@ -3,8 +3,6 @@
 > 合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本。
 > 本仓库基于原 Android 项目 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码，iOS 端使用 SwiftUI 重写界面与交互，并复用原项目整理的全部校方接口。
 
-![周课表小组件](ios/HFUTSchedule/docs/widget-preview.png)
-
 ## 下载与安装
 
 - 最新 IPA：[Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)（`ios-*` 标签）
@@ -73,7 +71,6 @@ HFUT-Schedule
     ├── Shared/              # 主应用与小组件共享的数据通道与视图
     ├── HFUTScheduleTests/   # 单元测试（接口解析、目录、密码规则等）
     ├── scripts/             # 构建 / 签名 / 小组件脚本
-    ├── docs/                # 小组件预览图
     ├── dist/                # 构建产物（IPA）
     └── project.yml          # XcodeGen 工程定义（工程文件的唯一来源）
 ```
