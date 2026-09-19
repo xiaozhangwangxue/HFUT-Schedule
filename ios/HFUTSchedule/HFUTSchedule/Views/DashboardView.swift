@@ -7,6 +7,7 @@ struct DashboardView: View {
     @State private var section = 0
     @State private var campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
     @State private var isRefreshingCampusCardBalance = false
+    @State private var tomorrowStatus: FocusTomorrowStatus = .firstClass(hour: nil)
 
     private let serviceColumns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -15,7 +16,14 @@ struct DashboardView: View {
     }
 
     private var todayCourses: [Course] {
-        scheduleStore.courses(on: todayIndex).sorted { $0.startTime < $1.startTime }
+        FocusPlanResolver.courses(on: Date(), store: scheduleStore)
+    }
+
+    /// 调休上班日：今天按设置的日期上课。
+    private var makeUpTargetText: String? {
+        guard HolidayCalendarStore.shared.isMakeUpWorkDay(Date()),
+              let target = SpecialWorkDayStore.shared.targetDate(for: Date()) else { return nil }
+        return "调休：今天按 \(FocusTomorrowStatus.shortDate(target)) 的课表上课"
     }
 
     private var currentWeek: Int {
@@ -83,6 +91,10 @@ struct DashboardView: View {
             campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
             Task { await refreshCampusCardBalance() }
         }
+        .task {
+            await HolidayCalendarStore.shared.refreshIfNeeded()
+            tomorrowStatus = FocusPlanResolver.tomorrowStatus(store: scheduleStore)
+        }
     }
 
     private var campusSnapshot: some View {
@@ -97,7 +109,12 @@ struct DashboardView: View {
             } label: {
                 snapshotItem("宿舍电费", value: "点击查询", icon: "bolt")
             }
-            snapshotItem(greetingTitle, value: greetingValue, icon: "face.smiling")
+            SourceAnchoredNavigationLink(sourceID: "dashboard-tomorrow") {
+                TomorrowPlanView()
+            } label: {
+                snapshotItem(tomorrowStatus.title, value: tomorrowStatus.value, icon: tomorrowStatus.symbol, footnote: tomorrowStatus.detail)
+            }
+            .buttonStyle(.plain)
             SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-network") {
                 FeatureDetailView(feature: feature(4))
             } label: {
@@ -110,6 +127,13 @@ struct DashboardView: View {
 
     @ViewBuilder
     private var courseList: some View {
+        if let makeUpTargetText {
+            Text(makeUpTargetText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
+        }
         if todayCourses.isEmpty {
             ContentUnavailableView("今天没有课程", systemImage: "calendar.badge.checkmark")
                 .frame(minHeight: 180)
@@ -147,7 +171,7 @@ struct DashboardView: View {
         }
     }
 
-    private func snapshotItem(_ title: String, value: String, icon: String) -> some View {
+    private func snapshotItem(_ title: String, value: String, icon: String, footnote: String? = nil) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3.weight(.medium))
@@ -156,6 +180,9 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.caption).foregroundStyle(.secondary)
                 Text(value).font(.body).foregroundStyle(.primary).lineLimit(1)
+                if let footnote {
+                    Text(footnote).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+                }
             }
             Spacer(minLength: 0)
         }
@@ -177,31 +204,6 @@ struct DashboardView: View {
     private var dateTitle: String {
         let date = Date().formatted(.dateTime.month(.twoDigits).day(.twoDigits))
         return "\(date) 第\(currentWeek)周 \(Course.weekdayNames[todayIndex - 1])"
-    }
-
-    private var greetingTitle: String {
-        switch Calendar.current.component(.hour, from: Date()) {
-        case 0..<6: "今晚"
-        case 6..<11: "今天"
-        case 11..<14: "中午"
-        case 14..<18: "下午"
-        default: "今晚"
-        }
-    }
-
-    private var greetingValue: String {
-        let name = studentStore.info?.name.nonEmpty
-        return name.map { "\($0)，\(shortGreeting)" } ?? shortGreeting
-    }
-
-    private var shortGreeting: String {
-        switch Calendar.current.component(.hour, from: Date()) {
-        case 0..<6: "早点休息"
-        case 6..<11: "早上好"
-        case 11..<14: "午安"
-        case 14..<18: "继续加油"
-        default: "晚上好"
-        }
     }
 
     private func status(for course: Course) -> String {
