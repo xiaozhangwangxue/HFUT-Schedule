@@ -34,6 +34,7 @@
 		7A0D2A9D9712D4D2D719ADB0 /* TomorrowPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5CE0D7860FD901F39A85FB /* TomorrowPlanView.swift */; };
 		82DB3FD29B2288C11933E095 /* WeeklyScheduleWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590CDCB6A15985C1C38D7B5 /* WeeklyScheduleWidgetView.swift */; };
 		83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44D706B873C376660720FE /* ScheduleView.swift */; };
+		868A5E0FC83A8AD742DB982B /* CampusBusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD09E698193C15812F83E2E /* CampusBusService.swift */; };
 		8851A28D10C4AEB0A02E7A9B /* CampusExtraAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BCCCEEB5806678D399FB74 /* CampusExtraAPIClient.swift */; };
 		8CE34AC81E598DD85309D9FF /* HFUTScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */; };
 		8EB74BE1D436DCDA74247798 /* WebVPNURLConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */; };
@@ -54,6 +55,7 @@
 		CCD751A0C27C754C43B40686 /* AcademicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59CC42C9774F1D615D57118B /* AcademicClient.swift */; };
 		D1CF0ECD4FCE520ED667922F /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */; };
 		D40893D53C715F270D34712D /* Course.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA33B515BDFC62F529434E96 /* Course.swift */; };
+		D80C46FF857CEC78374F563F /* CampusUpdateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B162673363EE24854AB832D8 /* CampusUpdateViews.swift */; };
 		D91BC2AC767F10D166BF2592 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */; };
 		DAF3A3FD6789AB7E1CB33199 /* stu.json in Resources */ = {isa = PBXBuildFile; fileRef = 4612EE6FFEF44A60EA8A8DF4 /* stu.json */; };
 		DCEFFF99B63C7E53A0B3A506 /* CampusCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C02B2BD30AB801728B88AB1E /* CampusCloudConfig.swift */; };
@@ -117,6 +119,7 @@
 		3895A08CC43B6CEBF693B0C7 /* AcademicScheduleSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleSyncView.swift; sourceTree = "<group>"; };
 		3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3D44D706B873C376660720FE /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		3DD09E698193C15812F83E2E /* CampusBusService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusBusService.swift; sourceTree = "<group>"; };
 		3F326CD0B0195DBAE51CC455 /* HFUTScheduleWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = HFUTScheduleWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		408AB2044F49E87C8654AB41 /* WeeklyScheduleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyScheduleWidget.swift; sourceTree = "<group>"; };
 		4572B214A20B0261FA2F0F30 /* HFUTScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HFUTScheduleApp.swift; sourceTree = "<group>"; };
@@ -145,6 +148,7 @@
 		AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		ACDD4BD05E04F55081BB634B /* WidgetScheduleBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetScheduleBridge.swift; sourceTree = "<group>"; };
 		AF3FAC60EC560DFB8387F65B /* NativeCASLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCASLoginView.swift; sourceTree = "<group>"; };
+		B162673363EE24854AB832D8 /* CampusUpdateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusUpdateViews.swift; sourceTree = "<group>"; };
 		B6F50F664FD3999D8BF74147 /* AcademicPortal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicPortal.swift; sourceTree = "<group>"; };
 		C02B2BD30AB801728B88AB1E /* CampusCloudConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusCloudConfig.swift; sourceTree = "<group>"; };
 		C0BCCCEEB5806678D399FB74 /* CampusExtraAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusExtraAPIClient.swift; sourceTree = "<group>"; };
@@ -243,6 +247,7 @@
 				F75FBE5E0DF9831524029CC4 /* AcademicStudentStore.swift */,
 				1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */,
 				D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */,
+				3DD09E698193C15812F83E2E /* CampusBusService.swift */,
 				C02B2BD30AB801728B88AB1E /* CampusCloudConfig.swift */,
 				C0BCCCEEB5806678D399FB74 /* CampusExtraAPIClient.swift */,
 				4D485DD3E112378BADEBC975 /* CampusServiceClient.swift */,
@@ -296,6 +301,7 @@
 				674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */,
 				4DCBDE1C83565BFC82187D11 /* CampusExtraViews.swift */,
 				5F76E0432BA536AABC389F3D /* CampusServiceViews.swift */,
+				B162673363EE24854AB832D8 /* CampusUpdateViews.swift */,
 				E4F0E3911F4C88C4F38BEDE4 /* CourseDetailView.swift */,
 				3CB4182AD7CCFBDA5BCD9758 /* DashboardView.swift */,
 				8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */,
@@ -466,6 +472,7 @@
 				1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */,
 				72DA1158E53A551EDCB508BD /* CASLoginClient.swift in Sources */,
 				0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */,
+				868A5E0FC83A8AD742DB982B /* CampusBusService.swift in Sources */,
 				DCEFFF99B63C7E53A0B3A506 /* CampusCloudConfig.swift in Sources */,
 				8851A28D10C4AEB0A02E7A9B /* CampusExtraAPIClient.swift in Sources */,
 				E2B24A5A81BD6535DDDB51FF /* CampusExtraViews.swift in Sources */,
@@ -473,6 +480,7 @@
 				A15080593BB0A228EAD13735 /* CampusServiceClient.swift in Sources */,
 				B318082EFCEFECD00BE11E52 /* CampusServiceViews.swift in Sources */,
 				A04CA7518993B483A0E3715A /* CampusSessionStore.swift in Sources */,
+				D80C46FF857CEC78374F563F /* CampusUpdateViews.swift in Sources */,
 				D40893D53C715F270D34712D /* Course.swift in Sources */,
 				A736EAB22EA96B47F3B03A14 /* CourseDetailView.swift in Sources */,
 				B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */,

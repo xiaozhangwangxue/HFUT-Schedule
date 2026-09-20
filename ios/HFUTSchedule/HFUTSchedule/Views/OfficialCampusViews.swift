@@ -431,6 +431,7 @@ private struct AcademicCourseSelectionDetailView: View {
     let title: String
     @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
     @State private var lessons: [AcademicSelectableLesson] = []
+    @State private var studentCounts: [Int: Int] = [:]
     @State private var query = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -446,7 +447,26 @@ private struct AcademicCourseSelectionDetailView: View {
             ForEach(visibleLessons) { lesson in
                 VStack(alignment: .leading, spacing: 5) {
                     Text(lesson.courseName).font(.headline)
-                    Text("\(lesson.code) · 限选 \(lesson.limitCount) 人").font(.caption).foregroundStyle(.secondary)
+                    Text(lesson.code).font(.caption).foregroundStyle(.secondary)
+                    if lesson.limitCount > 0 {
+                        let enrolled = studentCounts[lesson.id] ?? 0
+                        let ratio = min(1, Double(enrolled) / Double(lesson.limitCount))
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack {
+                                Text("已选 \(enrolled) / \(lesson.limitCount)")
+                                    .font(.caption)
+                                    .foregroundStyle(ratio >= 1 ? .red : .secondary)
+                                Spacer()
+                                Text("\(Int(ratio * 100))%")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            ProgressView(value: ratio)
+                                .tint(ratio >= 1 ? .red : AppTheme.accent)
+                        }
+                    } else {
+                        Text("限选人数待公布").font(.caption).foregroundStyle(.secondary)
+                    }
                     if !lesson.teachers.isEmpty { Text(lesson.teachers.joined(separator: "、")).font(.caption) }
                     if let schedule = lesson.schedule { Text(schedule).font(.caption2).foregroundStyle(.secondary) }
                     if let remark = lesson.remark, !remark.isEmpty { Text(remark).font(.caption2) }
@@ -473,8 +493,17 @@ private struct AcademicCourseSelectionDetailView: View {
         do {
             lessons = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
                 .fetchSelectableLessons(turnID: turnID)
+            await loadStudentCounts()
         } catch { errorMessage = error.localizedDescription }
         isLoading = false
+    }
+
+    @MainActor
+    private func loadStudentCounts() async {
+        let ids = lessons.map(\.id)
+        guard !ids.isEmpty else { return }
+        studentCounts = (try? await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+            .fetchLessonStudentCounts(lessonIDs: ids)) ?? [:]
     }
 }
 

@@ -144,9 +144,7 @@ struct DashboardView: View {
                     CourseDetailView(course: course)
                 } label: {
                     HStack(alignment: .top, spacing: 14) {
-                        Image(systemName: "clock")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
+                        courseIcon(for: course)
                             .frame(width: 34)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(course.startTime)-\(course.endTime)")
@@ -207,10 +205,58 @@ struct DashboardView: View {
     }
 
     private func status(for course: Course) -> String {
-        let now = Date().formatted(date: .omitted, time: .shortened)
-        if now < course.startTime { return "未开始" }
-        if now <= course.endTime { return "进行中" }
-        return "已结束"
+        switch courseState(course) {
+        case .notStarted: "未开始"
+        case .ongoing: "上课中"
+        case .ended: "已下课"
+        }
+    }
+
+    private enum CourseState { case notStarted, ongoing, ended }
+
+    @ViewBuilder
+    private func courseIcon(for course: Course) -> some View {
+        switch courseState(course) {
+        case .ongoing:
+            CircularProgressIcon(progress: courseProgress(course), tint: AppTheme.accent)
+        case .notStarted:
+            Image(systemName: "calendar")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+        case .ended:
+            Image(systemName: "checkmark.circle")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func courseState(_ course: Course) -> CourseState {
+        let now = Self.minutesOfDay(Date())
+        let start = Self.minutes(course.startTime)
+        let end = Self.minutes(course.endTime)
+        if now < start { return .notStarted }
+        if now <= end { return .ongoing }
+        return .ended
+    }
+
+    /// 当前课程已进行的比例，用于环形进度图标（对应上游 CourseProgressIcon）。
+    private func courseProgress(_ course: Course) -> Double {
+        let now = Self.minutesOfDay(Date())
+        let start = Self.minutes(course.startTime)
+        let end = Self.minutes(course.endTime)
+        guard end > start else { return 0 }
+        return min(1, max(0, (now - start) / (end - start)))
+    }
+
+    private static func minutes(_ value: String) -> Double {
+        let parts = value.split(separator: ":").compactMap { Double($0) }
+        guard let hour = parts.first else { return 0 }
+        return hour * 60 + (parts.count > 1 ? parts[1] : 0)
+    }
+
+    private static func minutesOfDay(_ date: Date) -> Double {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return Double(components.hour ?? 0) * 60 + Double(components.minute ?? 0)
     }
 
     private var campusCardBalanceText: String {

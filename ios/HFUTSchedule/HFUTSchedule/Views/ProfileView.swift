@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var exportingBackup = false
     @State private var importingBackup = false
     @State private var backupMessage: String?
+    @AppStorage("timetableShowsTimeLine") private var timetableShowsTimeLine = false
 
     var body: some View {
         ScrollView {
@@ -126,6 +127,22 @@ struct ProfileView: View {
                         Text("触感反馈")
                             .font(.headline)
                         Text("在关键操作完成时反馈")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(14)
+
+            Divider().padding(.leading, 70)
+
+            Toggle(isOn: $timetableShowsTimeLine) {
+                HStack(spacing: 14) {
+                    GlassIcon(systemName: "calendar.day.timeline.left", tint: .red)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("课表时间线")
+                            .font(.headline)
+                        Text("在当前周今天的课程格里显示当前时间线")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

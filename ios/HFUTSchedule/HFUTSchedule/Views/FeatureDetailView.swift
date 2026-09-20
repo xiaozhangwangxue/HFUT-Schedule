@@ -85,6 +85,10 @@ struct FeatureDetailView: View {
                 TeacherSearchView()
             case .transferMajor:
                 TransferMajorView()
+            case .work:
+                WorkServiceView()
+            case .bus:
+                BusScheduleView()
             case nil:
                 portalOrUnavailable
             }
