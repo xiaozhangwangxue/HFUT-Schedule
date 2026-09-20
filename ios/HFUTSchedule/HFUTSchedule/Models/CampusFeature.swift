@@ -48,6 +48,8 @@ enum NativeDestination: String, Hashable {
     case fee
     case teacherSearch
     case transferMajor
+    case work
+    case bus
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -86,7 +88,7 @@ enum FeatureCatalog {
         .init(id: 17, title: "校园新闻", subtitle: "学校与教务新闻", systemImage: "newspaper.fill", category: .information, urlString: "https://news.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 18, title: "培养方案", subtitle: "方案与完成情况", systemImage: "list.clipboard.fill", category: .study, urlString: "https://jxglstu.hfut.edu.cn/eams5-student/", nativeDestination: .program),
         .init(id: 19, title: "图书馆", subtitle: "借阅、检索与座位", systemImage: "books.vertical.circle.fill", category: .campus, urlString: "https://lib.hfut.edu.cn/", nativeDestination: .library),
-        .init(id: 20, title: "校车", subtitle: "校车时刻与路线", systemImage: "bus.fill", category: .campus, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 20, title: "校车", subtitle: "校车时刻与路线", systemImage: "bus.fill", category: .campus, urlString: "https://www.hfut.edu.cn/xcxx.htm", nativeDestination: .bus),
         .init(id: 21, title: "智慧后勤", subtitle: "合肥与宣城校区", systemImage: "wrench.and.screwdriver.fill", category: .campus, urlString: nil, nativeDestination: .repair),
         .init(id: 23, title: "饮水热水", subtitle: "热水与设备服务", systemImage: "drop.fill", category: .life, urlString: "alipays://platformapi/startapp?appId=20000067", nativeDestination: nil),
         .init(id: 24, title: "空教室", subtitle: "空闲教室查询", systemImage: "door.left.hand.open", category: .study, urlString: "https://jwglapp.hfut.edu.cn/", nativeDestination: .classrooms),
@@ -101,7 +103,7 @@ enum FeatureCatalog {
         .init(id: 34, title: "校友服务", subtitle: "校友平台", systemImage: "person.3.fill", category: .campus, urlString: "https://xypt.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 35, title: "今日校园", subtitle: "请假、奖助与学生事务", systemImage: "person.badge.clock.fill", category: .campus, urlString: "https://stu.hfut.edu.cn/", nativeDestination: .todayCampus),
         .init(id: 36, title: "创新创业", subtitle: "IETP 项目管理", systemImage: "lightbulb.fill", category: .study, urlString: "http://dcxt.hfut.edu.cn/", nativeDestination: nil),
-        .init(id: 37, title: "就业服务", subtitle: "招聘、实习与双选", systemImage: "briefcase.fill", category: .campus, urlString: "https://gdjy.hfut.edu.cn/", nativeDestination: nil),
+        .init(id: 37, title: "就业服务", subtitle: "招聘、实习与双选", systemImage: "briefcase.fill", category: .campus, urlString: "https://gdjy.hfut.edu.cn/", nativeDestination: .work),
         .init(id: 38, title: "节假日", subtitle: "放假与调休", systemImage: "calendar.badge.clock", category: .information, urlString: "https://www.gov.cn/", nativeDestination: .holidays),
         .init(id: 39, title: "信息共建", subtitle: "共享日程与校园资料", systemImage: "icloud.fill", category: .tools, urlString: "https://community.hfut.edu.cn/", nativeDestination: nil),
         .init(id: 40, title: "洗衣", subtitle: "洗衣、洗鞋与烘干", systemImage: "washer.fill", category: .life, urlString: "https://yshz-user.haier-ioc.com/", nativeDestination: .laundry),

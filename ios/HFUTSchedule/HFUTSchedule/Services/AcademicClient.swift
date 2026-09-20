@@ -340,6 +340,37 @@ struct AcademicClient {
 
     // MARK: - 转专业
 
+    /// 选课人数（对应上游 getSCount / ws/for-std/course-select/std-count）。
+    func fetchLessonStudentCounts(lessonIDs: [Int]) async throws -> [Int: Int] {
+        guard !lessonIDs.isEmpty else { return [:] }
+        var result: [Int: Int] = [:]
+        for chunk in stride(from: 0, to: lessonIDs.count, by: 50).map({ Array(lessonIDs[$0..<min($0 + 50, lessonIDs.count)]) }) {
+            let fields = chunk.map { ("lessonIds[]", String($0)) }
+            let data = try await formPost("ws/for-std/course-select/std-count", fields: fields)
+            let text = String(decoding: data, as: UTF8.self)
+            if let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                for (key, value) in root {
+                    guard let id = Int(key) else { continue }
+                    if let number = value as? Int { result[id] = number }
+                    else if let number = value as? String, let parsed = Int(number) { result[id] = parsed }
+                    else if let number = value as? Double { result[id] = Int(number) }
+                }
+                continue
+            }
+            // 形如 12345=30 或 count=30 的返回
+            if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*=\s*(\d+)"#) {
+                for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                    guard match.numberOfRanges > 2,
+                          let idRange = Range(match.range(at: 1), in: text),
+                          let countRange = Range(match.range(at: 2), in: text),
+                          let id = Int(text[idRange]), let count = Int(text[countRange]) else { continue }
+                    result[id] = count
+                }
+            }
+        }
+        return result
+    }
+
     func fetchTransferBatches() async throws -> [TransferBatch] {
         let context = try await loadStudentContext()
         let data = try await get("for-std/change-major-apply/index/\(context.studentID)")

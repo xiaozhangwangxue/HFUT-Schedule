@@ -42,7 +42,12 @@ struct ScheduleView: View {
                         )
                         .frame(minHeight: 520)
                     } else {
-                        TimetableGridView(courses: visibleCourses, visibleWeekdays: visibleWeekdays) { selectedCourse = $0 }
+                        TimetableGridView(
+                            courses: visibleCourses,
+                            visibleWeekdays: visibleWeekdays,
+                            week: selectedWeek,
+                            termStart: termStart
+                        ) { selectedCourse = $0 }
                     }
                 }
                 .padding(.horizontal, 10)

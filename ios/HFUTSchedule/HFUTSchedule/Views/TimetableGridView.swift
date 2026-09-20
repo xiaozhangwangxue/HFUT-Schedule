@@ -10,16 +10,38 @@ enum ScheduleCalendar {
     }()
 
     static func termStart(from courses: [Course]) -> Date? {
+        let derived = derivedTermStart(from: courses)
+        let cloud = cloudTermStart()
+        // 云端学期开始日更权威，但只在和课程数据一致（相差不超过 4 周）时采用，
+        // 避免云端配置还没更新时把日期算错。
+        if let derived, let cloud {
+            return abs(derived.timeIntervalSince(cloud)) <= 28 * 86_400 ? cloud : derived
+        }
+        return cloud ?? derived
+    }
+
+    private static func cloudTermStart() -> Date? {
+        let text = CampusCloudConfigStore.shared.termStartDate
+        guard !text.isEmpty, let date = isoDate(text) else { return nil }
+        return calendar.startOfDay(for: date)
+    }
+
+    /// 由课程数据推导学期开始日：对所有课程投票，避免混入上一学期的课程导致顶部日期错位。
+    private static func derivedTermStart(from courses: [Course]) -> Date? {
+        var votes: [Date: Int] = [:]
         for course in courses {
             guard let week = course.weekIndices?.sorted().first,
                   let text = course.dates?.sorted().first,
                   let date = isoDate(text) else { continue }
             let days = (week - 1) * 7 + max(0, course.weekday - 1)
             if let start = calendar.date(byAdding: .day, value: -days, to: date) {
-                return calendar.startOfDay(for: start)
+                votes[calendar.startOfDay(for: start), default: 0] += 1
             }
         }
-        return nil
+        return votes.sorted { lhs, rhs in
+            if lhs.value != rhs.value { return lhs.value > rhs.value }
+            return lhs.key > rhs.key
+        }.first?.key
     }
 
     static func currentWeek(termStart: Date?) -> Int {
@@ -101,13 +123,34 @@ struct ScheduleWeekHeader: View {
 struct TimetableGridView: View {
     let courses: [Course]
     let visibleWeekdays: [Int]
+    var week: Int = 1
+    var termStart: Date? = nil
     let onSelect: (Course) -> Void
+
+    @AppStorage("timetableShowsTimeLine") private var showsTimeLine = false
+    @State private var now = Date()
 
     private let startHour = 8.0
     private let endHour = 22.0
     private let hourHeight: CGFloat = 68
 
     private var totalHeight: CGFloat { y(for: endHour) }
+
+    /// 当前显示周 == 今天所在周，且今天在显示列内时，返回今天所在列索引。
+    private var todayColumn: Int? {
+        guard showsTimeLine else { return nil }
+        let currentWeek = ScheduleCalendar.currentWeek(termStart: termStart)
+        guard week == currentWeek else { return nil }
+        let todayWeekday = ScheduleCalendar.calendar.component(.weekday, from: now)
+        let mondayBased = todayWeekday == 1 ? 7 : todayWeekday - 1
+        guard visibleWeekdays.contains(mondayBased) else { return nil }
+        return visibleWeekdays.firstIndex(of: mondayBased)
+    }
+
+    private var currentTimeFraction: Double {
+        let components = ScheduleCalendar.calendar.dateComponents([.hour, .minute], from: now)
+        return Double(components.hour ?? 0) + Double(components.minute ?? 0) / 60
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -139,9 +182,22 @@ struct TimetableGridView: View {
                         Button("查看课程详情", systemImage: "info.circle") { onSelect(item.course) }
                     }
                 }
+
+                if let todayColumn {
+                    let lineY = y(for: currentTimeFraction)
+                    let columnWidth = proxy.size.width / CGFloat(visibleWeekdays.count)
+                    RoundedRectangle(cornerRadius: 1, style: .continuous)
+                        .fill(Color.red)
+                        .frame(width: max(0, columnWidth - 4), height: 1.6)
+                        .offset(x: CGFloat(todayColumn) * columnWidth + 2, y: lineY)
+                        .allowsHitTesting(false)
+                }
             }
         }
         .frame(height: totalHeight)
+        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { date in
+            now = date
+        }
     }
 
     private var positionedCourses: [PositionedCourse] {
