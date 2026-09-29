@@ -4,16 +4,36 @@ import CoreImage.CIFilterBuiltins
 
 // MARK: - 慧新易校
 
+private struct PayCodeLink: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
+}
+
 /// 对应 Android 版 huiXin/HuiXin.kt：使用 synjones-auth 直接打开慧新易校平台。
 struct HuiXinPortalView: View {
     @State private var url: URL?
     @State private var errorMessage: String?
     @State private var isLoading = true
+    @State private var payCodeURL: URL?
+    @State private var isLoadingPayCode = false
 
     var body: some View {
         Group {
             if let url {
                 PortalWebView(url: url)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                Task { await openPayCode() }
+                            } label: {
+                                if isLoadingPayCode {
+                                    ProgressView().controlSize(.small)
+                                } else {
+                                    Label("付款码", systemImage: "barcode")
+                                }
+                            }
+                        }
+                    }
             } else if isLoading {
                 ProgressView("正在打开慧新易校…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -28,6 +48,34 @@ struct HuiXinPortalView: View {
             }
         }
         .task { await load(force: false) }
+        .onAppear {
+            // 小组件 / 快捷指令进入时直接打开付款码
+            if UserDefaults.standard.bool(forKey: "pendingOpenPayCode") {
+                UserDefaults.standard.set(false, forKey: "pendingOpenPayCode")
+                Task { await openPayCode() }
+            }
+        }
+        .sheet(item: Binding(
+            get: { payCodeURL.map(PayCodeLink.init) },
+            set: { if $0 == nil { payCodeURL = nil } }
+        )) { link in
+            NavigationStack {
+                PortalWebView(url: link.url)
+                    .navigationTitle("付款码")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+    }
+
+    @MainActor
+    private func openPayCode() async {
+        isLoadingPayCode = true
+        defer { isLoadingPayCode = false }
+        if let saved = CampusServiceClient.shared.savedHuiXinPayCodeURL() {
+            payCodeURL = saved
+            return
+        }
+        payCodeURL = try? await CampusServiceClient.shared.huiXinPayCodeURL()
     }
 
     @MainActor
@@ -893,87 +941,6 @@ struct CloudWebNavigationView: View {
 }
 
 // MARK: - 培养方案
-
-/// 培养方案：按模块展示学分与课程数，支持搜索（对应 Android 版 ProgramUI）。
-struct ProgramPlanView: View {
-    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
-    @State private var modules: [AcademicProgramSummary] = []
-    @State private var keyword = ""
-    @State private var isLoading = true
-    @State private var errorMessage: String?
-
-    private var filtered: [AcademicProgramSummary] {
-        let trimmed = keyword.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return modules }
-        return modules.filter { module in
-            module.title.localizedCaseInsensitiveContains(trimmed)
-                || (module.remark ?? "").localizedCaseInsensitiveContains(trimmed)
-        }
-    }
-
-    private var totalCredits: Double {
-        modules.compactMap(\.requiredCredits).reduce(0, +)
-    }
-
-    private var totalCourses: Int {
-        modules.reduce(0) { $0 + $1.courseCount }
-    }
-
-    var body: some View {
-        List {
-            if modules.isEmpty, isLoading {
-                HStack { ProgressView(); Text("正在读取培养方案…").foregroundStyle(.secondary) }
-            } else if let errorMessage, modules.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(errorMessage).font(.footnote).foregroundStyle(.secondary)
-                    Button("重新读取") { Task { await load() } }
-                }
-            } else {
-                Section("方案概览") {
-                    LabeledContent("模块", value: "\(modules.count) 个")
-                    LabeledContent("要求学分", value: totalCredits > 0 ? totalCredits.formatted() : "—")
-                    LabeledContent("计划课程", value: "\(totalCourses) 门")
-                }
-
-                Section("模块（\(filtered.count)）") {
-                    ForEach(filtered) { module in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(module.title).font(.subheadline.weight(.semibold))
-                            Text([
-                                module.requiredCredits.map { "要求 \($0.formatted()) 学分" },
-                                module.courseCount > 0 ? "\(module.courseCount) 门课程" : nil
-                            ].compactMap { $0 }.joined(separator: " · "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            if let remark = module.remark, !remark.isEmpty {
-                                Text(remark).font(.caption2).foregroundStyle(.tertiary)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                }
-            }
-        }
-        .searchable(text: $keyword, prompt: "搜索模块或课程")
-        .navigationTitle("培养方案")
-        .task { if modules.isEmpty { await load() } }
-        .refreshable { await load() }
-    }
-
-    @MainActor
-    private func load() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            let mode = AcademicConnectionMode(rawValue: connectionMode) ?? .direct
-            modules = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies).fetchProgram()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isLoading = false
-    }
-}
-
 // MARK: - 学期报告
 
 /// 学期报告：学业 / 成绩 / 生活 / 图书馆四段式，对应 Android 版 TermReportScreen。

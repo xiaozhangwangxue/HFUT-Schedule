@@ -1,85 +1,55 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
+/// 选项页：结构与原版一致 —— 个人信息 / 更新版本 / 应用设置（外观、偏好与配置、网络、维护与关于）。
 struct ProfileView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
-    @EnvironmentObject private var notificationManager: CourseNotificationManager
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var showingLogin = false
-    @State private var showingAbout = false
-    @State private var exportingBackup = false
-    @State private var importingBackup = false
-    @State private var backupMessage: String?
-    @AppStorage("timetableShowsTimeLine") private var timetableShowsTimeLine = false
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
                 accountCard
+                updateCard
 
-                VStack(spacing: 10) {
-                    SectionHeader(title: "偏好与配置")
-                    settingsCard
-                }
-
-                VStack(spacing: 10) {
-                    SectionHeader(title: "关于")
-                    Button {
-                        showingAbout = true
-                    } label: {
-                        settingsRow(icon: "info.circle.fill", title: "版本与开源许可", value: "0.1.0")
-                    }
-                    .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 8) {
+                    SectionHeader(title: "应用设置")
+                    settingsList
                 }
             }
             .padding(16)
             .padding(.bottom, 28)
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .navigationTitle("我的")
+        .navigationTitle("选项")
         .sheet(isPresented: $showingLogin) {
             NavigationStack { LoginPortalView() }
         }
-        .sheet(isPresented: $showingAbout) {
-            AboutView()
-        }
-        .fileExporter(
-            isPresented: $exportingBackup,
-            document: ScheduleBackupDocument(courses: scheduleStore.courses),
-            contentType: .json,
-            defaultFilename: "聚在工大课表备份"
-        ) { result in
-            if case .failure(let error) = result { backupMessage = error.localizedDescription }
-        }
-        .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.json]) { result in
-            importBackup(result)
-        }
-        .alert("数据备份", isPresented: Binding(
-            get: { backupMessage != nil },
-            set: { if !$0 { backupMessage = nil } }
-        )) {
-            Button("好") { backupMessage = nil }
-        } message: {
-            Text(backupMessage ?? "")
-        }
-        .task { await notificationManager.refresh() }
         .onAppear { presentRequestedLogin() }
         .onChange(of: appState.shouldPresentLogin) { _, _ in presentRequestedLogin() }
     }
 
+    // MARK: - 个人信息
+
     private var accountCard: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 15) {
-                GlassIcon(systemName: "person.crop.circle.fill", tint: AppTheme.violet, size: 60)
+                GlassIcon(systemName: "person.crop.circle.fill", tint: AppTheme.violet, size: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(studentStore.info?.name.isEmpty == false ? studentStore.info!.name : "统一身份认证")
+                    Text(studentStore.info?.name.isEmpty == false ? studentStore.info!.name : "游客")
                         .font(.title3.weight(.bold))
                     Text(accountSubtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
+                Spacer(minLength: 0)
+                Text(termProgressText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+
             Button("前往安全登录", systemImage: "lock.shield.fill") {
                 showingLogin = true
             }
@@ -102,216 +72,146 @@ struct ProfileView: View {
             .joined(separator: " · ")
     }
 
-    private var settingsCard: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                GlassIcon(systemName: "location.fill", tint: AppTheme.mint)
-                Text("校区")
-                    .font(.headline)
-                Spacer()
-                Picker("校区", selection: $appState.campus) {
-                    ForEach(AppState.Campus.allCases) { campus in
-                        Text(campus.rawValue).tag(campus)
-                    }
-                }
-                .labelsHidden()
-            }
-            .padding(14)
+    /// 学期进度：对应原版「已过 X%」。
+    private var termProgressText: String {
+        let courses = scheduleStore.courses
+        guard let termStart = ScheduleCalendar.termStart(from: courses),
+              let lastDate = courses.compactMap({ $0.dates?.compactMap { ScheduleCalendar.isoDate($0) }.max() }).max() else {
+            return "第 \(currentWeek) 周"
+        }
+        let total = lastDate.timeIntervalSince(termStart)
+        guard total > 0 else { return "第 \(currentWeek) 周" }
+        let passed = Date().timeIntervalSince(termStart)
+        if passed < 0 { return "未开学" }
+        let percent = min(100, max(0, passed / total * 100))
+        return String(format: "已过 %.1f%%", percent)
+    }
 
-            Divider().padding(.leading, 70)
+    private var currentWeek: Int {
+        ScheduleCalendar.currentWeek(termStart: ScheduleCalendar.termStart(from: scheduleStore.courses))
+    }
 
-            Toggle(isOn: $appState.prefersHaptics) {
-                HStack(spacing: 14) {
-                    GlassIcon(systemName: "waveform", tint: AppTheme.cyan)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("触感反馈")
-                            .font(.headline)
-                        Text("在关键操作完成时反馈")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(14)
+    // MARK: - 更新版本
 
-            Divider().padding(.leading, 70)
-
-            Toggle(isOn: $timetableShowsTimeLine) {
-                HStack(spacing: 14) {
-                    GlassIcon(systemName: "calendar.day.timeline.left", tint: .red)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("课表时间线")
-                            .font(.headline)
-                        Text("在当前周今天的课程格里显示当前时间线")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(14)
-
-            Divider().padding(.leading, 70)
-
-            Toggle(isOn: reminderBinding) {
-                HStack(spacing: 14) {
-                    GlassIcon(systemName: "bell.badge.fill", tint: .orange)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("课程提醒")
-                            .font(.headline)
-                        Text("上课前 \(notificationManager.leadMinutes) 分钟提醒")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(14)
-
-            if notificationManager.isEnabled {
-                Picker("提前时间", selection: reminderLeadBinding) {
-                    ForEach([5, 10, 15, 30, 60], id: \.self) { minutes in
-                        Text("\(minutes) 分钟").tag(minutes)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 12)
-            }
-
-            Divider().padding(.leading, 70)
-
-            Button {
-                exportingBackup = true
-            } label: {
-                actionRow(icon: "square.and.arrow.up.fill", title: "导出课表备份")
-            }
-            .buttonStyle(.plain)
-
-            Divider().padding(.leading, 70)
-
-            Button {
-                importingBackup = true
-            } label: {
-                actionRow(icon: "square.and.arrow.down.fill", title: "恢复课表备份")
-            }
-            .buttonStyle(.plain)
-
-            Divider().padding(.leading, 70)
-
-            HStack(spacing: 14) {
-                GlassIcon(systemName: "accessibility", tint: .orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("辅助功能")
-                        .font(.headline)
-                    Text("自动跟随系统的动态字体、减少动态与减少透明度设置")
+    private var updateCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.down.circle")
+                    .font(.title2)
+                    .foregroundStyle(AppTheme.accent)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("当前版本 \(AppInfo.version)")
+                        .font(.subheadline.weight(.semibold))
+                    Text("已是最新版本，更新说明见项目 Releases")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
+                Spacer(minLength: 0)
             }
-            .padding(14)
-        }
-        .adaptiveGlass(cornerRadius: 24)
-    }
-
-    private var reminderBinding: Binding<Bool> {
-        Binding(
-            get: { notificationManager.isEnabled },
-            set: { enabled in
-                notificationManager.isEnabled = enabled
-                Task {
-                    do {
-                        try await notificationManager.reschedule(for: scheduleStore.courses)
-                    } catch {
-                        backupMessage = error.localizedDescription
-                    }
+            if let url = URL(string: "https://github.com/xiaozhangwangxue/HFUT-Schedule/releases") {
+                Link(destination: url) {
+                    Text("查看更新日志")
+                        .font(.footnote)
                 }
             }
-        )
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .adaptiveGlass(cornerRadius: 22)
     }
 
-    private var reminderLeadBinding: Binding<Int> {
-        Binding(
-            get: { notificationManager.leadMinutes },
-            set: { minutes in
-                notificationManager.leadMinutes = minutes
-                Task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
+    // MARK: - 应用设置
+
+    private var settingsList: some View {
+        VStack(spacing: 0) {
+            SettingsNavigationRow(
+                icon: "paintbrush.fill",
+                title: "外观",
+                subtitle: "色彩 动效 特效",
+                tint: AppTheme.violet
+            ) { AppearanceSettingsView() }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+
+            Divider().padding(.leading, 56)
+
+            SettingsNavigationRow(
+                icon: "slider.horizontal.3",
+                title: "偏好与配置",
+                subtitle: "配置项 缓存清理",
+                tint: AppTheme.cyan
+            ) { PreferencesSettingsView() }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+
+            Divider().padding(.leading, 56)
+
+            SettingsNavigationRow(
+                icon: "antenna.radiowaves.left.and.right",
+                title: "网络",
+                subtitle: "预加载 密码修改",
+                tint: AppTheme.mint
+            ) { NetworkSettingsView() }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+
+            Divider().padding(.leading, 56)
+
+            NavigationLink {
+                AboutView()
+            } label: {
+                HStack(spacing: 12) {
+                    SettingsIcon(systemName: "info.circle.fill", tint: .orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("维护与关于").font(.subheadline.weight(.medium))
+                        Text("反馈 关于 修复").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
             }
-        )
-    }
-
-    private func actionRow(icon: String, title: String) -> some View {
-        HStack(spacing: 14) {
-            GlassIcon(systemName: icon, tint: AppTheme.cyan)
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(.primary)
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
         }
-        .padding(14)
-        .contentShape(Rectangle())
+        .adaptiveGlass(cornerRadius: 22)
     }
+}
 
-    private func importBackup(_ result: Result<URL, Error>) {
-        do {
-            let url = try result.get()
-            let accessGranted = url.startAccessingSecurityScopedResource()
-            defer { if accessGranted { url.stopAccessingSecurityScopedResource() } }
-            let data = try Data(contentsOf: url)
-            let courses = try JSONDecoder().decode([Course].self, from: data)
-            scheduleStore.replace(with: courses)
-            Task { try? await notificationManager.reschedule(for: courses) }
-            backupMessage = "已恢复 \(courses.count) 门课程。"
-        } catch {
-            backupMessage = "恢复失败：\(error.localizedDescription)"
-        }
-    }
-
-    private func settingsRow(icon: String, title: String, value: String) -> some View {
-        HStack(spacing: 14) {
-            GlassIcon(systemName: icon, tint: AppTheme.violet)
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(.primary)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
-        }
-        .padding(14)
-        .adaptiveGlass(cornerRadius: 22, interactive: true)
+enum AppInfo {
+    static var version: String {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "\(short) (\(build))"
     }
 }
 
 private struct AboutView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    Label("聚在工大 iOS", systemImage: "app.badge.fill")
-                    LabeledContent("版本", value: "0.1.0 (1)")
-                    LabeledContent("界面", value: "SwiftUI + Liquid Glass")
+        List {
+            Section {
+                Label("聚在工大 iOS", systemImage: "app.badge.fill")
+                LabeledContent("版本", value: AppInfo.version)
+                LabeledContent("界面", value: "SwiftUI + Liquid Glass")
+            }
+            Section("维护") {
+                Button {
+                    openURL(URL(string: "https://github.com/xiaozhangwangxue/HFUT-Schedule/issues/new")!)
+                } label: {
+                    Label("提交反馈", systemImage: "bubble.left.and.exclamationmark.bubble.right")
                 }
-                Section("开源") {
-                    Text("本移植基于 Chiu-xaH/HFUT-Schedule，遵循 Apache License 2.0。修改文件保留变更说明与来源归属。")
-                    Link("查看上游仓库", destination: URL(string: "https://github.com/Chiu-xaH/HFUT-Schedule")!)
-                }
-                Section("隐私") {
-                    Text("登录凭据仅发送到合肥工业大学官方 CAS 与教务接口；应用不保存密码。校方返回的短期令牌保存在本机系统钥匙串中。")
+                Button {
+                    openURL(URL(string: "https://github.com/xiaozhangwangxue/HFUT-Schedule")!)
+                } label: {
+                    Label("项目主页与更新", systemImage: "link")
                 }
             }
-            .navigationTitle("关于")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
-                }
+            Section("开源") {
+                Text("本项目基于原 Android 项目 Chiu-xaH/HFUT-Schedule 移植，遵循 Apache License 2.0。校方接口与数据均来自学校公开系统，仅供学习交流使用。")
+                    .font(.footnote)
             }
         }
+        .navigationTitle("维护与关于")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
