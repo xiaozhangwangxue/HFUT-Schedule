@@ -8,6 +8,60 @@ struct AcademicProgramSummary: Identifiable, Hashable {
     let remark: String?
 }
 
+/// 培养方案课程（对应上游 JxglstuProgramPlanCourse）。
+struct AcademicProgramCourse: Identifiable, Hashable {
+    let name: String
+    let code: String
+    let credits: Double
+    let type: String
+    let terms: [String]
+    let weeks: String
+    let department: String
+    let remark: String
+    let compulsory: Bool
+
+    var id: String { code.isEmpty ? "\(name)|\(terms.joined())" : code }
+
+    var termText: String {
+        terms.isEmpty ? "未安排学期" : terms.map { term in
+            term.replacingOccurrences(of: "term_", with: "").replacingOccurrences(of: "_", with: "")
+        }.joined(separator: "、")
+    }
+}
+
+/// 培养方案模块树（对应上游 JxglstuProgramResponse）。
+struct AcademicProgramNode: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let requiredCredits: Double?
+    let remark: String?
+    let children: [AcademicProgramNode]
+    let courses: [AcademicProgramCourse]
+
+    var totalCourseCredits: Double {
+        courses.reduce(0) { $0 + $1.credits }
+    }
+
+    /// 该模块下的全部课程（含子模块）。
+    var allCourses: [AcademicProgramCourse] {
+        courses + children.flatMap(\.allCourses)
+    }
+}
+
+/// 培养方案完成情况（对应上游 for-std/program-completion-preview）。
+struct AcademicProgramCompletion: Equatable {
+    struct Item: Equatable, Identifiable {
+        let name: String
+        let actual: Double
+        let full: Double
+        var id: String { name }
+        var ratio: Double { full > 0 ? min(1, actual / full) : 0 }
+    }
+
+    let total: Item
+    let others: [Item]
+}
+
 struct AcademicCourseSelectionTurn: Decodable, Identifiable, Hashable {
     let id: Int
     let name: String
@@ -339,6 +393,97 @@ struct AcademicClient {
     }
 
     // MARK: - 转专业
+
+    // MARK: - 培养方案（模块树 + 完成情况）
+
+    func fetchProgramTree() async throws -> AcademicProgramNode {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/program/root-module-json/\(context.studentID)")
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw AcademicClientError.invalidData("培养方案解析失败")
+        }
+        return Self.programNode(root, path: "0")
+    }
+
+    func fetchProgramCompletion() async throws -> AcademicProgramCompletion? {
+        let context = try await loadStudentContext()
+        let data = try await get("for-std/program-completion-preview/json/\(context.studentID)")
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        let totals = Self.completionItem(from: root["total"])
+            ?? Self.completionItem(from: root["totalCompletion"])
+            ?? Self.completionItem(from: (root["result"] as? [String: Any])?["total"])
+        let othersRaw = (root["other"] as? [Any])
+            ?? (root["others"] as? [Any])
+            ?? ((root["result"] as? [String: Any])?["other"] as? [Any])
+            ?? (root["completionList"] as? [Any])
+            ?? []
+        let others = othersRaw.compactMap { Self.completionItem(from: $0) }
+        guard let totals, !others.isEmpty else { return nil }
+        return AcademicProgramCompletion(total: totals, others: others)
+    }
+
+    private static func completionItem(from value: Any?) -> AcademicProgramCompletion.Item? {
+        guard let dictionary = value as? [String: Any] else { return nil }
+        let name = (dictionary["name"] as? String)
+            ?? (dictionary["nameZh"] as? String)
+            ?? (dictionary["moduleName"] as? String)
+            ?? "培养方案课程"
+        let actual = number(dictionary["actual"] ?? dictionary["actualCredits"] ?? dictionary["passedCredits"]) ?? 0
+        let full = number(dictionary["full"] ?? dictionary["requiredCredits"] ?? dictionary["totalCredits"]) ?? 0
+        guard full > 0 else { return nil }
+        return AcademicProgramCompletion.Item(name: name, actual: actual, full: full)
+    }
+
+    private static func number(_ value: Any?) -> Double? {
+        if let number = value as? NSNumber { return number.doubleValue }
+        if let text = value as? String { return Double(text) }
+        return nil
+    }
+
+    static func programNode(_ node: [String: Any], path: String) -> AcademicProgramNode {
+        let type = node["type"] as? [String: Any]
+        let title = (type?["nameZh"] as? String)
+            ?? (node["nameZh"] as? String)
+            ?? (node["moduleName"] as? String)
+            ?? "培养方案"
+        let require = node["requireInfo"] as? [String: Any]
+        let credits = number(require?["requiredCredits"])
+        let remark = (node["remark"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let children = (node["children"] as? [[String: Any]] ?? []).enumerated().map { index, child in
+            programNode(child, path: "\(path).\(index)")
+        }
+        let courses = (node["planCourses"] as? [[String: Any]] ?? []).compactMap { item -> AcademicProgramCourse? in
+            let course = item["course"] as? [String: Any] ?? [:]
+            let name = (course["nameZh"] as? String) ?? (item["nameZh"] as? String) ?? ""
+            guard !name.isEmpty else { return nil }
+            let courseType = (course["courseType"] as? [String: Any])?["nameZh"] as? String
+                ?? (item["courseType"] as? [String: Any])?["nameZh"] as? String
+                ?? ""
+            let department = (course["openDepartment"] as? [String: Any])?["nameZh"] as? String
+                ?? (item["openDepartment"] as? [String: Any])?["nameZh"] as? String
+                ?? ""
+            let periodInfo = course["periodInfo"] as? [String: Any] ?? item["periodInfo"] as? [String: Any]
+            return AcademicProgramCourse(
+                name: name,
+                code: (course["code"] as? String) ?? (item["code"] as? String) ?? "",
+                credits: number(course["credits"]) ?? 0,
+                type: courseType,
+                terms: (item["readableTerms"] as? [String]) ?? (course["readableTerms"] as? [String]) ?? [],
+                weeks: (periodInfo?["weeks"] as? String) ?? "",
+                department: department,
+                remark: (item["remark"] as? String) ?? "",
+                compulsory: (item["compulsory"] as? Bool) ?? false
+            )
+        }
+        return AcademicProgramNode(
+            id: path,
+            title: title,
+            requiredCredits: credits,
+            remark: remark?.isEmpty == false ? remark : nil,
+            children: children,
+            courses: courses
+        )
+    }
 
     /// 选课人数（对应上游 getSCount / ws/for-std/course-select/std-count）。
     func fetchLessonStudentCounts(lessonIDs: [Int]) async throws -> [Int: Int] {

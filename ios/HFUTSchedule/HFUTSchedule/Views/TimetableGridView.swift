@@ -128,6 +128,9 @@ struct TimetableGridView: View {
     let onSelect: (Course) -> Void
 
     @AppStorage("timetableShowsTimeLine") private var showsTimeLine = false
+    @AppStorage(AppSettingsKey.showTeacherInSquare) private var showsTeacher = false
+    @AppStorage(AppSettingsKey.mergeConflictingSquares) private var mergesConflicts = false
+    @AppStorage(AppSettingsKey.backgroundBlur) private var backgroundBlur = 0.35
     @State private var now = Date()
 
     private let startHour = 8.0
@@ -156,6 +159,8 @@ struct TimetableGridView: View {
         GeometryReader { proxy in
             let columnWidth = proxy.size.width / CGFloat(visibleWeekdays.count)
             ZStack(alignment: .topLeading) {
+                timetableBackground
+
                 TimelineGridShape(columnCount: visibleWeekdays.count)
                     .stroke(.secondary.opacity(0.22), style: StrokeStyle(lineWidth: 0.65, dash: [4, 5]))
 
@@ -173,7 +178,11 @@ struct TimetableGridView: View {
                     ) {
                         CourseDetailView(course: item.course)
                     } label: {
-                        TimetableCourseCard(course: item.course)
+                        TimetableCourseCard(
+                            course: item.course,
+                            mergedCourses: item.mergedCourses,
+                            showsTeacher: showsTeacher
+                        )
                     }
                     .buttonStyle(.plain)
                     .frame(width: width, height: max(34, bottom - top))
@@ -204,21 +213,52 @@ struct TimetableGridView: View {
         var result: [PositionedCourse] = []
         for day in visibleWeekdays {
             let dayCourses = courses.filter { $0.weekday == day }.sorted { $0.startTime < $1.startTime }
+            var grouped = Set<UUID>()
             for course in dayCourses {
+                guard !grouped.contains(course.id) else { continue }
                 let start = Self.decimalTime(course.startTime)
                 let end = Self.decimalTime(course.endTime)
                 let overlaps = dayCourses.filter {
                     Self.decimalTime($0.startTime) < end && Self.decimalTime($0.endTime) > start
                 }
                 let ordered = overlaps.sorted { $0.startTime < $1.startTime || ($0.startTime == $1.startTime && $0.name < $1.name) }
+                if mergesConflicts, ordered.count > 1 {
+                    ordered.forEach { grouped.insert($0.id) }
+                    result.append(PositionedCourse(
+                        course: ordered[0],
+                        columnIndex: 0,
+                        totalColumns: 1,
+                        mergedCourses: ordered
+                    ))
+                    continue
+                }
+                grouped.insert(course.id)
                 result.append(PositionedCourse(
                     course: course,
                     columnIndex: ordered.firstIndex(of: course) ?? 0,
-                    totalColumns: max(1, ordered.count)
+                    totalColumns: max(1, ordered.count),
+                    mergedCourses: [course]
                 ))
             }
         }
         return result
+    }
+
+    /// 课程表背景图（可调前景模糊），对应上游「课程表-背景」。
+    @ViewBuilder
+    private var timetableBackground: some View {
+        if let url = TimetableBackgroundStore.fileURL,
+           let data = try? Data(contentsOf: url),
+           let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+                .blur(radius: backgroundBlur * 18)
+                .opacity(0.55)
+                .allowsHitTesting(false)
+        }
     }
 
     private func y(for hour: Double) -> CGFloat {
@@ -242,6 +282,7 @@ private struct PositionedCourse: Identifiable {
     let course: Course
     let columnIndex: Int
     let totalColumns: Int
+    var mergedCourses: [Course] = []
     var id: UUID { course.id }
 }
 
@@ -261,6 +302,8 @@ private struct TimelineGridShape: Shape {
 
 private struct TimetableCourseCard: View {
     let course: Course
+    var mergedCourses: [Course] = []
+    var showsTeacher: Bool = false
 
     private var tint: Color {
         [AppTheme.accent, AppTheme.mint, AppTheme.violet, .orange, .pink][abs(course.colorIndex) % 5]
@@ -273,7 +316,7 @@ private struct TimetableCourseCard: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer(minLength: 1)
-            Text(course.name + (course.teacher.isEmpty ? "" : "@\(course.teacher)"))
+            Text(title)
                 .font(.system(size: 10.5, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .lineLimit(5)
@@ -304,6 +347,15 @@ private struct TimetableCourseCard: View {
             .replacingOccurrences(of: "科教楼", with: "科教")
             .replacingOccurrences(of: "综合楼", with: "综")
             .replacingOccurrences(of: "大学生活动中心", with: "大活")
+    }
+
+    private var title: String {
+        if mergedCourses.count > 1 {
+            return mergedCourses
+                .map { showsTeacher && !$0.teacher.isEmpty ? "\($0.name)@\($0.teacher)" : $0.name }
+                .joined(separator: " / ")
+        }
+        return course.name + (showsTeacher && !course.teacher.isEmpty ? "@\(course.teacher)" : "")
     }
 }
 

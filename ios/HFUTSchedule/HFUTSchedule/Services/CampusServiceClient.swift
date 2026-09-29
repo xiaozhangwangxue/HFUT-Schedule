@@ -580,6 +580,22 @@ final class CampusServiceClient: @unchecked Sendable {
         return url
     }
 
+    /// 付款码（对应上游 QrCodePayTileService：HUI_XIN_URL + "plat/pay"）。
+    func huiXinPayCodeURL() async throws -> URL {
+        let token = try await huiXinToken(forceRefresh: false)
+        var components = URLComponents(string: "http://121.251.19.62/plat/pay")!
+        components.queryItems = [URLQueryItem(name: "synjones-auth", value: token)]
+        guard let url = components.url else { throw CampusServiceError.invalidResponse }
+        return url
+    }
+
+    func savedHuiXinPayCodeURL() -> URL? {
+        guard let token = savedHuiXinToken else { return nil }
+        var components = URLComponents(string: "http://121.251.19.62/plat/pay")!
+        components.queryItems = [URLQueryItem(name: "synjones-auth", value: token)]
+        return components.url
+    }
+
     func fetchSecondClassActivities(page: Int = 1, retrying: Bool = false) async throws -> [SecondClassActivity] {
         let cookie = try await secondClassCookie(forceRefresh: retrying)
         var components = URLComponents(string: "https://dekt.hfut.edu.cn/scReports/activity/activityPage")!

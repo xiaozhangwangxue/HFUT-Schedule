@@ -8,9 +8,11 @@ struct HFUTScheduleApp: App {
     @StateObject private var notificationManager = CourseNotificationManager()
     @StateObject private var academicRecordsStore = AcademicRecordsStore()
     @StateObject private var academicStudentStore = AcademicStudentStore()
+    @AppStorage(AppSettingsKey.appearance) private var appearance = AppAppearance.auto.rawValue
 
     init() {
         CampusSessionStore.shared.bootstrap()
+        AppTheme.restoreAccent()
     }
 
     var body: some Scene {
@@ -22,7 +24,16 @@ struct HFUTScheduleApp: App {
                 .environmentObject(academicRecordsStore)
                 .environmentObject(academicStudentStore)
                 .tint(AppTheme.accent)
+                .preferredColorScheme(preferredScheme)
                 .onOpenURL { appState.open($0) }
+        }
+    }
+
+    private var preferredScheme: ColorScheme? {
+        switch AppAppearance(rawValue: appearance) ?? .auto {
+        case .auto: nil
+        case .light: .light
+        case .dark: .dark
         }
     }
 }

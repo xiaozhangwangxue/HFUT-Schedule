@@ -72,6 +72,15 @@ private struct WebViewRepresentable: UIViewRepresentable {
                 )
             )
         }
+        if UserDefaults.standard.bool(forKey: AppSettingsKey.webDarkMode) {
+            configuration.userContentController.addUserScript(
+                WKUserScript(
+                    source: Self.forceDarkModeScript,
+                    injectionTime: .atDocumentEnd,
+                    forMainFrameOnly: false
+                )
+            )
+        }
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
@@ -166,6 +175,28 @@ private struct WebViewRepresentable: UIViewRepresentable {
     /// The portal owns the current mailbox route. Follow the same visible
     /// “未读 N 封” control the user taps on the official page instead of
     /// hard-coding a mailbox host that may change.
+    /// 强制网页深色模式（对应上游「外观-强制网页深色模式」）。
+    private static let forceDarkModeScript = #"""
+    (() => {
+      if (window.__hfutForceDark) return;
+      window.__hfutForceDark = true;
+      const style = document.createElement('style');
+      style.textContent = `
+        html { background: #101114 !important; }
+        body, main, section, article, div, table, td, th, ul, ol, li, p, span, label, form {
+          background-color: transparent !important;
+          color: #E6E3DF !important;
+          border-color: rgba(255,255,255,0.14) !important;
+        }
+        html, body { background-color: #101114 !important; }
+        a, a:visited { color: #7FB3FF !important; }
+        input, textarea, select { background: #1B1D21 !important; color: #E6E3DF !important; }
+        img, video, canvas { filter: brightness(0.92); }
+      `;
+      document.documentElement.appendChild(style);
+    })();
+    """#
+
     private static let openCampusMailboxScript = #"""
     (() => {
       if (window.__hfutMailboxLinkWatcher || location.hostname !== 'one.hfut.edu.cn') return;

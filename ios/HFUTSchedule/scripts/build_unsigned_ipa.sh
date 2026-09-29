@@ -6,7 +6,7 @@ project_dir="${script_dir:h}"
 derived_data="${project_dir}/build/DerivedData"
 dist_dir="${project_dir}/dist"
 app_path="${derived_data}/Build/Products/Release-iphoneos/HFUTSchedule.app"
-ipa_path="${dist_dir}/HFUTSchedule-iOS-0.1.0-unsigned.ipa"
+ipa_path="${dist_dir}/HFUTSchedule-iOS-1.0.0-unsigned.ipa"
 
 cd "${project_dir}"
 xcodegen generate

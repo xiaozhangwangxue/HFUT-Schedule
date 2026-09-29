@@ -47,6 +47,20 @@ struct OpenLibraryIntent: AppIntent {
     }
 }
 
+/// 付款码快捷方式（对应上游「扫码支付的快捷方式」）。
+struct OpenPayCodeIntent: AppIntent {
+    static var title: LocalizedStringResource = "打开付款码"
+    static var description = IntentDescription("直接打开慧新易校付款码，用于扫码支付。")
+    static var openAppWhenRun = true
+
+    func perform() async throws -> some IntentResult {
+        UserDefaults.standard.set("services", forKey: "pendingDestination")
+        UserDefaults.standard.set(44, forKey: "pendingFeatureID")
+        UserDefaults.standard.set(true, forKey: "pendingOpenPayCode")
+        return .result()
+    }
+}
+
 struct HFUTAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -72,6 +86,12 @@ struct HFUTAppShortcuts: AppShortcutsProvider {
             phrases: ["用 \(.applicationName) 打开图书馆"],
             shortTitle: "图书馆",
             systemImageName: "books.vertical.fill"
+        )
+        AppShortcut(
+            intent: OpenPayCodeIntent(),
+            phrases: ["打开 \(.applicationName) 的付款码", "用 \(.applicationName) 扫码支付"],
+            shortTitle: "付款码",
+            systemImageName: "barcode"
         )
     }
 
