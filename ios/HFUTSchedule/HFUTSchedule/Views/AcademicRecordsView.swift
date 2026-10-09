@@ -202,16 +202,32 @@ private struct GradeRow: View {
 }
 
 private enum GradeStatistics {
+    /// 被排除计算的项目：无绩点（免修、未参加等），或通过但绩点为 0。
+    static func isExcluded(_ grade: AcademicGrade) -> Bool {
+        guard let gpa = Double(grade.gpa.replacingOccurrences(of: " ", with: "")) else { return true }
+        if gpa == 0, let score = Double(grade.score), score >= 60 { return true }
+        return false
+    }
+
+    /// 是否忽略排除项（对应上游「忽略平均成绩的排除计算」）。
+    static var ignoresExclusion: Bool {
+        UserDefaults.standard.bool(forKey: AppSettingsKey.ignoreExcludedGrades)
+    }
+
+    static func counted(_ grades: [AcademicGrade]) -> [AcademicGrade] {
+        ignoresExclusion ? grades : grades.filter { !isExcluded($0) }
+    }
+
     static func weightedScore(_ grades: [AcademicGrade]) -> Double? {
-        weighted(grades) { Double($0.score) }
+        weighted(counted(grades)) { Double($0.score) }
     }
 
     static func weightedGPA(_ grades: [AcademicGrade]) -> Double? {
-        weighted(grades) { Double($0.gpa) }
+        weighted(counted(grades)) { Double($0.gpa) }
     }
 
     static func totalCredits(_ grades: [AcademicGrade]) -> Double {
-        grades.compactMap { Double($0.credits) }.reduce(0, +)
+        counted(grades).compactMap { Double($0.credits) }.reduce(0, +)
     }
 
     private static func weighted(_ grades: [AcademicGrade], value: (AcademicGrade) -> Double?) -> Double? {
@@ -236,6 +252,31 @@ private struct GradeAnalysisView: View {
                 LabeledContent("平均成绩", value: GradeStatistics.weightedScore(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
                 LabeledContent("平均绩点", value: GradeStatistics.weightedGPA(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
                 LabeledContent("未通过", value: "\(grades.filter { (Double($0.score) ?? 100) < 60 }.count) 门")
+                if !GradeStatistics.ignoresExclusion {
+                    LabeledContent("已排除", value: "\(grades.filter(GradeStatistics.isExcluded).count) 门")
+                }
+            }
+
+            if !GradeStatistics.ignoresExclusion {
+                let excluded = grades.filter(GradeStatistics.isExcluded)
+                if !excluded.isEmpty {
+                    Section {
+                        ForEach(excluded) { grade in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(grade.courseName).font(.subheadline)
+                                Text([grade.lessonCode, grade.score.isEmpty ? "无成绩" : grade.score, "绩点 \(grade.gpa.isEmpty ? "--" : grade.gpa)"]
+                                    .filter { !$0.isEmpty }
+                                    .joined(separator: " · "))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } header: {
+                        Text("不参与计算的项目")
+                    } footer: {
+                        Text("免修、未参加等没有绩点的项目默认不参与平均分。可在「选项 → 偏好与配置 → 忽略平均成绩的排除计算」中让它们参与计算。")
+                    }
+                }
             }
         }
         .navigationTitle("成绩分析")

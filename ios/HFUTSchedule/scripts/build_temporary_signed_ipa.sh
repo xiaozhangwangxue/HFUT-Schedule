@@ -17,7 +17,7 @@ profile_dir="${HOME}/Library/Developer/Xcode/UserData/Provisioning Profiles"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-27.2.0-Beta.app/Contents/Developer}"
 
 stamp="$(date +%Y%m%d-%H%M)"
-ipa_path="${dist_dir}/HFUTSchedule-iOS-1.0.0-temporary-signed-${stamp}.ipa"
+ipa_path="${dist_dir}/HFUTSchedule-iOS-1.1.0-temporary-signed-${stamp}.ipa"
 app_path="${derived_dir}/Build/Products/Release-iphoneos/HFUTSchedule.app"
 widget_path="${app_path}/PlugIns/HFUTScheduleWidget.appex"
 

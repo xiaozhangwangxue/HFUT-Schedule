@@ -217,6 +217,7 @@ struct PreferencesSettingsView: View {
     @AppStorage(AppSettingsKey.showFinishedToday) private var showFinishedToday = true
     @AppStorage(AppSettingsKey.showExpiredEvents) private var showExpiredEvents = false
     @AppStorage(AppSettingsKey.xuanchengQuota) private var xuanchengQuota = 30.0
+    @AppStorage(AppSettingsKey.ignoreExcludedGrades) private var ignoreExcludedGrades = false
     @State private var exportingBackup = false
     @State private var importingBackup = false
     @State private var message: String?
@@ -291,6 +292,14 @@ struct PreferencesSettingsView: View {
                     Text("\(Int(xuanchengQuota)) GiB").foregroundStyle(.secondary)
                 }
                 Slider(value: $xuanchengQuota, in: 5...100, step: 5)
+
+                Toggle(isOn: $ignoreExcludedGrades) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("忽略平均成绩的排除计算").font(.subheadline.weight(.medium))
+                        Text("允许被排除的成绩项目参与计算，可能会拉低原平均成绩")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Section("通知") {
@@ -642,6 +651,117 @@ struct SecretEditorSheet: View {
 }
 
 // MARK: - 课表背景存储
+
+/// 设置项搜索（对应上游 SettingsSearchDestination）。
+struct SettingsSearchView: View {
+    struct Entry: Identifiable, Hashable {
+        enum Target: String, Hashable {
+            case appearance, preferences, network, about
+            var title: String {
+                switch self {
+                case .appearance: "外观"
+                case .preferences: "偏好与配置"
+                case .network: "网络"
+                case .about: "维护与关于"
+                }
+            }
+        }
+
+        let title: String
+        let detail: String
+        let target: Target
+        var id: String { "\(target.rawValue)-\(title)" }
+    }
+
+    @State private var query = ""
+
+    private static let allEntries: [Entry] = [
+        Entry(title: "深浅色", detail: "跟随系统 / 浅色 / 深色", target: .appearance),
+        Entry(title: "纯黑深色背景", detail: "OLED 深色模式纯黑背景", target: .appearance),
+        Entry(title: "强制网页深色模式", detail: "给校内网页注入深色样式", target: .appearance),
+        Entry(title: "主题色", detail: "自定义取色与鲜艳度", target: .appearance),
+        Entry(title: "液态玻璃", detail: "系统材质与模糊", target: .appearance),
+        Entry(title: "方格内显示教师", detail: "课程表显示授课教师", target: .appearance),
+        Entry(title: "合并冲突方格", detail: "同一时间段的课程合并", target: .appearance),
+        Entry(title: "课程表背景", detail: "背景图与前景模糊", target: .appearance),
+        Entry(title: "显示所有底栏标签", detail: "底栏标签显示方式", target: .appearance),
+        Entry(title: "触感反馈", detail: "关键操作震动反馈", target: .preferences),
+        Entry(title: "默认课程表", detail: "合工大教务 / 智慧社区", target: .preferences),
+        Entry(title: "自动计算学期", detail: "按日期判断学期", target: .preferences),
+        Entry(title: "学期开始时间", detail: "自定义学期开始时间", target: .preferences),
+        Entry(title: "聚焦仍显示今天已完成的项目", detail: "上完的课程是否显示", target: .preferences),
+        Entry(title: "聚焦中仍显示已结束的日程", detail: "过期日程是否显示", target: .preferences),
+        Entry(title: "宣城校区校园网月免费额度", detail: "用于计算使用百分比", target: .preferences),
+        Entry(title: "忽略平均成绩的排除计算", detail: "让被排除的成绩参与平均分", target: .preferences),
+        Entry(title: "课程提醒", detail: "上课前提醒", target: .preferences),
+        Entry(title: "备份与恢复", detail: "导出、恢复课表备份", target: .preferences),
+        Entry(title: "缓存清理", detail: "清理缓存不影响数据", target: .preferences),
+        Entry(title: "一卡通密码", detail: "快速充值与校园网登录", target: .network),
+        Entry(title: "校园网密码", detail: "校园网一键登录", target: .network),
+        Entry(title: "教务系统密码", detail: "同班同学、教室、培养方案", target: .network),
+        Entry(title: "自动刷新登录状态", detail: "冷启动后台统一认证", target: .network),
+        Entry(title: "大模型", detail: "填写 ApiKey", target: .network),
+        Entry(title: "数据上报", detail: "崩溃日志上报", target: .network),
+        Entry(title: "刷新登录状态", detail: "重新登录一次", target: .network),
+        Entry(title: "请求范围", detail: "一次加载的条目数", target: .network),
+        Entry(title: "版本与开源许可", detail: "当前版本、反馈、开源协议", target: .about)
+    ]
+
+    private var filtered: [Entry] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return Self.allEntries }
+        return Self.allEntries.filter {
+            $0.title.localizedCaseInsensitiveContains(trimmed)
+                || $0.detail.localizedCaseInsensitiveContains(trimmed)
+                || $0.target.title.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+
+    var body: some View {
+        List {
+            ForEach(filtered) { entry in
+                NavigationLink {
+                    destination(for: entry.target)
+                } label: {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(entry.title).font(.subheadline.weight(.medium))
+                        Text("\(entry.target.title) · \(entry.detail)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            if filtered.isEmpty {
+                Text("没有匹配的设置项。").font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+        .searchable(text: $query, prompt: "搜索设置项")
+        .navigationTitle("搜索设置项")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func destination(for target: Entry.Target) -> some View {
+        switch target {
+        case .appearance: AppearanceSettingsView()
+        case .preferences: PreferencesSettingsView()
+        case .network: NetworkSettingsView()
+        case .about:
+            List {
+                Section {
+                    LabeledContent("版本", value: AppInfo.version)
+                    LabeledContent("界面", value: "SwiftUI + Liquid Glass")
+                }
+                Section("开源") {
+                    Text("本项目基于原 Android 项目 Chiu-xaH/HFUT-Schedule 移植，遵循 Apache License 2.0。")
+                        .font(.footnote)
+                }
+            }
+            .navigationTitle("维护与关于")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
 
 enum TimetableBackgroundStore {
     static var fileURL: URL? {

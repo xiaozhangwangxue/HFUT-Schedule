@@ -6,12 +6,15 @@ struct ProfileView: View {
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var showingLogin = false
+    @State private var isRefreshingLogin = false
+    @State private var refreshMessage: String?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 accountCard
                 updateCard
+                pinnedSection
 
                 VStack(alignment: .leading, spacing: 8) {
                     SectionHeader(title: "应用设置")
@@ -23,8 +26,26 @@ struct ProfileView: View {
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("选项")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    SettingsSearchView()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("搜索设置项")
+            }
+        }
         .sheet(isPresented: $showingLogin) {
             NavigationStack { LoginPortalView() }
+        }
+        .alert("提示", isPresented: Binding(
+            get: { refreshMessage != nil },
+            set: { if !$0 { refreshMessage = nil } }
+        )) {
+            Button("好") { refreshMessage = nil }
+        } message: {
+            Text(refreshMessage ?? "")
         }
         .onAppear { presentRequestedLogin() }
         .onChange(of: appState.shouldPresentLogin) { _, _ in presentRequestedLogin() }
@@ -121,6 +142,45 @@ struct ProfileView: View {
     }
 
     // MARK: - 应用设置
+
+    /// 常驻项目（对应原版「常驻项目」）。
+    private var pinnedSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionHeader(title: "常驻项目")
+            Button {
+                Task { await refreshLogin() }
+            } label: {
+                HStack(spacing: 12) {
+                    SettingsIcon(systemName: "arrow.triangle.2.circlepath", tint: AppTheme.mint)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("刷新登录状态").font(.subheadline.weight(.medium))
+                        Text("如果一卡通或者考试成绩等无法查询，可能是登录过期，需重新登录一次")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Spacer(minLength: 0)
+                    if isRefreshingLogin { ProgressView().controlSize(.small) }
+                }
+                .padding(14)
+                .adaptiveGlass(cornerRadius: 20, interactive: true)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @MainActor
+    private func refreshLogin() async {
+        guard !isRefreshingLogin else { return }
+        isRefreshingLogin = true
+        defer { isRefreshingLogin = false }
+        do {
+            _ = try await CampusServiceClient.shared.refreshOnePortalToken()
+            refreshMessage = "登录状态已刷新"
+        } catch {
+            refreshMessage = "刷新失败：\(error.localizedDescription)"
+        }
+    }
 
     private var settingsList: some View {
         VStack(spacing: 0) {

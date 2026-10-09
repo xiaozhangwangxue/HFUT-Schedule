@@ -24,6 +24,7 @@ enum AppSettingsKey {
     static let autoTermStart = "appAutoTermStart"              // 自动计算学期
     static let manualTermStart = "appManualTermStart"          // 学期开始时间
     static let useDefaultCardPassword = "useDefaultCardPassword" // 使用默认一卡通密码
+    static let ignoreExcludedGrades = "ignoreUnjoinedGradeItems" // 忽略平均成绩的排除计算
 }
 
 enum AppAppearance: String, CaseIterable, Identifiable {
