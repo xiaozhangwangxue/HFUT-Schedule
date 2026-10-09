@@ -254,17 +254,21 @@ private struct ModuleCreditsBar: View {
 
     var body: some View {
         let total = items.reduce(0) { $0 + $1.1 }
-        GeometryReader { proxy in
-            HStack(spacing: 2) {
-                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(Self.colors[index % Self.colors.count])
-                        .frame(width: total > 0 ? max(4, proxy.size.width * item.1 / total - 2) : 4)
+        if items.isEmpty || total <= 0 {
+            EmptyView()
+        } else {
+            GeometryReader { proxy in
+                HStack(spacing: 2) {
+                    ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(Self.colors[index % Self.colors.count])
+                            .frame(width: max(4, proxy.size.width * item.1 / total - 2))
+                    }
                 }
             }
+            .frame(height: 8)
+            .padding(.top, 2)
         }
-        .frame(height: 8)
-        .padding(.top, 2)
     }
 
     private static let colors: [Color] = [AppTheme.accent, AppTheme.mint, AppTheme.violet, .orange, .pink, .teal]
