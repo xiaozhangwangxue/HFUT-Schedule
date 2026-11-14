@@ -1,22 +1,10 @@
 // 小组件渲染预览：把 WeeklyScheduleWidgetView 渲染成 PNG，便于在装机前检查排版。
 // 用法：
-//   swiftc -parse-as-library Shared/WeeklyScheduleWidgetView.swift scripts/render_widget_preview.swift \
-//     -target arm64-apple-macos13.0 -o /tmp/widget_preview && /tmp/widget_preview /tmp/widget.png
+//   swiftc -parse-as-library Shared/WidgetScheduleBridge.swift Shared/WidgetScheduleCalendar.swift \
+//     Shared/WeeklyScheduleWidgetView.swift scripts/render_widget_preview.swift \
+//     -target arm64-apple-macos13.0 -o /tmp/widget_preview && /tmp/widget_preview /tmp/widget-previews
 import SwiftUI
 import AppKit
-
-struct WidgetCourseSnapshot: Identifiable, Equatable {
-    var id: UUID
-    var name: String
-    var teacher: String
-    var location: String
-    var weekday: Int
-    var startTime: String
-    var endTime: String
-    var colorIndex: Int
-    var weekIndices: [Int]?
-    var dates: [String]?
-}
 
 private func course(
     _ name: String,

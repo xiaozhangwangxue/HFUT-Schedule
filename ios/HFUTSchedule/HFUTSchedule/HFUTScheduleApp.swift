@@ -10,6 +10,7 @@ struct HFUTScheduleApp: App {
     @StateObject private var academicRecordsStore = AcademicRecordsStore()
     @StateObject private var academicStudentStore = AcademicStudentStore()
     @AppStorage(AppSettingsKey.appearance) private var appearance = AppAppearance.auto.rawValue
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         CampusSessionStore.shared.bootstrap()
@@ -28,6 +29,9 @@ struct HFUTScheduleApp: App {
                 .tint(AppTheme.accent)
                 .preferredColorScheme(preferredScheme)
                 .onOpenURL { appState.open($0) }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { scheduleStore.refreshWidgetSnapshot() }
+                }
         }
     }
 

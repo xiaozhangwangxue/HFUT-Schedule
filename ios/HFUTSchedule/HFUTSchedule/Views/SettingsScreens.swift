@@ -324,31 +324,13 @@ struct PreferencesSettingsView: View {
                 }
             }
 
-            Section("存储") {
-                Button {
-                    exportingBackup = true
-                } label: {
-                    Label("导出课表备份", systemImage: "square.and.arrow.up")
-                }
-                Button {
-                    importingBackup = true
-                } label: {
-                    Label("恢复课表备份", systemImage: "square.and.arrow.down")
-                }
-                Button {
-                    clearCache()
-                } label: {
-                    HStack {
-                        Label("缓存清理", systemImage: "trash")
-                        Spacer()
-                        Text(cacheSize).foregroundStyle(.secondary)
-                    }
-                }
-            }
+            storageSection
         }
         .navigationTitle("偏好与配置")
         .navigationBarTitleDisplayMode(.inline)
         .task { cacheSize = Self.cacheSizeText() }
+        .onChange(of: autoTermStart) { _, _ in scheduleStore.refreshWidgetSnapshot() }
+        .onChange(of: manualTermStart) { _, _ in scheduleStore.refreshWidgetSnapshot() }
         .fileExporter(
             isPresented: $exportingBackup,
             document: ScheduleBackupDocument(courses: scheduleStore.courses, events: eventStore.events),
@@ -368,6 +350,31 @@ struct PreferencesSettingsView: View {
         } message: {
             Text(message ?? "")
         }
+    }
+
+    private var storageSection: some View {
+    Section("存储") {
+        NavigationLink { WidgetSyncSettingsView() } label: { Label("桌面小组件", systemImage: "rectangle.on.rectangle") }
+        Button {
+            exportingBackup = true
+        } label: {
+            Label("导出课表备份", systemImage: "square.and.arrow.up")
+        }
+        Button {
+            importingBackup = true
+        } label: {
+            Label("恢复课表备份", systemImage: "square.and.arrow.down")
+        }
+        Button {
+            clearCache()
+        } label: {
+            HStack {
+                Label("缓存清理", systemImage: "trash")
+                Spacer()
+                Text(cacheSize).foregroundStyle(.secondary)
+            }
+        }
+    }
     }
 
     private var currentWeek: Int {
@@ -429,6 +436,7 @@ struct PreferencesSettingsView: View {
             if let preferences = payload.preferences {
                 BackupPreferences.restore(preferences)
                 AppTheme.restoreAccent()
+                scheduleStore.refreshWidgetSnapshot()
             }
             Task { try? await notificationManager.reschedule(for: payload.courses) }
             message = "已恢复 \(payload.courses.count) 门课程\(payload.events.map { "、\($0.count) 项日程" } ?? "")。"
@@ -739,6 +747,7 @@ struct SettingsSearchView: View {
         Entry(title: "忽略平均成绩的排除计算", detail: "让被排除的成绩参与平均分", target: .preferences),
         Entry(title: "课程提醒", detail: "上课前提醒", target: .preferences),
         Entry(title: "备份与恢复", detail: "导出、恢复课表备份", target: .preferences),
+        Entry(title: "桌面小组件", detail: "共享课表、同步状态、重新签名", target: .preferences),
         Entry(title: "缓存清理", detail: "清理缓存不影响数据", target: .preferences),
         Entry(title: "一卡通密码", detail: "快速充值与校园网登录", target: .network),
         Entry(title: "校园网密码", detail: "校园网一键登录", target: .network),

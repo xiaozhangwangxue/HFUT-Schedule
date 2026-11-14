@@ -40,6 +40,13 @@ struct WeeklyScheduleViewData {
     var week: Int
     var monday: Date?
     var courses: [WidgetCourseSnapshot]
+    var hasScheduleData: Bool = true
+    var calendar: Calendar = WidgetScheduleCalendar.gregorian()
+
+    var emptyStateTitle: String { hasScheduleData ? "本周没有课程" : "还没有课表数据" }
+    var emptyStateMessage: String {
+        hasScheduleData ? "课表已同步\n打开 App 查看其他周次或周末课程" : "打开 App 同步一次课表\n这里就会显示本周课程"
+    }
 }
 
 enum SchedulePalette {
@@ -78,16 +85,16 @@ struct WeeklyScheduleWidgetView: View {
         .padding(.bottom, 6)
     }
 
-    /// 还没有课表数据时的引导页：保留日期与星期表头，提示打开 App 同步一次。
+    /// 区分尚未收到数据和已同步但本周无课，避免把正常的空周误报为同步失败。
     private var emptyState: some View {
         VStack(spacing: 7) {
-            Image(systemName: "calendar.badge.plus")
+            Image(systemName: data.hasScheduleData ? "calendar.badge.checkmark" : "calendar.badge.plus")
                 .font(.system(size: 28, weight: .light))
                 .foregroundStyle(palette.title.opacity(0.8))
-            Text("还没有课表数据")
+            Text(data.emptyStateTitle)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(palette.cardText)
-            Text("打开 App 同步一次课表\n这里就会显示本周课程")
+            Text(data.emptyStateMessage)
                 .font(.system(size: 10))
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
@@ -116,7 +123,7 @@ struct WeeklyScheduleWidgetView: View {
             Spacer(minLength: 0)
             Image(systemName: "clock")
                 .font(.system(size: 10, weight: .bold))
-            Text(Date(), style: .time)
+            Text(data.date, style: .time)
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .monospacedDigit()
         }
@@ -127,7 +134,7 @@ struct WeeklyScheduleWidgetView: View {
     private var dayHeaderRow: some View {
         HStack(spacing: 4) {
             ForEach(1...5, id: \.self) { weekday in
-                let isToday = Self.isToday(weekday, monday: data.monday)
+                let isToday = isToday(weekday)
                 VStack(spacing: 1) {
                     Text("周\(Self.weekdayNames[weekday - 1])")
                         .font(.system(size: 9.5, weight: .bold))
@@ -148,30 +155,32 @@ struct WeeklyScheduleWidgetView: View {
     }
 
     private var dateText: String {
-        Self.formatter("MM/dd").string(from: data.date)
+        formatter("MM/dd").string(from: data.date)
     }
 
     private var weekdayText: String {
-        Self.formatter("EEEE").string(from: data.date)
+        formatter("EEEE").string(from: data.date)
     }
 
     private func dateLabel(for weekday: Int) -> String {
         guard let monday = data.monday,
-              let date = Calendar.current.date(byAdding: .day, value: weekday - 1, to: monday) else { return "--/--" }
-        return Self.formatter("MM/dd").string(from: date)
+              let date = data.calendar.date(byAdding: .day, value: weekday - 1, to: monday) else { return "--/--" }
+        return formatter("MM/dd").string(from: date)
     }
 
-    private static func formatter(_ format: String) -> DateFormatter {
+    private func formatter(_ format: String) -> DateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
+        formatter.calendar = data.calendar
+        formatter.timeZone = data.calendar.timeZone
         formatter.dateFormat = format
         return formatter
     }
 
-    private static func isToday(_ weekday: Int, monday: Date?) -> Bool {
-        guard let monday,
-              let date = Calendar.current.date(byAdding: .day, value: weekday - 1, to: monday) else { return false }
-        return Calendar.current.isDateInToday(date)
+    private func isToday(_ weekday: Int) -> Bool {
+        guard let monday = data.monday,
+              let date = data.calendar.date(byAdding: .day, value: weekday - 1, to: monday) else { return false }
+        return data.calendar.isDate(date, inSameDayAs: data.date)
     }
 }
 
@@ -237,7 +246,8 @@ private struct ScheduleCourseCard: View {
     let palette: WidgetPalette
 
     private var tint: Color {
-        SchedulePalette.courseTints[abs(course.colorIndex) % SchedulePalette.courseTints.count]
+        let count = SchedulePalette.courseTints.count
+        return SchedulePalette.courseTints[((course.colorIndex % count) + count) % count]
     }
 
     private var title: String {

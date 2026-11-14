@@ -19,8 +19,6 @@ struct DashboardView: View {
     @State private var isRefreshingCampusCardBalance = false
     @State private var tomorrowStatus: FocusTomorrowStatus = .firstClass(hour: nil)
 
-    private let serviceColumns = [GridItem(.flexible()), GridItem(.flexible())]
-
     private var todayIndex: Int {
         Calendar.current.component(.weekday, from: now).mondayBasedWeekday
     }
@@ -63,7 +61,7 @@ struct DashboardView: View {
                     eventList
                 } else {
                     eventList
-                    LazyVGrid(columns: serviceColumns, spacing: 10) {
+                    CampusAdaptiveGrid(minimumItemWidth: 180, spacing: 10, maximumContentWidth: 840) {
                         ForEach(quickFeatures) { feature in
                             SourceAnchoredNavigationLink(sourceID: "dashboard-service-\(feature.id)") {
                                 FeatureDetailView(feature: feature)
@@ -75,9 +73,11 @@ struct DashboardView: View {
                     }
                 }
             }
+            .frame(maxWidth: 840)
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .frame(maxWidth: .infinity)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle(dateTitle)
@@ -176,7 +176,7 @@ struct DashboardView: View {
     }
 
     private var campusSnapshot: some View {
-        LazyVGrid(columns: serviceColumns, spacing: 8) {
+        CampusAdaptiveGrid(minimumItemWidth: 180, spacing: 8, maximumContentWidth: 840) {
             VStack(spacing: 0) {
                 SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-card") {
                     FeatureDetailView(feature: feature(1))
@@ -270,9 +270,9 @@ struct DashboardView: View {
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.caption).foregroundStyle(.secondary)
-                Text(value).font(.body).foregroundStyle(.primary).lineLimit(1)
+                Text(value).font(.body).foregroundStyle(.primary).lineLimit(2)
                 if let footnote {
-                    Text(footnote).font(.caption2).foregroundStyle(.tertiary).lineLimit(1)
+                    Text(footnote).font(.caption2).foregroundStyle(.tertiary).lineLimit(2)
                 }
             }
             Spacer(minLength: 0)

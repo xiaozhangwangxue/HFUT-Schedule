@@ -4,7 +4,7 @@
 <dict>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>K6T9P3LS8V.com.xiaozhangwangxue.hfutschedule.ios</string>
+		<string>$(AppIdentifierPrefix)com.xiaozhangwangxue.hfutschedule.ios</string>
 	</array>
 </dict>
 </plist>

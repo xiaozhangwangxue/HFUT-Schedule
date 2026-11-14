@@ -58,7 +58,7 @@ enum ScheduleCalendar {
         let today = calendar.startOfDay(for: Date())
         let days = calendar.dateComponents([.day], from: termStart, to: today).day ?? 0
         guard days >= 0 else { return 1 }
-        return min(20, max(1, days / 7 + 1))
+        return max(1, days / 7 + 1)
     }
 
     static func startDate(of week: Int, termStart: Date?) -> Date? {
@@ -416,13 +416,14 @@ struct WeekStepper: View {
 
 struct WeekPickerSheet: View {
     @Binding var selectedWeek: Int
+    var maximumWeek: Int = 20
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
-                    ForEach(1...20, id: \.self) { week in
+                    ForEach(1...maximumWeek, id: \.self) { week in
                         Button("第 \(week) 周") {
                             selectedWeek = week
                             dismiss()

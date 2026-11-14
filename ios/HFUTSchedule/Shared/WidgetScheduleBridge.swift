@@ -1,21 +1,17 @@
 import Foundation
 import Security
 
-/// 主应用与小组件之间的数据通道。
-///
-/// 免费个人团队不能使用 App Groups，所以这里使用三条通道按优先级读取：
-/// 1. App Group（签名支持时自动生效）
-/// 2. 共享钥匙串（免费团队描述文件自带 `TEAM.*` keychain 分组，可用）
-/// 3. 构建时写入小组件包内的快照 JSON（保底，保证小组件永远有内容显示）
+/// App and extension must be re-signed with a common keychain access group.
+/// Runtime queries use the groups granted by that signature, never a fixed team ID.
 enum WidgetScheduleBridge {
     static let widgetKind = "HFUTWeeklyScheduleWidget"
     static let appGroupIdentifier = "group.com.xiaozhangwangxue.hfutschedule.ios"
-    static let snapshotDefaultsKey = "weeklyScheduleSnapshotV1"
     static let bundledSnapshotResource = "ScheduleSnapshot"
     static let documentsSnapshotName = "hfut-widget-snapshot.json"
     static let keychainService = "com.xiaozhangwangxue.hfutschedule.widget.snapshot"
     static let keychainAccount = "weekly-schedule"
-    static let keychainAccessGroup = "K6T9P3LS8V.com.xiaozhangwangxue.hfutschedule.ios"
+    static let receiptAccount = "weekly-schedule.receipt"
+    static let publicationStatusKey = "widgetPublicationStatusV2"
 }
 
 struct WidgetCourseSnapshot: Codable, Identifiable, Equatable {
@@ -31,85 +27,192 @@ struct WidgetCourseSnapshot: Codable, Identifiable, Equatable {
     var dates: [String]?
 }
 
+struct WidgetScheduleSnapshot: Codable, Equatable {
+    var formatVersion = 2
+    var revision: UUID
+    var updatedAt: Date
+    var termStart: Date?
+    var courses: [WidgetCourseSnapshot]
+}
+
+struct WidgetSnapshotReceipt: Codable, Equatable {
+    let revision: UUID
+    let readAt: Date
+}
+
+enum WidgetSnapshotSource: Equatable { case appGroup, keychain, bundle }
+
+struct WidgetSnapshotLoadResult {
+    let snapshot: WidgetScheduleSnapshot?
+    let source: WidgetSnapshotSource?
+    var hasScheduleData: Bool {
+        guard let snapshot else { return false }
+        return source != .bundle || !snapshot.courses.isEmpty
+    }
+}
+
+struct WidgetPublicationStatus: Codable, Equatable {
+    let revision: UUID
+    let publishedAt: Date
+    let courseCount: Int
+    let appGroupWritten: Bool
+    let keychainStatus: Int32
+
+    var didWrite: Bool { appGroupWritten || keychainStatus == errSecSuccess }
+}
+
+/// All transport is injectable so tests never access a person's keychain or schedule.
+struct WidgetSnapshotTransport {
+    var readAppGroup: () -> Data?
+    var writeAppGroup: (Data) -> Bool
+    var readKeychain: () -> Data?
+    var writeKeychain: (Data) -> Int32
+    var readBundle: () -> Data?
+    var readReceipt: () -> Data?
+    var writeReceipt: (Data) -> Void
+    var recordPublication: (WidgetPublicationStatus) -> Void
+    var writeDocumentsCopy: (Data) -> Void
+
+    static var live: Self {
+        Self(
+            readAppGroup: { SharedWidgetFiles.read("snapshot-v2.json") },
+            writeAppGroup: { SharedWidgetFiles.write($0, name: "snapshot-v2.json") },
+            readKeychain: { SharedKeychainSnapshot.read(account: WidgetScheduleBridge.keychainAccount) },
+            writeKeychain: { SharedKeychainSnapshot.write($0, account: WidgetScheduleBridge.keychainAccount) },
+            readBundle: {
+                guard let url = Bundle.main.url(forResource: WidgetScheduleBridge.bundledSnapshotResource, withExtension: "json") else { return nil }
+                return try? Data(contentsOf: url)
+            },
+            readReceipt: {
+                let values = [SharedWidgetFiles.read("receipt-v2.json"), SharedKeychainSnapshot.read(account: WidgetScheduleBridge.receiptAccount)]
+                return values.compactMap { $0 }.compactMap { data -> (Data, WidgetSnapshotReceipt)? in
+                    guard let receipt = try? JSONDecoder().decode(WidgetSnapshotReceipt.self, from: data) else { return nil }
+                    return (data, receipt)
+                }.max(by: { $0.1.readAt < $1.1.readAt })?.0
+            },
+            writeReceipt: { data in
+                _ = SharedWidgetFiles.write(data, name: "receipt-v2.json")
+                _ = SharedKeychainSnapshot.write(data, account: WidgetScheduleBridge.receiptAccount)
+            },
+            recordPublication: { status in
+                if let data = try? JSONEncoder().encode(status) { UserDefaults.standard.set(data, forKey: WidgetScheduleBridge.publicationStatusKey) }
+            },
+            writeDocumentsCopy: { data in
+                guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+                try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try? data.write(to: directory.appendingPathComponent(WidgetScheduleBridge.documentsSnapshotName), options: .atomic)
+            }
+        )
+    }
+}
+
 enum WidgetSnapshotStore {
-    static func encode(_ courses: [WidgetCourseSnapshot]) -> Data? {
-        try? JSONEncoder().encode(courses)
+    static func encode(_ courses: [WidgetCourseSnapshot]) -> Data? { try? JSONEncoder().encode(courses) }
+    static func decode(_ data: Data) -> [WidgetCourseSnapshot] { decodeSnapshot(data)?.courses ?? [] }
+
+    static func decodeSnapshot(_ data: Data) -> WidgetScheduleSnapshot? {
+        if let snapshot = try? JSONDecoder().decode(WidgetScheduleSnapshot.self, from: data), snapshot.formatVersion == 2 {
+            return snapshot
+        }
+        // Preserve compatibility with existing local and bundled array snapshots.
+        guard let courses = try? JSONDecoder().decode([WidgetCourseSnapshot].self, from: data) else { return nil }
+        return WidgetScheduleSnapshot(formatVersion: 1, revision: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                                      updatedAt: .distantPast, termStart: nil, courses: courses)
     }
 
-    static func decode(_ data: Data) -> [WidgetCourseSnapshot] {
-        (try? JSONDecoder().decode([WidgetCourseSnapshot].self, from: data)) ?? []
+    @discardableResult
+    static func store(_ courses: [WidgetCourseSnapshot], termStart: Date? = nil,
+                      transport: WidgetSnapshotTransport = .live, now: Date = .now) -> Bool {
+        let previous = loadSnapshot(transport: transport)
+        let sameContent = previous?.formatVersion == 2 && previous?.courses == courses && previous?.termStart == termStart
+        let revision = sameContent ? previous!.revision : UUID()
+        let publicationDate = orderedDate(now: now, after: previous?.updatedAt)
+        let snapshot = WidgetScheduleSnapshot(revision: revision, updatedAt: publicationDate, termStart: termStart, courses: courses)
+        guard let data = try? JSONEncoder().encode(snapshot) else { return false }
+        let groupWritten = transport.writeAppGroup(data)
+        let keychainStatus = transport.writeKeychain(data)
+        let status = WidgetPublicationStatus(revision: snapshot.revision, publishedAt: now,
+            courseCount: courses.count, appGroupWritten: groupWritten, keychainStatus: keychainStatus)
+        transport.recordPublication(status)
+        transport.writeDocumentsCopy(data)
+        return status.didWrite
     }
 
-    /// 主应用在课表变化时调用：写入所有可用通道，并留一份 Documents 副本便于导出。
-    static func store(_ courses: [WidgetCourseSnapshot]) {
-        guard let data = encode(courses) else { return }
-        if let defaults = UserDefaults(suiteName: WidgetScheduleBridge.appGroupIdentifier) {
-            defaults.set(data, forKey: WidgetScheduleBridge.snapshotDefaultsKey)
-        }
-        SharedKeychainSnapshot.write(data)
-        writeDocumentsCopy(data)
+    static var lastSyncStatus: WidgetPublicationStatus? {
+        guard let data = UserDefaults.standard.data(forKey: WidgetScheduleBridge.publicationStatusKey) else { return nil }
+        return try? JSONDecoder().decode(WidgetPublicationStatus.self, from: data)
     }
 
-    /// 小组件读取：按可用性依次回退。
-    static func load() -> [WidgetCourseSnapshot] {
-        if let defaults = UserDefaults(suiteName: WidgetScheduleBridge.appGroupIdentifier),
-           let data = defaults.data(forKey: WidgetScheduleBridge.snapshotDefaultsKey) {
-            let courses = decode(data)
-            if !courses.isEmpty { return courses }
-        }
-        if let data = SharedKeychainSnapshot.read() {
-            let courses = decode(data)
-            if !courses.isEmpty { return courses }
-        }
-        if let url = Bundle.main.url(
-            forResource: WidgetScheduleBridge.bundledSnapshotResource,
-            withExtension: "json"
-        ), let data = try? Data(contentsOf: url) {
-            return decode(data)
-        }
-        return []
+    static func acknowledged(_ status: WidgetPublicationStatus, transport: WidgetSnapshotTransport = .live) -> Bool {
+        guard let data = transport.readReceipt(), let receipt = try? JSONDecoder().decode(WidgetSnapshotReceipt.self, from: data) else { return false }
+        return receipt.revision == status.revision
     }
 
-    private static func writeDocumentsCopy(_ data: Data) {
-        guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
-        let url = directory.appendingPathComponent(WidgetScheduleBridge.documentsSnapshotName)
-        try? data.write(to: url, options: .atomic)
+    static func load() -> [WidgetCourseSnapshot] { loadSnapshot()?.courses ?? [] }
+
+    static func loadSnapshot(acknowledge: Bool = false, transport: WidgetSnapshotTransport = .live) -> WidgetScheduleSnapshot? {
+        loadResult(acknowledge: acknowledge, transport: transport).snapshot
+    }
+
+    static func loadResult(acknowledge: Bool = false, transport: WidgetSnapshotTransport = .live) -> WidgetSnapshotLoadResult {
+        // A valid empty snapshot is authoritative. Never resurrect an older bundled schedule.
+        let shared: [(WidgetScheduleSnapshot, WidgetSnapshotSource)] = [
+            transport.readAppGroup().flatMap(decodeSnapshot).map { ($0, .appGroup) },
+            transport.readKeychain().flatMap(decodeSnapshot).map { ($0, .keychain) }
+        ].compactMap { $0 }
+        if let newest = shared.max(by: { $0.0.updatedAt < $1.0.updatedAt }) {
+            let previousReceipt = transport.readReceipt().flatMap { try? JSONDecoder().decode(WidgetSnapshotReceipt.self, from: $0) }
+            let receiptDate = orderedDate(now: .now, after: previousReceipt?.readAt)
+            if acknowledge, let receipt = try? JSONEncoder().encode(WidgetSnapshotReceipt(revision: newest.0.revision, readAt: receiptDate)) {
+                transport.writeReceipt(receipt)
+            }
+            return WidgetSnapshotLoadResult(snapshot: newest.0, source: newest.1)
+        }
+        if let bundled = transport.readBundle().flatMap(decodeSnapshot) {
+            return WidgetSnapshotLoadResult(snapshot: bundled, source: .bundle)
+        }
+        return WidgetSnapshotLoadResult(snapshot: nil, source: nil)
+    }
+
+    private static func orderedDate(now: Date, after previous: Date?) -> Date {
+        guard let previous, previous >= now else { return now }
+        return Date(timeIntervalSinceReferenceDate: previous.timeIntervalSinceReferenceDate.nextUp)
+    }
+}
+
+private enum SharedWidgetFiles {
+    private static func url(_ name: String) -> URL? {
+        // A suite-name object is NOT evidence that a signing entitlement exists.
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: WidgetScheduleBridge.appGroupIdentifier)?
+            .appendingPathComponent(name)
+    }
+    static func read(_ name: String) -> Data? { url(name).flatMap { try? Data(contentsOf: $0) } }
+    static func write(_ data: Data, name: String) -> Bool {
+        guard let destination = url(name) else { return false }
+        do { try data.write(to: destination, options: .atomic); return true }
+        catch { return false }
     }
 }
 
 private enum SharedKeychainSnapshot {
-    private static var baseQuery: [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: WidgetScheduleBridge.keychainService,
-            kSecAttrAccount as String: WidgetScheduleBridge.keychainAccount,
-            kSecAttrAccessGroup as String: WidgetScheduleBridge.keychainAccessGroup
-        ]
+    static func query(account: String) -> [String: Any] {
+        // Omitting agrp uses groups from the current signature. The shipping
+        // entitlements put the SAME shared group first in App and Widget.
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: WidgetScheduleBridge.keychainService,
+         kSecAttrAccount as String: account]
     }
-
-    static func write(_ data: Data) {
-        let query = baseQuery
-        let attributes: [String: Any] = [kSecValueData as String: data]
-        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-        if status == errSecSuccess { return }
-        // 已有旧条目但更新失败（属性不一致等）时先删掉再重建，避免写入被静默丢弃。
-        if status != errSecItemNotFound {
-            SecItemDelete(query as CFDictionary)
-        }
+    static func write(_ data: Data, account: String) -> Int32 {
+        let query = query(account: account)
+        let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        guard status == errSecItemNotFound else { return status }
         var insert = query
         insert[kSecValueData as String] = data
         insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        let addStatus = SecItemAdd(insert as CFDictionary, nil)
-        if addStatus != errSecSuccess {
-            // 访问分组不可写时保留主应用自身的副本；此副本不保证扩展可读，扩展仍会显示同步引导。
-            var fallback = insert
-            fallback.removeValue(forKey: kSecAttrAccessGroup as String)
-            SecItemAdd(fallback as CFDictionary, nil)
-        }
+        return SecItemAdd(insert as CFDictionary, nil)
     }
-
-    static func read() -> Data? {
-        var query = baseQuery
+    static func read(account: String) -> Data? {
+        var query = query(account: account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?

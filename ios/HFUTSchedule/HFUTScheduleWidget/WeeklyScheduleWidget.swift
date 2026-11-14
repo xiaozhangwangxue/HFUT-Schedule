@@ -6,9 +6,10 @@ private struct WeeklyScheduleEntry: TimelineEntry {
     let week: Int
     let monday: Date?
     let courses: [WidgetCourseSnapshot]
+    let hasScheduleData: Bool
 
     var viewData: WeeklyScheduleViewData {
-        WeeklyScheduleViewData(date: date, week: week, monday: monday, courses: courses)
+        WeeklyScheduleViewData(date: date, week: week, monday: monday, courses: courses, hasScheduleData: hasScheduleData)
     }
 }
 
@@ -17,8 +18,9 @@ private struct WeeklyScheduleProvider: TimelineProvider {
         WeeklyScheduleEntry(
             date: .now,
             week: 2,
-            monday: Self.calendar.startOfDay(for: .now),
-            courses: Self.previewCourses
+            monday: WidgetScheduleCalendar.gregorian().dateInterval(of: .weekOfYear, for: .now)?.start,
+            courses: Self.previewCourses,
+            hasScheduleData: true
         )
     }
 
@@ -28,88 +30,24 @@ private struct WeeklyScheduleProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WeeklyScheduleEntry>) -> Void) {
         let current = entry(previewWhenEmpty: false)
-        completion(Timeline(entries: [current], policy: .after(Self.nextRefresh(for: current))))
+        completion(Timeline(entries: [current], policy: .after(WidgetScheduleCalendar.nextRefresh(
+            after: current.date, hasScheduleData: current.hasScheduleData
+        ))))
     }
 
-    /// 下次刷新时间：每天 00:01 换日，同时最多每 30 分钟刷新一次，
-    /// 没有数据时缩短到 15 分钟，等 App 写入快照后尽快显示出来。
-    private static func nextRefresh(for entry: WeeklyScheduleEntry) -> Date {
-        let now = Date()
-        let nextMidnight = calendar.nextDate(
-            after: now,
-            matching: DateComponents(hour: 0, minute: 1),
-            matchingPolicy: .nextTime
-        ) ?? now.addingTimeInterval(3600)
-        let interval: TimeInterval = entry.courses.isEmpty ? 15 * 60 : 30 * 60
-        return min(nextMidnight, now.addingTimeInterval(interval))
-    }
-
-    private func entry(previewWhenEmpty: Bool) -> WeeklyScheduleEntry {
-        let allCourses = WidgetSnapshotStore.load()
-        let termStart = Self.termStart(from: allCourses)
-        let week = Self.currentWeek(termStart: termStart)
-        let activeCourses = Self.courses(allCourses, in: week)
+    private func entry(previewWhenEmpty: Bool, date: Date = .now) -> WeeklyScheduleEntry {
+        // The bridge acknowledges only App Group / shared-keychain snapshots.
+        // A filtered empty week still proves that schedule data was received.
+        let result = WidgetSnapshotStore.loadResult(acknowledge: true)
+        let projected = WidgetScheduleCalendar.project(result.snapshot, on: date)
+        let showPreview = previewWhenEmpty && !result.hasScheduleData
         return WeeklyScheduleEntry(
-            date: .now,
-            week: week,
-            monday: Self.startDate(of: week, termStart: termStart),
-            courses: activeCourses.isEmpty && previewWhenEmpty ? Self.previewCourses : activeCourses
+            date: date,
+            week: projected.week,
+            monday: projected.monday,
+            courses: showPreview ? Self.previewCourses : projected.courses,
+            hasScheduleData: result.hasScheduleData || showPreview
         )
-    }
-
-    private static let calendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "zh_CN")
-        calendar.timeZone = .current
-        calendar.firstWeekday = 2
-        return calendar
-    }()
-
-    private static func termStart(from courses: [WidgetCourseSnapshot]) -> Date? {
-        for course in courses {
-            guard let week = course.weekIndices?.sorted().first,
-                  let text = course.dates?.sorted().first,
-                  let date = isoDate(text) else { continue }
-            let days = (week - 1) * 7 + max(0, course.weekday - 1)
-            if let start = calendar.date(byAdding: .day, value: -days, to: date) {
-                return calendar.startOfDay(for: start)
-            }
-        }
-        return nil
-    }
-
-    private static func currentWeek(termStart: Date?) -> Int {
-        guard let termStart else { return 1 }
-        let days = calendar.dateComponents([.day], from: termStart, to: calendar.startOfDay(for: .now)).day ?? 0
-        guard days >= 0 else { return 1 }
-        return min(20, max(1, days / 7 + 1))
-    }
-
-    private static func startDate(of week: Int, termStart: Date?) -> Date? {
-        guard let termStart else { return nil }
-        return calendar.date(byAdding: .day, value: (week - 1) * 7, to: termStart)
-    }
-
-    private static func courses(_ courses: [WidgetCourseSnapshot], in week: Int) -> [WidgetCourseSnapshot] {
-        var seen = Set<String>()
-        return courses
-            .filter { course in
-                guard let weeks = course.weekIndices, !weeks.isEmpty else { return true }
-                return weeks.contains(week)
-            }
-            .filter { course in
-                let key = [course.name, course.teacher, course.location, String(course.weekday), course.startTime, course.endTime]
-                    .joined(separator: "|")
-                return seen.insert(key).inserted
-            }
-    }
-
-    private static func isoDate(_ text: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: text)
     }
 
     private static let previewCourses: [WidgetCourseSnapshot] = [
@@ -159,7 +97,7 @@ private struct WidgetRootView: View {
             .containerBackground(for: .widget) {
                 WidgetPalette.resolve(colorScheme).canvas
             }
-            .widgetURL(URL(string: "hfut-schedule://"))
+            .widgetURL(URL(string: "hfut-schedule://schedule"))
     }
 }
 

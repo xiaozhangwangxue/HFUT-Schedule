@@ -8,11 +8,6 @@ struct ServicesView: View {
     @State private var hiddenServiceIDs: Set<Int> = []
     @State private var showingEditor = false
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 8),
-        GridItem(.flexible(), spacing: 8)
-    ]
-
     private var filtered: [CampusFeature] {
         orderedFeatures.filter { feature in
             let text = "\(feature.title) \(feature.subtitle) \(feature.category.rawValue)"
@@ -30,7 +25,7 @@ struct ServicesView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 8) {
+            CampusAdaptiveGrid {
                 ForEach(filtered) { feature in
                     SourceAnchoredNavigationLink(sourceID: "service-\(feature.id)") {
                         FeatureDetailView(feature: feature)
@@ -43,6 +38,7 @@ struct ServicesView: View {
             .padding(.horizontal, 10)
             .padding(.top, 8)
             .padding(.bottom, 24)
+            .frame(maxWidth: .infinity)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("查询中心")
@@ -144,18 +140,19 @@ private struct CompactFeatureTile: View {
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
                 Text(feature.title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 Text(feature.subtitle)
-                    .font(.system(size: 8.5))
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 9)
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
         .contentShape(Rectangle())
         .adaptiveGlass(cornerRadius: 10, tint: AppTheme.accent.opacity(0.025), interactive: true)
         .accessibilityElement(children: .combine)

@@ -1,8 +1,8 @@
 # 聚在工大 iOS 工程
 
-当前版本 **1.2.0**，运行于 iOS 17.0 及以上。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
+当前版本 **1.2.1**，运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
 
-本次同步的上游范围为 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，实现状态见 [MIGRATION.md](MIGRATION.md)。
+1.2.1 修复已保存课表在升级 / 重签名后没有到达小组件的通道问题。上游同步范围沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md)，当前修复见 [1.2.1](../../docs/ios/1.2.1.md)。
 
 ## 工程组成
 
@@ -17,7 +17,7 @@
 
 ## 构建与测试
 
-建议 Xcode 27.x，先安装 XcodeGen：
+使用包含 iOS 27.2 SDK 的 Xcode，先安装 XcodeGen：
 
 ```sh
 brew install xcodegen
@@ -40,7 +40,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
 ```
 
-产物位于 `dist/HFUTSchedule-iOS-1.2.0-unsigned.ipa`。IPA 必须另外签名后才能安装到 iPhone；本流程不依赖 Apple 账号，也不自动安装设备。
+产物位于 `dist/HFUTSchedule-iOS-1.2.1-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.1-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
 
 模拟器测试使用本机已有目标。先执行 `xcrun simctl list devices available`，再从工程目录运行：
 
@@ -53,7 +53,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 
 目标名称按本机可用模拟器调整。`HFUTSchedule` 共享 scheme 关联 `HFUTScheduleTests`。测试使用构造样例、临时目录和注入传输；DeepSeek 与 QWeather 测试不访问真实 API，也不消耗用户额度。
 
-本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.0 更新说明的验证章节](../../docs/ios/1.2.0.md#验证)。
+本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.1 更新说明的验证章节](../../docs/ios/1.2.1.md#验证)。
 
 ## 认证与数据
 
@@ -78,11 +78,37 @@ AI 助手使用用户在「选项 → 网络 → DeepSeek」配置的 Key，保�
 
 ## 小组件与公共产物
 
-小组件实现了 App Group、共享钥匙串和包内 JSON 的读取通道。实际共享能力由签名权限、团队和 entitlement 配置决定，需要按自己的签名环境核对，不能仅凭存在 App Group 标识就假定共享已生效。
+### 1.2.1 同步流程
 
-公共源码中的 `ScheduleSnapshot.json` 保持为空数组。公共 IPA 也必须包含空快照；首次安装时显示「打开 App 同步课表」引导，点击组件打开应用。正常数据写入后请求重载时间线；时间线另有短间隔和跨日刷新策略，最终刷新时机由 WidgetKit 决定。
+- 启动加载已有本地课表后重新发布快照，前台返回和设置页手动发送也使用同一流程。缺失 / 损坏的本地文件不能发布空数据覆盖已有共享快照。
+- v2 快照包含课程、版本标识、时间和 `termStart`；小组件优先使用随 App 发送的学期开始日期。兼容旧数组快照。
+- 合法的空课表具有独立含义：清空课表后发送的有效空快照会压过旧数据，不回退显示旧包内课程。
+- 共享通道区分「写入成功」和「扩展已读取」。只有扩展读取后写回、且对应当前快照版本的 ACK 回执，才确认读取；App 自己回读不算扩展确认。
+- 「选项 → 偏好与配置 → 桌面小组件」显示同步状态并可手动发送。WidgetKit 的实际刷新仍由系统调度，请求重载不等于已显示。
+
+### 签名与验证
+
+两个目标的 `keychain-access-groups` 均使用 `$(AppIdentifierPrefix)com.xiaozhangwangxue.hfutschedule.ios`。运行时不再写死 `kSecAttrAccessGroup`，写入使用当前签名授予的默认首组。重签名必须保留 Widget 扩展，并让同一个已授权共享组成为两个目标的首组。不能假设 App ID prefix 始终等于团队标识。Apple 的 [Keychain Sharing 配置文档](https://developer.apple.com/documentation/xcode/configuring-keychain-sharing) 说明了动态前缀、两个目标共组和默认首组规则。
+
+`scripts/build_temporary_signed_ipa.sh` 从两个描述文件提取实际前缀与授权组，不再将维护者团队写入 entitlement；签名后调用 `verify_widget_signing.sh`。如果使用其他工具重签，可在工程目录执行：
+
+```sh
+./scripts/verify_widget_signing.sh /absolute/path/to/signed.ipa
+```
+
+该脚本只读检查签后 App / Widget、entitlement、描述文件授权及签名完整性，只报告结构和共组状态。**它必须用于已签名包**，不能用未签名公共 IPA 证明共享可用，也不能代替安装后 ACK 验证。不保证所有侧载工具会保留扩展或共同访问组。
+
+App Group 容器仍按实际签名授权决定是否可用；不能根据免费 / 付费账号身份一概判断。当前 Apple [iOS 能力表](https://developer.apple.com/help/account/reference/supported-capabilities-ios) 在免费 Apple Developer 列列出 App Groups 与 Keychain Sharing，最终仍需核对描述文件、签名和容器访问。
+
+### 公共包
+
+公共源码中的 `ScheduleSnapshot.json` 保持为空数组。公共 IPA 也必须包含空快照，不能注入维护者个人课表来掩盖共享通道问题。未同步时显示打开 App 的引导；已取得有效空课表时按无课状态处理。
 
 带个人快照的构建和临时签名工具仅用于本机。发布前应核对 App 中有 `stu.json`、嵌入的 `HFUTScheduleWidget.appex`，且快照为空；不要将旧的个人安装包作为公共附件。
+
+## Duo 与可变窗口
+
+校园信息网格按当前窗口提供的宽度和动态字体计算列数，并限制内容最大宽度，不依赖设备名称或固定屏幕尺寸。窗口变宽、收窄、旋转和 Duo 动态窗口变化时重新布局。本次 SDK 构建和窗口场景的实际验证结果见 1.2.1 发布说明，硬件验收单列。
 
 ## 当前验收边界
 

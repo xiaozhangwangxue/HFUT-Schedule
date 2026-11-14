@@ -31,6 +31,15 @@ struct ScheduleView: View {
         return regular + events + exams
     }
 
+    private var maximumWeek: Int {
+        let listed = scheduleStore.courses.flatMap { $0.weekIndices ?? [] }.max() ?? 1
+        let examWeek: Int = recordsStore.exams.compactMap { exam in
+            guard let start = termStart, let date = exam.startDate else { return nil }
+            return (ScheduleCalendar.calendar.dateComponents([.day], from: start, to: date).day ?? 0) / 7 + 1
+        }.max() ?? 1
+        return max(20, min(52, max(listed, examWeek, ScheduleCalendar.currentWeek(termStart: termStart))))
+    }
+
     private var visibleWeekdays: [Int] {
         showsWeekend ? Array(1...7) : Array(1...5)
     }
@@ -75,7 +84,7 @@ struct ScheduleView: View {
             WeekStepper(
                 week: selectedWeek,
                 canGoBack: selectedWeek > 1,
-                canGoForward: selectedWeek < 20,
+                canGoForward: selectedWeek < maximumWeek,
                 onBack: { moveWeek(-1) },
                 onCurrent: { goToCurrentWeek() },
                 onForward: { moveWeek(1) },
@@ -116,7 +125,7 @@ struct ScheduleView: View {
             AcademicScheduleSyncView()
         }
         .sheet(isPresented: $showingWeekPicker) {
-            WeekPickerSheet(selectedWeek: $selectedWeek)
+            WeekPickerSheet(selectedWeek: $selectedWeek, maximumWeek: maximumWeek)
                 .presentationDetents([.medium])
                 .presentationBackground(.ultraThinMaterial)
         }
@@ -185,19 +194,19 @@ struct ScheduleView: View {
     }
 
     private func moveWeek(_ delta: Int) {
-        let target = min(20, max(1, selectedWeek + delta))
+        let target = min(maximumWeek, max(1, selectedWeek + delta))
         guard target != selectedWeek else { return }
         withAnimation(.spring(response: 0.38, dampingFraction: 1)) { selectedWeek = target }
     }
 
     private func goToCurrentWeek() {
-        let week = ScheduleCalendar.currentWeek(termStart: termStart)
+        let week = min(maximumWeek, ScheduleCalendar.currentWeek(termStart: termStart))
         withAnimation(.spring(response: 0.38, dampingFraction: 1)) { selectedWeek = week }
     }
 
     private func chooseInitialWeekIfNeeded(force: Bool = false) {
         guard force || !didChooseInitialWeek else { return }
-        selectedWeek = ScheduleCalendar.currentWeek(termStart: termStart)
+        selectedWeek = min(maximumWeek, ScheduleCalendar.currentWeek(termStart: termStart))
         didChooseInitialWeek = true
         revealWeekendIfNeeded()
     }

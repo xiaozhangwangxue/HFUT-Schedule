@@ -1,6 +1,19 @@
 #!/bin/zsh
 set -euo pipefail
 
+export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-27.2.0-Beta.app/Contents/Developer}"
+required_sdk_version="27.2"
+if [[ ! -d "${DEVELOPER_DIR}" ]]; then
+    echo "错误：找不到 Xcode 27.2：${DEVELOPER_DIR}" >&2
+    exit 1
+fi
+actual_sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+if [[ "${actual_sdk_version}" != "${required_sdk_version}" ]]; then
+    echo "错误：公开 IPA 必须使用 iOS ${required_sdk_version} SDK，当前为 ${actual_sdk_version}（${DEVELOPER_DIR}）。" >&2
+    exit 1
+fi
+build_sdk="iphoneos${required_sdk_version}"
+
 script_dir="${0:A:h}"
 project_dir="${script_dir:h}"
 derived_data="${project_dir}/build/PublicRelease"
@@ -21,16 +34,22 @@ xcodegen generate
 xcodebuild \
   -project HFUTSchedule.xcodeproj \
   -scheme HFUTSchedule \
-  -sdk iphoneos \
+  -sdk "${build_sdk}" \
   -configuration Release \
   -derivedDataPath "${derived_data}" \
   CODE_SIGNING_ALLOWED=NO \
   build
 
-python3 - "${app_path}" <<'PY'
+python3 - "${app_path}" "${build_sdk}" <<'PY'
 from pathlib import Path
-import json, sys
+import json, plistlib, sys
 app = Path(sys.argv[1])
+expected_sdk = sys.argv[2]
+for bundle in [app, *app.glob('PlugIns/*.appex')]:
+    with (bundle/'Info.plist').open('rb') as stream:
+        info = plistlib.load(stream)
+    if info.get('DTSDKName') != expected_sdk:
+        raise SystemExit(f'Refusing public archive: {bundle.name} used {info.get("DTSDKName")}, expected {expected_sdk}.')
 snapshots = list(app.rglob('ScheduleSnapshot.json'))
 if not snapshots or not (app/'stu.json').exists():
     raise SystemExit('Public bundle is missing its widget snapshot or campus links.')
