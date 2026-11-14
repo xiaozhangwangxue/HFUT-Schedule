@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ScheduleView: View {
     @EnvironmentObject private var scheduleStore: ScheduleStore
+    @EnvironmentObject private var eventStore: CustomEventStore
+    @EnvironmentObject private var recordsStore: AcademicRecordsStore
     @EnvironmentObject private var notificationManager: CourseNotificationManager
     @State private var selectedWeek = 1
     @State private var didChooseInitialWeek = false
@@ -9,15 +11,24 @@ struct ScheduleView: View {
     @State private var showingAcademicSync = false
     @State private var showingWeekPicker = false
     @State private var selectedCourse: Course?
+    @State private var editingEvent: CustomEvent?
+    @State private var selectedExam: ResolvedAcademicExam?
     @State private var exportMessage: String?
     @AppStorage("scheduleShowsWeekend") private var showsWeekend = false
+    @AppStorage(AppSettingsKey.autoTermStart) private var autoTermStart = true
+    @AppStorage(AppSettingsKey.manualTermStart) private var manualTermStart = 0.0
 
     private var termStart: Date? {
         ScheduleCalendar.termStart(from: scheduleStore.courses)
+            ?? ScheduleCalendar.calendar.dateInterval(of: .weekOfYear, for: Date())?.start
     }
 
     private var selectedCourses: [Course] {
-        ScheduleCalendar.courses(scheduleStore.courses, in: selectedWeek)
+        let regular = ScheduleCalendar.courses(scheduleStore.courses, in: selectedWeek)
+        guard let monday = ScheduleCalendar.startDate(of: selectedWeek, termStart: termStart) else { return regular }
+        let events = eventStore.events.flatMap { $0.timetableCourses(in: monday, calendar: ScheduleCalendar.calendar) }
+        let exams = UpcomingExamResolver.timetableCourses(recordsStore.exams, inWeekStarting: monday, calendar: ScheduleCalendar.calendar)
+        return regular + events + exams
     }
 
     private var visibleWeekdays: [Int] {
@@ -47,7 +58,12 @@ struct ScheduleView: View {
                             visibleWeekdays: visibleWeekdays,
                             week: selectedWeek,
                             termStart: termStart
-                        ) { selectedCourse = $0 }
+                        ) { course in
+                            if course.source == "exam" {
+                                selectedExam = UpcomingExamResolver.resolved(recordsStore.exams, calendar: ScheduleCalendar.calendar).first { $0.id == course.id }
+                            } else if let event = eventStore.events.first(where: { $0.id == course.id }) { editingEvent = event }
+                            else { selectedCourse = course }
+                        }
                     }
                 }
                 .padding(.horizontal, 10)
@@ -92,6 +108,10 @@ struct ScheduleView: View {
         .sheet(isPresented: $showingAdd) {
             AddCourseView(defaultWeekday: Calendar.current.component(.weekday, from: Date()).mondayBasedWeekday)
         }
+        .sheet(item: $editingEvent) { CustomEventEditor(event: $0) }
+        .sheet(item: $selectedExam) { item in
+            NavigationStack { UpcomingExamDetailView(item: item) }
+        }
         .sheet(isPresented: $showingAcademicSync) {
             AcademicScheduleSyncView()
         }
@@ -115,6 +135,10 @@ struct ScheduleView: View {
         }
         .task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
         .onAppear { chooseInitialWeekIfNeeded() }
+        .onChange(of: autoTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }
+        .onChange(of: manualTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }
+        .onChange(of: selectedWeek) { _, _ in revealWeekendIfNeeded() }
+        .onChange(of: selectedCourses) { _, _ in revealWeekendIfNeeded() }
         .onChange(of: scheduleStore.courses) { _, _ in chooseInitialWeekIfNeeded(force: true) }
         .onChange(of: scheduleStore.courses) { _, courses in
             Task { try? await notificationManager.reschedule(for: courses) }
@@ -175,6 +199,11 @@ struct ScheduleView: View {
         guard force || !didChooseInitialWeek else { return }
         selectedWeek = ScheduleCalendar.currentWeek(termStart: termStart)
         didChooseInitialWeek = true
+        revealWeekendIfNeeded()
+    }
+
+    private func revealWeekendIfNeeded() {
+        if selectedCourses.contains(where: { $0.weekday > 5 }) { showsWeekend = true }
     }
 
     @MainActor
@@ -212,6 +241,7 @@ private struct AddCourseView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let error = scheduleStore.storageError { Text(error).foregroundStyle(.red) }
                 Section("课程") {
                     TextField("课程名称", text: $name)
                     TextField("教师（可选）", text: $teacher)
@@ -235,18 +265,18 @@ private struct AddCourseView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
-                        scheduleStore.add(
+                        let saved = scheduleStore.add(
                             Course(
                                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                                 teacher: teacher,
                                 location: location,
                                 weekday: weekday,
-                                startTime: startTime.formatted(date: .omitted, time: .shortened),
-                                endTime: endTime.formatted(date: .omitted, time: .shortened),
+                                startTime: ScheduleCalendar.clockString(startTime),
+                                endTime: ScheduleCalendar.clockString(endTime),
                                 colorIndex: Int.random(in: 0..<5)
                             )
                         )
-                        dismiss()
+                        if saved { dismiss() }
                     }
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || endTime <= startTime)
                 }

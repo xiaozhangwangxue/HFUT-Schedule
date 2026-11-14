@@ -241,7 +241,7 @@ final class CASLoginClient: @unchecked Sendable {
         let location = response.value(forHTTPHeaderField: "Location") ?? ""
         if location.contains("/for-std/course-table/info/") { return true }
         let html = String(data: body, encoding: .utf8) ?? ""
-        return html.range(of: #"course-table/info/\d+"#, options: .regularExpression) != nil
+        return AcademicHTMLParser.studentID(fromLandingHTML: html) != nil
     }
 
     private func refreshAcademicSessionFromTGC() async throws {

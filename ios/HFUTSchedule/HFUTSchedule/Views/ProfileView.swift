@@ -255,6 +255,7 @@ private struct AboutView: View {
                 LabeledContent("界面", value: "SwiftUI + Liquid Glass")
             }
             Section("维护") {
+                NavigationLink("开发者选项") { DeveloperInfoView() }
                 Button {
                     openURL(URL(string: "https://github.com/xiaozhangwangxue/HFUT-Schedule/issues/new")!)
                 } label: {

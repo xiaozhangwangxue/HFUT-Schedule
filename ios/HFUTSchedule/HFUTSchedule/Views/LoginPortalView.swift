@@ -104,9 +104,10 @@ struct LoginPortalView: View {
 
             do {
                 let schedule = try await client.fetchSchedule(semesterID: AcademicPortal.currentSemesterID)
-                await MainActor.run {
+                let saved = await MainActor.run {
                     scheduleStore.replaceAcademicCourses(with: schedule.courses())
                 }
+                guard saved else { throw CocoaError(.fileWriteUnknown) }
                 try? await notificationManager.reschedule(for: scheduleStore.courses)
                 completed.append("课表")
             } catch { failures.append("课表：\(error.localizedDescription)") }

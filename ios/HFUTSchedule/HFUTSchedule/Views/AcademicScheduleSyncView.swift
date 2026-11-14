@@ -84,7 +84,11 @@ struct AcademicScheduleSyncView: View {
         switch result {
         case .success(let payload):
             let courses = payload.courses()
-            scheduleStore.replaceAcademicCourses(with: courses)
+            guard scheduleStore.replaceAcademicCourses(with: courses) else {
+                status = "保存失败"
+                resultMessage = scheduleStore.storageError ?? "课表未保存，请重试。"
+                return
+            }
             Task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
             status = "同步完成"
             resultMessage = "已同步 \(courses.count) 个课程时段，保留了手动添加的课程。"

@@ -67,11 +67,37 @@ struct WeeklyScheduleWidgetView: View {
         VStack(spacing: 5) {
             header
             dayHeaderRow
-            TimelineCanvas(courses: data.courses, palette: palette)
+            if data.courses.isEmpty {
+                emptyState
+            } else {
+                TimelineCanvas(courses: data.courses, palette: palette)
+            }
         }
         .padding(.horizontal, 10)
         .padding(.top, 8)
         .padding(.bottom, 6)
+    }
+
+    /// 还没有课表数据时的引导页：保留日期与星期表头，提示打开 App 同步一次。
+    private var emptyState: some View {
+        VStack(spacing: 7) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 28, weight: .light))
+                .foregroundStyle(palette.title.opacity(0.8))
+            Text("还没有课表数据")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(palette.cardText)
+            Text("打开 App 同步一次课表\n这里就会显示本周课程")
+                .font(.system(size: 10))
+                .multilineTextAlignment(.center)
+                .lineSpacing(2)
+                .foregroundStyle(palette.subtle)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(palette.dayBackground)
+        )
     }
 
     /// 顶部：日期 + 周次 + 星期 + 实时时间。

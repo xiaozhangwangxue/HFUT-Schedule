@@ -50,6 +50,7 @@ enum NativeDestination: String, Hashable {
     case transferMajor
     case work
     case bus
+    case ai
 }
 
 struct CampusFeature: Identifiable, Hashable {
@@ -113,7 +114,7 @@ enum FeatureCatalog {
         .init(id: 44, title: "慧新易校", subtitle: "校园卡、电费与生活缴费平台", systemImage: "building.2.fill", category: .life, urlString: "http://121.251.19.62/", nativeDestination: .huiXin),
         .init(id: 45, title: "第二课堂", subtitle: "活动与学分", systemImage: "person.3.sequence.fill", category: .study, urlString: "https://dekt.hfut.edu.cn/", nativeDestination: .secondClass),
         .init(id: 46, title: "场地预约", subtitle: "原版功能开发中", systemImage: "table.furniture", category: .campus, urlString: nil, nativeDestination: .appointment),
-        .init(id: 47, title: "AI 助手", subtitle: "校园问答与学习辅助", systemImage: "sparkles", category: .tools, urlString: nil, nativeDestination: nil),
+        .init(id: 47, title: "AI 助手", subtitle: "DeepSeek 对话与网页摘要", systemImage: "sparkles", category: .tools, urlString: nil, nativeDestination: .ai),
         .init(id: 48, title: "事务跟踪", subtitle: "反馈、进度与开发动态", systemImage: "point.3.connected.trianglepath.dotted", category: .tools, urlString: "https://github.com/Chiu-xaH/HFUT-Schedule/issues", nativeDestination: nil),
         .init(id: 49, title: "快递", subtitle: "包裹与取件码", systemImage: "shippingbox.fill", category: .life, urlString: "https://m.pinduoduo.net/mdkd/package?tab=ID_CODE", nativeDestination: .express),
         .init(id: 50, title: "意见反馈", subtitle: "建议与问题反馈", systemImage: "bubble.left.and.exclamationmark.bubble.right.fill", category: .information, urlString: "https://github.com/Chiu-xaH/HFUT-Schedule/issues/new", nativeDestination: nil)

@@ -7,13 +7,15 @@ final class AcademicRecordsStore: ObservableObject {
 
     private let gradesKey = "academicGradeTerms"
     private let examsKey = "academicExams"
+    private let defaults: UserDefaults
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: gradesKey),
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: gradesKey),
            let decoded = try? JSONDecoder().decode([AcademicGradeTerm].self, from: data) {
             gradeTerms = decoded
         }
-        if let data = UserDefaults.standard.data(forKey: examsKey),
+        if let data = defaults.data(forKey: examsKey),
            let decoded = try? JSONDecoder().decode([AcademicExam].self, from: data) {
             exams = decoded
         }
@@ -33,7 +35,7 @@ final class AcademicRecordsStore: ObservableObject {
 
     private func persist<T: Encodable>(_ value: T, key: String) {
         guard let data = try? JSONEncoder().encode(value) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+        defaults.set(data, forKey: key)
     }
 }
 

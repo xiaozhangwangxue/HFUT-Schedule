@@ -278,7 +278,9 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
         let identity = info?.fields.first(where: { key, _ in
             key.contains("身份证") || key.contains("证件号")
         })?.value
-        guard let username, let identity, let password = Self.defaultUniAppPassword(identityNumber: identity) else {
+        let savedPassword = AppSecretStore.read(AppSecretStore.Account.academicPassword)?.nonEmptyValue
+        let password = savedPassword ?? identity.flatMap { Self.defaultUniAppPassword(identityNumber: $0) }
+        guard let username, let password else {
             throw OfficialCampusAPIError.missingAutomaticCredentials
         }
 

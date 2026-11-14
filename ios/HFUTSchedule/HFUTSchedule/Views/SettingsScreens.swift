@@ -207,6 +207,7 @@ struct AppearanceSettingsView: View {
 // MARK: - 偏好与配置
 
 struct PreferencesSettingsView: View {
+    @EnvironmentObject private var eventStore: CustomEventStore
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var notificationManager: CourseNotificationManager
     @EnvironmentObject private var appState: AppState
@@ -216,6 +217,7 @@ struct PreferencesSettingsView: View {
     @AppStorage(AppSettingsKey.manualTermStart) private var manualTermStart = 0.0
     @AppStorage(AppSettingsKey.showFinishedToday) private var showFinishedToday = true
     @AppStorage(AppSettingsKey.showExpiredEvents) private var showExpiredEvents = false
+    @AppStorage(AppSettingsKey.focusCardAction) private var focusCardAction = FocusCardAction.recharge.rawValue
     @AppStorage(AppSettingsKey.xuanchengQuota) private var xuanchengQuota = 30.0
     @AppStorage(AppSettingsKey.ignoreExcludedGrades) private var ignoreExcludedGrades = false
     @State private var exportingBackup = false
@@ -267,6 +269,13 @@ struct PreferencesSettingsView: View {
                             UserDefaults.standard.set(value, forKey: AppSettingsKey.manualTermStart)
                         }
                 }
+            }
+
+            Section("聚焦") {
+                Picker("聚焦首卡片功能", selection: $focusCardAction) {
+                    ForEach(FocusCardAction.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                NavigationLink("管理自建日程") { CustomEventsView() }
             }
 
             Section("偏好与配置") {
@@ -342,7 +351,7 @@ struct PreferencesSettingsView: View {
         .task { cacheSize = Self.cacheSizeText() }
         .fileExporter(
             isPresented: $exportingBackup,
-            document: ScheduleBackupDocument(courses: scheduleStore.courses),
+            document: ScheduleBackupDocument(courses: scheduleStore.courses, events: eventStore.events),
             contentType: .json,
             defaultFilename: "聚在工大课表备份"
         ) { result in
@@ -401,10 +410,28 @@ struct PreferencesSettingsView: View {
             let url = try result.get()
             let granted = url.startAccessingSecurityScopedResource()
             defer { if granted { url.stopAccessingSecurityScopedResource() } }
-            let courses = try JSONDecoder().decode([Course].self, from: Data(contentsOf: url))
-            scheduleStore.replace(with: courses)
-            Task { try? await notificationManager.reschedule(for: courses) }
-            message = "已恢复 \(courses.count) 门课程。"
+            let payload = try ScheduleBackupPayload.decode(Data(contentsOf: url))
+            let previousEvents = eventStore.events
+            let previous = ScheduleBackupPayload(courses: scheduleStore.courses, events: previousEvents, preferences: BackupPreferences.capture())
+            let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("恢复前备份", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let safetyURL = directory.appendingPathComponent("恢复前-\(UUID().uuidString).json")
+            try JSONEncoder().encode(previous).write(to: safetyURL, options: .atomic)
+            if let events = payload.events, !eventStore.restore(events) {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            guard scheduleStore.replace(with: payload.courses) else {
+                let rolledBack = payload.events == nil || eventStore.restore(previousEvents)
+                message = rolledBack ? "恢复失败，课程和日程保持恢复前的状态。" : "课程恢复失败，日程回滚也未成功。恢复前的数据已保存在“恢复前备份”目录中。"
+                return
+            }
+            if let preferences = payload.preferences {
+                BackupPreferences.restore(preferences)
+                AppTheme.restoreAccent()
+            }
+            Task { try? await notificationManager.reschedule(for: payload.courses) }
+            message = "已恢复 \(payload.courses.count) 门课程\(payload.events.map { "、\($0.count) 项日程" } ?? "")。"
         } catch {
             message = "恢复失败：\(error.localizedDescription)"
         }
@@ -427,6 +454,7 @@ struct NetworkSettingsView: View {
     @State private var editing: EditingField?
     @State private var message: String?
     @State private var isRefreshingLogin = false
+    @State private var isRefreshingAcademicPassword = false
 
     private enum EditingField: String, Identifiable {
         case card, schoolNet, academic, ai
@@ -436,7 +464,7 @@ struct NetworkSettingsView: View {
             case .card: "一卡通密码"
             case .schoolNet: "校园网密码"
             case .academic: "教务系统密码"
-            case .ai: "大模型 ApiKey"
+            case .ai: "DeepSeek API Key"
             }
         }
     }
@@ -489,6 +517,7 @@ struct NetworkSettingsView: View {
                     }
                 }
                 Button {
+                    academicPassword = AppSecretStore.read(AppSecretStore.Account.academicPassword) ?? ""
                     editing = .academic
                 } label: {
                     HStack(spacing: 12) {
@@ -503,6 +532,19 @@ struct NetworkSettingsView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
+                Button {
+                    Task {
+                        isRefreshingAcademicPassword = true
+                        defer { isRefreshingAcademicPassword = false }
+                        if await AcademicClient(mode: AcademicConnectionMode(rawValue: UserDefaults.standard.string(forKey: "academicConnectionMode") ?? "direct") ?? .direct, cookies: CampusSessionStore.shared.allCookies).refreshAcademicPasswordIfAvailable() {
+                            academicPassword = AppSecretStore.read(AppSecretStore.Account.academicPassword) ?? ""
+                            message = "已获取最新教务系统密码"
+                        } else { message = "暂未获取到密码，请先完成教务登录后重试。" }
+                    }
+                } label: {
+                    HStack { Label("刷新获取最新教务密码", systemImage: "arrow.clockwise"); if isRefreshingAcademicPassword { ProgressView() } }
+                }.disabled(isRefreshingAcademicPassword)
+                AcademicPasswordChangeLink()
                 SettingsToggleRow(icon: "arrow.clockwise.circle.fill", title: "自动刷新登录状态",
                                   subtitle: "冷启动后自动在后台完成一次统一身份认证",
                                   tint: AppTheme.cyan, isOn: $autoRefreshLogin)
@@ -512,8 +554,8 @@ struct NetworkSettingsView: View {
                     HStack(spacing: 12) {
                         SettingsIcon(systemName: "sparkles", tint: .purple)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("大模型").font(.subheadline.weight(.medium))
-                            Text("填写 ApiKey 后可使用 AI 助手能力").font(.caption).foregroundStyle(.secondary)
+                            Text("DeepSeek AI 助手").font(.subheadline.weight(.medium))
+                            Text("使用自己的 DeepSeek API Key；发送消息或网页摘要时才会请求 DeepSeek").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Text(aiKey.isEmpty ? "未设置" : "已设置").font(.caption).foregroundStyle(.secondary)
@@ -553,7 +595,7 @@ struct NetworkSettingsView: View {
         .sheet(item: $editing) { field in
             SecretEditorSheet(
                 title: field.title,
-                placeholder: field == .card ? "6 位数字" : "请输入密码",
+                placeholder: field == .ai ? "DeepSeek API Key" : (field == .card ? "6 位数字" : "请输入密码"),
                 initial: initialValue(for: field),
                 onSave: { value in save(value, for: field) }
             )
@@ -576,7 +618,7 @@ struct NetworkSettingsView: View {
         switch field {
         case .card: cardPassword
         case .schoolNet: schoolNetPassword
-        case .academic: academicPassword
+        case .academic: AppSecretStore.read(AppSecretStore.Account.academicPassword) ?? ""
         case .ai: aiKey
         }
     }
@@ -690,6 +732,8 @@ struct SettingsSearchView: View {
         Entry(title: "自动计算学期", detail: "按日期判断学期", target: .preferences),
         Entry(title: "学期开始时间", detail: "自定义学期开始时间", target: .preferences),
         Entry(title: "聚焦仍显示今天已完成的项目", detail: "上完的课程是否显示", target: .preferences),
+        Entry(title: "聚焦首卡片功能", detail: "一卡通右侧按钮：无 / 充值 / 付款码", target: .preferences),
+        Entry(title: "自建日程", detail: "新建、编辑、克隆、截止事项", target: .preferences),
         Entry(title: "聚焦中仍显示已结束的日程", detail: "过期日程是否显示", target: .preferences),
         Entry(title: "宣城校区校园网月免费额度", detail: "用于计算使用百分比", target: .preferences),
         Entry(title: "忽略平均成绩的排除计算", detail: "让被排除的成绩参与平均分", target: .preferences),
@@ -700,7 +744,7 @@ struct SettingsSearchView: View {
         Entry(title: "校园网密码", detail: "校园网一键登录", target: .network),
         Entry(title: "教务系统密码", detail: "同班同学、教室、培养方案", target: .network),
         Entry(title: "自动刷新登录状态", detail: "冷启动后台统一认证", target: .network),
-        Entry(title: "大模型", detail: "填写 ApiKey", target: .network),
+        Entry(title: "DeepSeek AI 助手", detail: "API Key、网页摘要", target: .network),
         Entry(title: "数据上报", detail: "崩溃日志上报", target: .network),
         Entry(title: "刷新登录状态", detail: "重新登录一次", target: .network),
         Entry(title: "请求范围", detail: "一次加载的条目数", target: .network),
@@ -752,6 +796,7 @@ struct SettingsSearchView: View {
                     LabeledContent("版本", value: AppInfo.version)
                     LabeledContent("界面", value: "SwiftUI + Liquid Glass")
                 }
+                Section { NavigationLink("开发者选项") { DeveloperInfoView() } }
                 Section("开源") {
                     Text("本项目基于原 Android 项目 Chiu-xaH/HFUT-Schedule 移植，遵循 Apache License 2.0。")
                         .font(.footnote)

@@ -3,6 +3,16 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
+    @EnvironmentObject private var eventStore: CustomEventStore
+    @EnvironmentObject private var recordsStore: AcademicRecordsStore
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
+    @AppStorage(AppSettingsKey.focusCardAction) private var cardAction = FocusCardAction.recharge.rawValue
+    @AppStorage(AppSettingsKey.showFinishedToday) private var showFinished = true
+    @AppStorage(AppSettingsKey.showExpiredEvents) private var showExpired = false
+    @State private var now = Date()
+    @State private var editingEvent: CustomEvent?
+    @State private var quickActionError: String?
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var section = 0
     @State private var campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
@@ -12,17 +22,18 @@ struct DashboardView: View {
     private let serviceColumns = [GridItem(.flexible()), GridItem(.flexible())]
 
     private var todayIndex: Int {
-        Calendar.current.component(.weekday, from: Date()).mondayBasedWeekday
+        Calendar.current.component(.weekday, from: now).mondayBasedWeekday
     }
 
     private var todayCourses: [Course] {
-        FocusPlanResolver.courses(on: Date(), store: scheduleStore)
+        FocusPlanResolver.courses(on: now, store: scheduleStore)
+            .filter { showFinished || Self.minutes($0.endTime) >= Self.minutesOfDay(now) }
     }
 
     /// 调休上班日：今天按设置的日期上课。
     private var makeUpTargetText: String? {
-        guard HolidayCalendarStore.shared.isMakeUpWorkDay(Date()),
-              let target = SpecialWorkDayStore.shared.targetDate(for: Date()) else { return nil }
+        guard HolidayCalendarStore.shared.isMakeUpWorkDay(now),
+              let target = SpecialWorkDayStore.shared.targetDate(for: now) else { return nil }
         return "调休：今天按 \(FocusTomorrowStatus.shortDate(target)) 的课表上课"
     }
 
@@ -47,8 +58,11 @@ struct DashboardView: View {
 
                 if section == 0 {
                     campusSnapshot
+                    examList
                     courseList
+                    eventList
                 } else {
+                    eventList
                     LazyVGrid(columns: serviceColumns, spacing: 10) {
                         ForEach(quickFeatures) { feature in
                             SourceAnchoredNavigationLink(sourceID: "dashboard-service-\(feature.id)") {
@@ -70,6 +84,8 @@ struct DashboardView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink { CustomEventsView() } label: { Image(systemName: "calendar.badge.plus") }
+                    .accessibilityLabel("自建日程")
                 SourceAnchoredNavigationLink(sourceID: "dashboard-toolbar-cloud") {
                     FeatureDetailView(feature: feature(39))
                 } label: {
@@ -87,22 +103,99 @@ struct DashboardView: View {
                 }
             }
         }
+        .sheet(item: $editingEvent) { CustomEventEditor(event: $0) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshClock() } }
+        }
         .onAppear {
             campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
             Task { await refreshCampusCardBalance() }
         }
         .task {
             await HolidayCalendarStore.shared.refreshIfNeeded()
-            tomorrowStatus = FocusPlanResolver.tomorrowStatus(store: scheduleStore)
+            await refreshClock()
+            while !Task.isCancelled {
+                do { try await Task.sleep(for: .seconds(60)) } catch { break }
+                await refreshClock()
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshClock() async {
+        now = Date()
+        tomorrowStatus = FocusPlanResolver.tomorrowStatus(store: scheduleStore)
+    }
+
+    @ViewBuilder
+    private var examList: some View {
+        ForEach(UpcomingExamResolver.focusExams(recordsStore.exams, now: now, calendar: ScheduleCalendar.calendar)) { item in
+            SourceAnchoredNavigationLink(sourceID: "focus-exam-\(item.id.uuidString)") {
+                UpcomingExamDetailView(item: item)
+            } label: {
+                VStack(alignment: .leading, spacing: 7) {
+                    Label("考试 · \(item.exam.name)", systemImage: "pencil.and.list.clipboard")
+                        .font(.headline).foregroundStyle(.primary)
+                    Text(item.exam.dateTime).font(.subheadline).foregroundStyle(.secondary)
+                    Label(item.location, systemImage: "mappin.and.ellipse").font(.subheadline).foregroundStyle(.secondary)
+                    Text(examCountdown(item)).font(.caption.weight(.semibold)).foregroundStyle(.red)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                .adaptiveGlass(cornerRadius: 22, tint: .red.opacity(0.08), interactive: true)
+            }.buttonStyle(.plain)
+        }
+    }
+
+    private func examCountdown(_ item: ResolvedAcademicExam) -> String {
+        if now >= item.start { return "考试进行中" }
+        let days = ScheduleCalendar.calendar.dateComponents([.day], from: ScheduleCalendar.calendar.startOfDay(for: now),
+            to: ScheduleCalendar.calendar.startOfDay(for: item.start)).day ?? 0
+        if days == 0 { return "今天考试" }
+        if days == 1 { return "明天考试" }
+        return "\(days) 天后考试"
+    }
+
+    @ViewBuilder
+    private var eventList: some View {
+        if section == 0, BirthdayGreeting.isBirthday(fields: studentStore.info?.fields ?? [:], on: now) {
+            Label("生日快乐！愿新的一岁学有所获，生活顺心。", systemImage: "birthday.cake")
+                .font(.subheadline).padding(16).adaptiveGlass(cornerRadius: 20)
+        }
+        if let error = eventStore.storageError { Text(error).font(.footnote).foregroundStyle(.red) }
+        ForEach(eventStore.events.filter {
+            $0.appears(on: now, showExpired: showExpired) && ($0.isImportant(on: now) == (section == 0))
+        }.sorted { $0.end < $1.end }) { event in
+            Button { editingEvent = event } label: {
+                VStack(alignment: .leading, spacing: 5) {
+                    Label(event.title, systemImage: event.kind == .deadline ? "hourglass" : "calendar")
+                    Text(event.end.formatted(date: .abbreviated, time: .shortened)).font(.caption).foregroundStyle(.secondary)
+                    if !event.location.isEmpty { Text(event.location).font(.caption).foregroundStyle(.secondary) }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(16).adaptiveGlass(cornerRadius: 20)
+            }.buttonStyle(.plain)
         }
     }
 
     private var campusSnapshot: some View {
         LazyVGrid(columns: serviceColumns, spacing: 8) {
-            SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-card") {
-                FeatureDetailView(feature: feature(1))
-            } label: {
-                snapshotItem("一卡通", value: campusCardBalanceText, icon: "creditcard")
+            VStack(spacing: 0) {
+                SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-card") {
+                    FeatureDetailView(feature: feature(1))
+                } label: {
+                    snapshotItem("一卡通", value: campusCardBalanceText, icon: "creditcard")
+                }
+                if let action = FocusCardAction(rawValue: cardAction), action != .none {
+                    if action == .recharge {
+                        Button("充值", systemImage: "plus.circle") {
+                            openURL(CampusServiceClient.alipayCampusCardURL) { accepted in
+                                if !accepted { openURL(CampusServiceClient.alipayCampusCardFallbackURL) }
+                            }
+                        }.buttonStyle(.bordered)
+                    } else {
+                        NavigationLink {
+                            FocusPayCodeView()
+                        } label: { Label("付款码", systemImage: "qrcode") }.buttonStyle(.bordered)
+                    }
+                }
             }
             SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-electricity") {
                 FeatureDetailView(feature: feature(3))
@@ -200,7 +293,7 @@ struct DashboardView: View {
     }
 
     private var dateTitle: String {
-        let date = Date().formatted(.dateTime.month(.twoDigits).day(.twoDigits))
+        let date = now.formatted(.dateTime.month(.twoDigits).day(.twoDigits))
         return "\(date) 第\(currentWeek)周 \(Course.weekdayNames[todayIndex - 1])"
     }
 
@@ -231,7 +324,7 @@ struct DashboardView: View {
     }
 
     private func courseState(_ course: Course) -> CourseState {
-        let now = Self.minutesOfDay(Date())
+        let now = Self.minutesOfDay(self.now)
         let start = Self.minutes(course.startTime)
         let end = Self.minutes(course.endTime)
         if now < start { return .notStarted }
@@ -241,7 +334,7 @@ struct DashboardView: View {
 
     /// 当前课程已进行的比例，用于环形进度图标（对应上游 CourseProgressIcon）。
     private func courseProgress(_ course: Course) -> Double {
-        let now = Self.minutesOfDay(Date())
+        let now = Self.minutesOfDay(self.now)
         let start = Self.minutes(course.startTime)
         let end = Self.minutes(course.endTime)
         guard end > start else { return 0 }

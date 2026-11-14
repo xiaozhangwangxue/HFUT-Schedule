@@ -4,22 +4,23 @@ import UniformTypeIdentifiers
 struct ScheduleBackupDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
 
-    var courses: [Course]
+    var payload: ScheduleBackupPayload
+    var courses: [Course] { payload.courses }
 
-    init(courses: [Course]) {
-        self.courses = courses
+    init(courses: [Course], events: [CustomEvent] = []) {
+        payload = ScheduleBackupPayload(courses: courses, events: events, preferences: BackupPreferences.capture())
     }
 
     init(configuration: ReadConfiguration) throws {
         guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        courses = try JSONDecoder().decode([Course].self, from: data)
+        payload = try ScheduleBackupPayload.decode(data)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return FileWrapper(regularFileWithContents: try encoder.encode(courses))
+        return FileWrapper(regularFileWithContents: try encoder.encode(payload))
     }
 }

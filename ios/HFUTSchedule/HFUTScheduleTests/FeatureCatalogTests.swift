@@ -154,7 +154,7 @@ final class FeatureCatalogTests: XCTestCase {
         let unavailable = FeatureCatalog.all.filter {
             $0.url == nil && $0.nativeDestination == nil
         }
-        XCTAssertEqual(unavailable.map(\.title), ["AI 助手"])
+        XCTAssertEqual(unavailable.map(\.title), [])
     }
 
     func testCourseWeekdayNames() {

@@ -91,11 +91,21 @@ private enum SharedKeychainSnapshot {
         let query = baseQuery
         let attributes: [String: Any] = [kSecValueData as String: data]
         let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-        guard status == errSecItemNotFound else { return }
+        if status == errSecSuccess { return }
+        // 已有旧条目但更新失败（属性不一致等）时先删掉再重建，避免写入被静默丢弃。
+        if status != errSecItemNotFound {
+            SecItemDelete(query as CFDictionary)
+        }
         var insert = query
         insert[kSecValueData as String] = data
         insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(insert as CFDictionary, nil)
+        let addStatus = SecItemAdd(insert as CFDictionary, nil)
+        if addStatus != errSecSuccess {
+            // 访问分组不可写时保留主应用自身的副本；此副本不保证扩展可读，扩展仍会显示同步引导。
+            var fallback = insert
+            fallback.removeValue(forKey: kSecAttrAccessGroup as String)
+            SecItemAdd(fallback as CFDictionary, nil)
+        }
     }
 
     static func read() -> Data? {

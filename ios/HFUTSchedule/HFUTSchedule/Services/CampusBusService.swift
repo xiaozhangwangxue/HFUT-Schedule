@@ -1,6 +1,6 @@
 import Foundation
 
-/// 校车班次（对应上游 v4.20.1 的校车 v2 数据，来源：https://www.hfut.edu.cn/xcxx.htm）。
+/// 校车班次（对应上游校车 v2 数据，来源：https://www.hfut.edu.cn/xcxx.htm）。
 struct CampusBusRoute: Identifiable, Equatable {
     let week: String
     let time: String
@@ -15,6 +15,22 @@ struct CampusBusRoute: Identifiable, Equatable {
     /// 完整线路：起点 → 途经站 → 终点
     var points: [String] {
         ([from] + stops + [to]).filter { !$0.isEmpty }
+    }
+}
+
+enum CampusBusDisplayMode: String, CaseIterable, Identifiable {
+    case upcoming = "出行"
+    case all = "所有安排"
+
+    var id: String { rawValue }
+}
+
+struct CampusBusSelection: Equatable {
+    let routes: [CampusBusRoute]
+    let hasDepartedTrips: Bool
+
+    var emptyMessage: String {
+        hasDepartedTrips ? "今天的运营已结束" : "暂无班车安排"
     }
 }
 
@@ -49,7 +65,9 @@ struct CampusBusService {
         for row in rows.dropFirst() {
             // 整格（含标签）匹配，便于过滤 display:none 的列
             let cellHTMLs = matches(row, #"(?is)(<t[dh]\b[^>]*>.*?</t[dh]>)"#)
-            let visibleCells = cellHTMLs.filter { !$0.lowercased().contains("display: none") }
+            let visibleCells = cellHTMLs.filter {
+                $0.range(of: #"(?i)display\s*:\s*none"#, options: .regularExpression) == nil
+            }
             guard !visibleCells.isEmpty else { continue }
 
             var cells = visibleCells
@@ -59,7 +77,11 @@ struct CampusBusService {
             }
             guard cells.count >= 6 else { continue }
 
-            let fromTo = clean(cells[0]).components(separatedBy: "—")
+            let fromTo = clean(cells[0]).components(separatedBy: "—").map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            // 上游把 7:5 规范为 07:05；无效时间不应进入实时班次计算。
+            guard let departureMinute = minutes(afterMidnight: clean(cells[1])) else { continue }
             let place = clean(cells[2])
             let count = Int(clean(cells[4]).filter { $0.isNumber }) ?? 0
             let stops = clean(cells[3])
@@ -67,7 +89,7 @@ struct CampusBusService {
                 .filter { !$0.isEmpty }
             routes.append(CampusBusRoute(
                 week: currentWeek.replacingOccurrences(of: " ", with: ""),
-                time: clean(cells[1]),
+                time: String(format: "%02d:%02d", departureMinute / 60, departureMinute % 60),
                 from: fromTo.first ?? clean(cells[0]),
                 to: fromTo.count > 1 ? fromTo[1] : clean(cells[0]),
                 place: place,
@@ -76,6 +98,61 @@ struct CampusBusService {
             ))
         }
         return routes
+    }
+
+    /// 与 BusNowScreen 相同：按自然星期匹配，节假日仅提示查看公告，不替换班次类别。
+    static func weekdayGroup(for date: Date, calendar: Calendar = .current) -> String {
+        switch calendar.component(.weekday, from: date) {
+        case 1: return "周日"
+        case 7: return "周六"
+        default: return "周一至周五"
+        }
+    }
+
+    static func select(
+        _ routes: [CampusBusRoute],
+        mode: CampusBusDisplayMode,
+        date: Date,
+        now: Date,
+        from: String = "",
+        to: String = "",
+        calendar: Calendar = .current
+    ) -> CampusBusSelection {
+        let group = weekdayGroup(for: date, calendar: calendar)
+        let matching = routes.filter {
+            (mode == .all || $0.week == group) &&
+            (from.isEmpty || $0.from.localizedCaseInsensitiveContains(from)) &&
+            (to.isEmpty || $0.to.localizedCaseInsensitiveContains(to))
+        }.sorted {
+            let lhs = minutes(afterMidnight: $0.time) ?? Int.max
+            let rhs = minutes(afterMidnight: $1.time) ?? Int.max
+            return lhs == rhs ? $0.id < $1.id : lhs < rhs
+        }
+        guard mode == .upcoming, calendar.isDate(date, inSameDayAs: now) else {
+            return CampusBusSelection(routes: matching, hasDepartedTrips: false)
+        }
+        let nowMinute = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+        // Android 将发车当分钟视为已开始，只有严格晚于当前分钟的班次保留。
+        let upcoming = matching.filter { (minutes(afterMidnight: $0.time) ?? Int.max) > nowMinute }
+        return CampusBusSelection(routes: upcoming, hasDepartedTrips: upcoming.count < matching.count)
+    }
+
+    static func minutes(afterMidnight time: String) -> Int? {
+        let parts = time.split(separator: ":", omittingEmptySubsequences: false)
+        guard parts.count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]),
+              (0...23).contains(hour), (0...59).contains(minute) else { return nil }
+        return hour * 60 + minute
+    }
+
+    /// 每次进入页面先立即计算，然后对齐下一整分钟刷新。
+    static func secondsUntilNextMinute(from now: Date) -> TimeInterval {
+        60 - now.timeIntervalSince1970.truncatingRemainder(dividingBy: 60)
+    }
+
+    static func holidayAdvisory(for day: HolidayDay?) -> String? {
+        guard let day else { return nil }
+        let kind = day.isOffDay ? "假期" : "调休工作日"
+        return "此日期为\(kind)，点击查看调休通知公告，以实际安排为准。"
     }
 
     /// 取包含「运行区间」的表格（优先 docx_4 样式表）。

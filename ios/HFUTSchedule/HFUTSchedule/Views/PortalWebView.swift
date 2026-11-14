@@ -8,6 +8,10 @@ struct PortalWebView: View {
     var autoOpenCampusMailbox = false
     @State private var isLoading = true
     @State private var title = ""
+    @State private var webViewReference = PortalWebViewReference()
+    @State private var isExtractingSummary = false
+    @State private var summaryPage: DeepSeekWebPageContext?
+    @State private var summaryError: String?
 
     init(
         url: URL,
@@ -28,6 +32,7 @@ struct PortalWebView: View {
                 academicMode: academicMode,
                 onAcademicAuthenticated: onAcademicAuthenticated,
                 autoOpenCampusMailbox: autoOpenCampusMailbox,
+                reference: webViewReference,
                 isLoading: $isLoading,
                 pageTitle: $title
             )
@@ -46,7 +51,51 @@ struct PortalWebView: View {
         .animation(.easeOut(duration: 0.2), value: isLoading)
         .navigationTitle(title.isEmpty ? "校园门户" : title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: prepareSummary) {
+                    if isExtractingSummary { ProgressView() }
+                    else { Label("AI 摘要", systemImage: "sparkles") }
+                }
+                .disabled(isLoading || isExtractingSummary)
+                .accessibilityLabel("使用 AI 概括当前网页")
+            }
+        }
+        .navigationDestination(item: $summaryPage) { page in
+            AIAssistantView(page: page)
+        }
+        .alert("无法读取网页", isPresented: Binding(
+            get: { summaryError != nil },
+            set: { if !$0 { summaryError = nil } }
+        )) {
+            Button("好", role: .cancel) { summaryError = nil }
+        } message: {
+            Text(summaryError ?? "")
+        }
     }
+
+    @MainActor
+    private func prepareSummary() {
+        guard let webView = webViewReference.webView else { return }
+        isExtractingSummary = true
+        webView.evaluateJavaScript("document.body ? document.body.innerText : ''") { result, error in
+            isExtractingSummary = false
+            guard error == nil, let text = result as? String,
+                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                summaryError = "当前页面没有可读取的正文，请等待网页加载完成后重试。"
+                return
+            }
+            summaryPage = DeepSeekWebPageContext(
+                title: webView.title ?? title,
+                sourceURL: webView.url ?? url,
+                text: text
+            )
+        }
+    }
+}
+
+private final class PortalWebViewReference {
+    weak var webView: WKWebView?
 }
 
 private struct WebViewRepresentable: UIViewRepresentable {
@@ -54,6 +103,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
     let academicMode: AcademicConnectionMode?
     let onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     let autoOpenCampusMailbox: Bool
+    let reference: PortalWebViewReference
     @Binding var isLoading: Bool
     @Binding var pageTitle: String
 
@@ -83,6 +133,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
         }
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        reference.webView = webView
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true

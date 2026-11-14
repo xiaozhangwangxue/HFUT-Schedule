@@ -28,12 +28,20 @@ private struct WeeklyScheduleProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WeeklyScheduleEntry>) -> Void) {
         let current = entry(previewWhenEmpty: false)
-        let nextMidnight = Self.calendar.nextDate(
-            after: .now,
+        completion(Timeline(entries: [current], policy: .after(Self.nextRefresh(for: current))))
+    }
+
+    /// 下次刷新时间：每天 00:01 换日，同时最多每 30 分钟刷新一次，
+    /// 没有数据时缩短到 15 分钟，等 App 写入快照后尽快显示出来。
+    private static func nextRefresh(for entry: WeeklyScheduleEntry) -> Date {
+        let now = Date()
+        let nextMidnight = calendar.nextDate(
+            after: now,
             matching: DateComponents(hour: 0, minute: 1),
             matchingPolicy: .nextTime
-        ) ?? Date().addingTimeInterval(3600)
-        completion(Timeline(entries: [current], policy: .after(nextMidnight)))
+        ) ?? now.addingTimeInterval(3600)
+        let interval: TimeInterval = entry.courses.isEmpty ? 15 * 60 : 30 * 60
+        return min(nextMidnight, now.addingTimeInterval(interval))
     }
 
     private func entry(previewWhenEmpty: Bool) -> WeeklyScheduleEntry {
@@ -151,6 +159,7 @@ private struct WidgetRootView: View {
             .containerBackground(for: .widget) {
                 WidgetPalette.resolve(colorScheme).canvas
             }
+            .widgetURL(URL(string: "hfut-schedule://"))
     }
 }
 

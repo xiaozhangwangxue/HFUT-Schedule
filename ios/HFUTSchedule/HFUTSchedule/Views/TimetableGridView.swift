@@ -10,6 +10,7 @@ enum ScheduleCalendar {
     }()
 
     static func termStart(from courses: [Course]) -> Date? {
+        if let manual = manualTermStart(defaults: .standard) { return manual }
         let derived = derivedTermStart(from: courses)
         let cloud = cloudTermStart()
         // 云端学期开始日更权威，但只在和课程数据一致（相差不超过 4 周）时采用，
@@ -18,6 +19,14 @@ enum ScheduleCalendar {
             return abs(derived.timeIntervalSince(cloud)) <= 28 * 86_400 ? cloud : derived
         }
         return cloud ?? derived
+    }
+
+    static func manualTermStart(defaults: UserDefaults) -> Date? {
+        guard defaults.object(forKey: AppSettingsKey.autoTermStart) != nil,
+              !defaults.bool(forKey: AppSettingsKey.autoTermStart) else { return nil }
+        let timestamp = defaults.double(forKey: AppSettingsKey.manualTermStart)
+        guard timestamp > 0, timestamp.isFinite else { return nil }
+        return calendar.startOfDay(for: Date(timeIntervalSince1970: timestamp))
     }
 
     private static func cloudTermStart() -> Date? {
@@ -68,6 +77,15 @@ enum ScheduleCalendar {
                 .joined(separator: "|")
             return seen.insert(key).inserted
         }
+    }
+
+    static func clockString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 
     static func isoDate(_ text: String) -> Date? {
@@ -133,8 +151,8 @@ struct TimetableGridView: View {
     @AppStorage(AppSettingsKey.backgroundBlur) private var backgroundBlur = 0.35
     @State private var now = Date()
 
-    private let startHour = 8.0
-    private let endHour = 22.0
+    private var startHour: Double { min(8, courses.map { Self.decimalTime($0.startTime) }.min() ?? 8) }
+    private var endHour: Double { max(22, courses.map { Self.decimalTime($0.endTime) }.max() ?? 22) }
     private let hourHeight: CGFloat = 68
 
     private var totalHeight: CGFloat { y(for: endHour) }
@@ -173,16 +191,21 @@ struct TimetableGridView: View {
                     let top = y(for: Self.decimalTime(item.course.startTime))
                     let bottom = y(for: Self.decimalTime(item.course.endTime))
 
-                    SourceAnchoredNavigationLink(
-                        sourceID: "timetable-course-\(item.course.id.uuidString)"
-                    ) {
-                        CourseDetailView(course: item.course)
-                    } label: {
-                        TimetableCourseCard(
-                            course: item.course,
-                            mergedCourses: item.mergedCourses,
-                            showsTeacher: showsTeacher
-                        )
+                    Group {
+                        if item.course.source == "custom-event" {
+                            Button { onSelect(item.course) } label: {
+                                TimetableCourseCard(course: item.course, mergedCourses: item.mergedCourses, showsTeacher: showsTeacher)
+                            }
+                        } else {
+                            SourceAnchoredNavigationLink(
+                                sourceID: "timetable-course-\(item.course.id.uuidString)-\(item.course.weekday)"
+                            ) {
+                                if item.course.source == "exam" { TimetableExamDestination(courseID: item.course.id) }
+                                else { CourseDetailView(course: item.course) }
+                            } label: {
+                                TimetableCourseCard(course: item.course, mergedCourses: item.mergedCourses, showsTeacher: showsTeacher)
+                            }
+                        }
                     }
                     .buttonStyle(.plain)
                     .frame(width: width, height: max(34, bottom - top))
@@ -222,7 +245,7 @@ struct TimetableGridView: View {
                     Self.decimalTime($0.startTime) < end && Self.decimalTime($0.endTime) > start
                 }
                 let ordered = overlaps.sorted { $0.startTime < $1.startTime || ($0.startTime == $1.startTime && $0.name < $1.name) }
-                if mergesConflicts, ordered.count > 1 {
+                if mergesConflicts, ordered.count > 1, ordered.allSatisfy({ $0.source != "exam" && $0.source != "custom-event" }) {
                     ordered.forEach { grouped.insert($0.id) }
                     result.append(PositionedCourse(
                         course: ordered[0],
@@ -283,7 +306,7 @@ private struct PositionedCourse: Identifiable {
     let columnIndex: Int
     let totalColumns: Int
     var mergedCourses: [Course] = []
-    var id: UUID { course.id }
+    var id: String { "\(course.id.uuidString)|\(course.weekday)" }
 }
 
 private struct TimelineGridShape: Shape {
@@ -306,7 +329,8 @@ private struct TimetableCourseCard: View {
     var showsTeacher: Bool = false
 
     private var tint: Color {
-        [AppTheme.accent, AppTheme.mint, AppTheme.violet, .orange, .pink][abs(course.colorIndex) % 5]
+        if course.source == "exam" { return .red }
+        return [AppTheme.accent, AppTheme.mint, AppTheme.violet, .orange, .pink][abs(course.colorIndex) % 5]
     }
 
     var body: some View {
@@ -355,7 +379,7 @@ private struct TimetableCourseCard: View {
                 .map { showsTeacher && !$0.teacher.isEmpty ? "\($0.name)@\($0.teacher)" : $0.name }
                 .joined(separator: " / ")
         }
-        return course.name + (showsTeacher && !course.teacher.isEmpty ? "@\(course.teacher)" : "")
+        return (course.source == "exam" ? "考试\n" : "") + course.name + (showsTeacher && !course.teacher.isEmpty ? "@\(course.teacher)" : "")
     }
 }
 

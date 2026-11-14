@@ -89,6 +89,8 @@ struct FeatureDetailView: View {
                 WorkServiceView()
             case .bus:
                 BusScheduleView()
+            case .ai:
+                AIAssistantView()
             case nil:
                 portalOrUnavailable
             }
@@ -471,25 +473,66 @@ private struct NativeCampusLifeView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var studentStore: AcademicStudentStore
-    @State private var weather: CampusWeather?
+    @State private var weatherReport: CampusWeatherReport?
     @State private var weatherError: String?
+
+    private var weatherLocation: CampusWeatherLocation { appState.campus == .hefei ? .hefei : .xuancheng }
 
     var body: some View {
         List {
             Section("实时天气") {
-                if let weather {
-                    HStack(spacing: 16) {
-                        Image(systemName: weather.symbol).font(.largeTitle).foregroundStyle(.orange)
-                        VStack(alignment: .leading) {
-                            Text("\(weather.temperature, specifier: "%.1f")°").font(.title.bold())
-                            Text("体感 \(weather.apparent, specifier: "%.1f")° · 湿度 \(weather.humidity)% · 风速 \(weather.wind, specifier: "%.1f") km/h")
-                                .font(.caption).foregroundStyle(.secondary)
+                if let report = weatherReport {
+                    let weather = report.observation
+                    NavigationLink { PortalWebView(url: report.detailURL) } label: {
+                        HStack(spacing: 16) {
+                            Image(systemName: weather.symbol).font(.largeTitle).foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(weather.temperature, specifier: "%.1f")° · \(weather.condition)").font(.title2.bold())
+                                Text("体感 \(weather.apparent, specifier: "%.1f")° · 湿度 \(weather.humidity)%")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Text(weather.windDescription).font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    Text("实时数据：\(report.source)；点击查看和风天气官方详情。")
+                        .font(.caption).foregroundStyle(.secondary)
                 } else if let weatherError {
                     Text(weatherError).foregroundStyle(.secondary)
                 } else {
                     ProgressView("正在读取 \(appState.campus.rawValue) 天气…")
+                }
+            }
+
+            Section("气象预警") {
+                switch weatherReport?.warnings {
+                case let .available(warnings):
+                    if warnings.isEmpty {
+                        Text("和风天气当前返回暂无预警。")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(warnings) { warning in
+                            NavigationLink {
+                                PortalWebView(url: weatherReport?.warningURL ?? weatherLocation.officialWarningURL)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Label(warning.title, systemImage: "exclamationmark.triangle.fill")
+                                        .font(.subheadline.weight(.medium))
+                                    Text(warning.typeName).font(.caption).foregroundStyle(.secondary)
+                                    Text(warning.text).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                case let .unavailable(message):
+                    Text(message).font(.caption).foregroundStyle(.secondary)
+                case nil:
+                    Text("当前预警请打开和风天气官方页面查看。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                NavigationLink {
+                    PortalWebView(url: weatherReport?.warningURL ?? weatherLocation.officialWarningURL)
+                } label: {
+                    Label("查看\(weatherLocation.cityName)官方预警", systemImage: "arrow.up.right.square")
                 }
             }
 
@@ -515,37 +558,15 @@ private struct NativeCampusLifeView: View {
 
     @MainActor private func loadWeather() async {
         weatherError = nil
+        weatherReport = nil
         do {
-            let coordinate = appState.campus == .hefei ? (31.77, 117.20) : (30.90, 118.71)
-            var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
-            components.queryItems = [
-                .init(name: "latitude", value: String(coordinate.0)),
-                .init(name: "longitude", value: String(coordinate.1)),
-                .init(name: "current", value: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m"),
-                .init(name: "timezone", value: "Asia/Shanghai")
-            ]
-            let (data, _) = try await URLSession.shared.data(from: components.url!)
-            weather = try JSONDecoder().decode(CampusWeatherEnvelope.self, from: data).current
-        } catch { weatherError = "天气读取失败：\(error.localizedDescription)" }
-    }
-}
-
-private struct CampusWeatherEnvelope: Decodable { let current: CampusWeather }
-private struct CampusWeather: Decodable {
-    let temperature: Double
-    let apparent: Double
-    let humidity: Int
-    let code: Int
-    let wind: Double
-    enum CodingKeys: String, CodingKey {
-        case temperature = "temperature_2m"
-        case apparent = "apparent_temperature"
-        case humidity = "relative_humidity_2m"
-        case code = "weather_code"
-        case wind = "wind_speed_10m"
-    }
-    var symbol: String {
-        switch code { case 0: "sun.max.fill"; case 1...3: "cloud.sun.fill"; case 45...48: "cloud.fog.fill"; case 51...67, 80...82: "cloud.rain.fill"; case 71...77, 85...86: "cloud.snow.fill"; default: "cloud.fill" }
+            let result = try await CampusWeatherClient().fetch(location: weatherLocation)
+            guard !Task.isCancelled else { return }
+            weatherReport = result
+        } catch {
+            guard !Task.isCancelled else { return }
+            weatherError = "天气读取失败：\(error.localizedDescription)"
+        }
     }
 }
 

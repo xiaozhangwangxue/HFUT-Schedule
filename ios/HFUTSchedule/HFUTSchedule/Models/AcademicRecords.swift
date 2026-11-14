@@ -23,13 +23,10 @@ struct AcademicExam: Codable, Hashable, Identifiable {
     let place: String
 
     var startDate: Date? {
-        let start = String(dateTime.prefix(16))
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        return formatter.date(from: start)
+        UpcomingExamResolver.timing(for: self)?.start
     }
+
+    var endDate: Date? { UpcomingExamResolver.timing(for: self)?.end }
 }
 
 struct AcademicRecordsPayload: Codable {

@@ -25,6 +25,10 @@ struct AcademicStudentInfoView: View {
                     fieldSection("基本信息", keys: ["性别", "政治面貌", "生源地"])
                     fieldSection("联系方式", keys: ["邮箱", "电话", "手机", "地址", "邮编"])
 
+                    Section("账号安全") {
+                        AcademicPasswordChangeLink()
+                    }
+
                     let remaining = remainingFields(info)
                     if !remaining.isEmpty {
                         Section("其他信息") {
@@ -68,5 +72,31 @@ struct AcademicStudentInfoView: View {
         return info.fields
             .filter { !known.contains($0.key) && !$0.value.isEmpty }
             .sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }
+    }
+}
+
+/// The same authenticated account page used by upstream's password settings.
+struct AcademicPasswordChangeLink: View {
+    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
+
+    private var selectedMode: AcademicConnectionMode {
+        AcademicConnectionMode(rawValue: connectionMode) ?? .direct
+    }
+
+    var body: some View {
+        NavigationLink {
+            PortalWebView(url: AcademicPortal.url("my/account", mode: selectedMode))
+                .navigationTitle("修改教务密码")
+                .navigationBarTitleDisplayMode(.inline)
+                .onDisappear {
+                    let mode = selectedMode
+                    Task {
+                        _ = await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+                            .refreshAcademicPasswordIfAvailable()
+                    }
+                }
+        } label: {
+            Label("修改教务系统密码", systemImage: "lock.rotation")
+        }
     }
 }

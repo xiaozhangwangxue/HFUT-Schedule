@@ -213,6 +213,10 @@ struct AcademicClient {
     }
 
     func fetchStudentInfo() async throws -> AcademicStudentInfo {
+        // The school exposes the independent academic API password on this
+        // authenticated account page. Failure must not prevent normal CAS use
+        // or erase a password supplied by the user.
+        _ = await refreshAcademicPasswordIfAvailable()
         let context = try await loadStudentContext()
         async let infoData = get("for-std/student-info/info/\(context.studentID)")
         async let profileData = get("my/profile")
@@ -226,6 +230,20 @@ struct AcademicClient {
             profileHTML: profileHTML,
             fallbackStudentID: String(context.studentID)
         )
+    }
+
+    @discardableResult
+    func refreshAcademicPasswordIfAvailable() async -> Bool {
+        guard let data = try? await get("my/account"),
+              let html = String(data: data, encoding: .utf8),
+              let password = AcademicHTMLParser.accountPassword(from: html) else { return false }
+        let existing = AppSecretStore.read(AppSecretStore.Account.academicPassword)
+        AppSecretStore.write(password, account: AppSecretStore.Account.academicPassword)
+        guard AppSecretStore.read(AppSecretStore.Account.academicPassword) == password else { return false }
+        if existing != password {
+            UserDefaults.standard.set(0, forKey: "officialUniAppAutomaticFailureCount")
+        }
+        return true
     }
 
     func fetchProgram() async throws -> [AcademicProgramSummary] {
@@ -371,11 +389,12 @@ struct AcademicClient {
             throw AcademicClientError.authenticationRequired
         }
         let landingHTML = String(data: landingData, encoding: .utf8) ?? ""
-        let candidates = [location, response.url?.absoluteString ?? "", landingHTML]
-        guard let studentID = candidates.lazy.compactMap({
+        let redirectCandidates = [location, response.url?.absoluteString ?? ""]
+        let redirectedID = redirectCandidates.lazy.compactMap({
             Self.firstInteger(in: $0, pattern: #"course-table/info/(\d+)"#)
-        }).first else {
-            throw AcademicClientError.invalidData("未获取到教务学生标识（course-table 未返回原版所需的 302 Location）")
+        }).first
+        guard let studentID = redirectedID ?? AcademicHTMLParser.studentID(fromLandingHTML: landingHTML) else {
+            throw AcademicClientError.invalidData("未获取到教务学生标识，请刷新登录状态后重试")
         }
 
         let data = try await get("for-std/course-table/info/\(studentID)")
@@ -775,6 +794,48 @@ private extension String {
 }
 
 enum AcademicHTMLParser {
+    /// Mirrors the upstream multi-record selector: prefer the card whose
+    /// cultivation type is 主修, then use the first card for older pages.
+    /// A malformed selected value must never fall through to another record.
+    static func studentID(fromLandingHTML html: String) -> Int? {
+        let document = AcademicHTMLElement.parse(html)
+        let cards = document.descendants.filter { $0.classes.contains("student-panel-block") }
+        if !cards.isEmpty {
+            let mainCard = cards.first { card in
+                card.descendants.contains { node in
+                    guard node.tag == "dt", node.normalizedText == "培养类型",
+                          let siblings = node.parent?.children.filter({ $0.tag != "#text" }),
+                          let index = siblings.firstIndex(where: { $0 === node }),
+                          siblings.indices.contains(index + 1) else { return false }
+                    return siblings[index + 1].normalizedText == "主修"
+                }
+            }
+            let mainButton = mainCard?.descendants.first { $0.tag == "button" && $0.attributes["value"] != nil }
+            let button = mainButton ?? cards.lazy.compactMap { card in
+                card.descendants.first { $0.tag == "button" && $0.attributes["value"] != nil }
+            }.first
+            guard let value = button?.attributes["value"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  value.range(of: #"^[0-9]+$"#, options: .regularExpression) != nil else { return nil }
+            return Int(value)
+        }
+
+        // Keep compatibility with earlier single-record HTTP 200 pages.
+        guard let value = matches(in: html, pattern: #"course-table/info/(\d+)"#).first else { return nil }
+        return Int(value)
+    }
+
+    static func accountPassword(from html: String) -> String? {
+        let document = AcademicHTMLElement.parse(html)
+        guard let form = document.descendants.first(where: { $0.tag == "form" && $0.attributes["id"] == "save-form" }),
+              let input = form.descendants.first(where: { $0.tag == "input" && $0.attributes["id"] == "plainPassword" }),
+              let value = input.attributes["value"] else { return nil }
+        let password = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !password.isEmpty, password.count <= 256,
+              password.rangeOfCharacter(from: .controlCharacters) == nil,
+              !password.allSatisfy({ "*•●·".contains($0) }) else { return nil }
+        return password
+    }
+
     static func studentInfo(from html: String, profileHTML: String, fallbackStudentID: String) -> AcademicStudentInfo {
         var fields: [String: String] = [:]
         let terms = matches(in: html, pattern: #"(?is)<dt\b[^>]*>(.*?)</dt>"#).map(clean)
@@ -824,9 +885,10 @@ enum AcademicHTMLParser {
 
     static func exams(from html: String) -> [AcademicExam] {
         rows(in: html).compactMap { cells in
-            guard cells.count >= 3,
-                  cells[1].range(of: #"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}~\d{2}:\d{2}$"#, options: .regularExpression) != nil else { return nil }
-            return AcademicExam(name: cells[0], dateTime: cells[1], place: cells[2])
+            guard cells.count >= 3 else { return nil }
+            let exam = AcademicExam(name: cells[0], dateTime: cells[1], place: cells[2])
+            guard UpcomingExamResolver.timing(for: exam) != nil else { return nil }
+            return exam
         }.sorted { $0.dateTime < $1.dateTime }
     }
 
@@ -872,5 +934,106 @@ enum AcademicHTMLParser {
             .replacingOccurrences(of: "&quot;", with: "\"")
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+/// A small structural HTML reader for the two authenticated selectors above.
+/// It preserves nested card/form boundaries and decoded attributes, rather
+/// than relying on a regex that can accidentally select another student's ID
+/// or an unrelated password input elsewhere on the page.
+private final class AcademicHTMLElement {
+    let tag: String
+    let attributes: [String: String]
+    weak var parent: AcademicHTMLElement?
+    var children: [AcademicHTMLElement] = []
+    var text = ""
+
+    init(tag: String, attributes: [String: String] = [:]) {
+        self.tag = tag
+        self.attributes = attributes
+    }
+
+    var classes: Set<String> { Set((attributes["class"] ?? "").split(whereSeparator: \.isWhitespace).map(String.init)) }
+    var descendants: [AcademicHTMLElement] { children.flatMap { [$0] + $0.descendants } }
+    var normalizedText: String {
+        (tag == "#text" ? Self.decodeEntities(text) : children.map(\.normalizedText).joined())
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func parse(_ html: String) -> AcademicHTMLElement {
+        let root = AcademicHTMLElement(tag: "#document")
+        guard let tokenizer = try? NSRegularExpression(pattern: #"(?s)<!--.*?-->|<(?:(?:\"[^\"]*\")|(?:'[^']*')|[^'\">])*>|[^<]+"#) else { return root }
+        var stack = [root]
+        let voidTags: Set<String> = ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]
+        for match in tokenizer.matches(in: html, range: NSRange(html.startIndex..., in: html)) {
+            guard let range = Range(match.range, in: html), let parent = stack.last else { continue }
+            let token = String(html[range])
+            if token.hasPrefix("<!--") || token.hasPrefix("<!") || token.hasPrefix("<?") { continue }
+            if !token.hasPrefix("<") {
+                if parent.tag != "script" && parent.tag != "style" {
+                    let node = AcademicHTMLElement(tag: "#text")
+                    node.text = token
+                    node.parent = parent
+                    parent.children.append(node)
+                }
+                continue
+            }
+            let closing = token.hasPrefix("</")
+            let content = token.dropFirst(closing ? 2 : 1).dropLast().trimmingCharacters(in: .whitespacesAndNewlines)
+            let tag = String(content.prefix { $0.isLetter || $0.isNumber || $0 == "-" || $0 == ":" }).lowercased()
+            guard !tag.isEmpty else { continue }
+            if parent.tag == "script" || parent.tag == "style" {
+                if closing && parent.tag == tag { stack.removeLast() }
+                continue
+            }
+            if closing {
+                if let index = stack.lastIndex(where: { $0.tag == tag }), index > 0 {
+                    stack.removeSubrange(index...)
+                }
+                continue
+            }
+            let element = AcademicHTMLElement(tag: tag, attributes: parseAttributes(String(content.dropFirst(tag.count))))
+            element.parent = parent
+            parent.children.append(element)
+            if !voidTags.contains(tag) && !content.hasSuffix("/") { stack.append(element) }
+        }
+        return root
+    }
+
+    private static func parseAttributes(_ source: String) -> [String: String] {
+        guard let regex = try? NSRegularExpression(pattern: #"([A-Za-z_:][A-Za-z0-9_:.-]*)(?:\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\"'=<>`]+)))?"#) else { return [:] }
+        var result: [String: String] = [:]
+        for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)) {
+            guard let keyRange = Range(match.range(at: 1), in: source) else { continue }
+            let key = source[keyRange].lowercased()
+            guard result[key] == nil else { continue }
+            let value = (2...4).compactMap { index -> String? in
+                guard let range = Range(match.range(at: index), in: source) else { return nil }
+                return String(source[range])
+            }.first ?? ""
+            result[key] = decodeEntities(value)
+        }
+        return result
+    }
+
+    private static func decodeEntities(_ source: String) -> String {
+        let named = ["amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'", "nbsp": " "]
+        guard let regex = try? NSRegularExpression(pattern: #"&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);"#) else { return source }
+        var result = source
+        for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)).reversed() {
+            guard let entityRange = Range(match.range(at: 1), in: source), let fullRange = Range(match.range, in: result) else { continue }
+            let entity = String(source[entityRange])
+            let replacement: String?
+            if entity.hasPrefix("#x") {
+                replacement = UInt32(entity.dropFirst(2), radix: 16).flatMap(UnicodeScalar.init).map(String.init)
+            } else if entity.hasPrefix("#") {
+                replacement = UInt32(entity.dropFirst()).flatMap(UnicodeScalar.init).map(String.init)
+            } else {
+                replacement = named[entity]
+            }
+            if let replacement { result.replaceSubrange(fullRange, with: replacement) }
+        }
+        return result
     }
 }

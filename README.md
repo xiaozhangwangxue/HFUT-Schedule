@@ -1,53 +1,54 @@
 # 聚在工大 · iOS（HFUT-Schedule）
 
-> 合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本。
-> 本仓库基于原 Android 项目 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码，iOS 端使用 SwiftUI 重写界面与交互，并复用原项目整理的全部校方接口。
+合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本，基于 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码与接口文档。
 
-当前版本：**1.1.0**
+当前版本：**1.2.0**（2026-11-14）。本次核对上游 **2026-10-01 至 2026-11-14** 的全部 65 条提交和 5 次正式发布，基线覆盖已发布的 **4.21.4.1**，并包含开发分支 [`b3cb252e`](https://github.com/Chiu-xaH/HFUT-Schedule/commit/b3cb252e44f024720f6f8fb6216ad076550ee119) 的 DeepSeek 网页联动。
+
+- [iOS 1.2.0 更新说明](docs/ios/1.2.0.md)
+- [上游完整更新审计与 iOS 对照](docs/ios/upstream-audit-2026-11-14.md)
+- [iOS 迁移状态与边界](ios/HFUTSchedule/MIGRATION.md)
 
 ## 下载与安装
 
-- 最新 IPA：[ios-v1.1.0](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases/tag/ios-v1.1.0)
-- 仓库内也直接提供构建产物：[`ios/HFUTSchedule/dist/`](ios/HFUTSchedule/dist)
+发布文件见 [GitHub Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)。本次公共产物名为 `HFUTSchedule-iOS-1.2.0-unsigned.ipa`，需使用自己的开发者签名或兼容的侧载工具签名后安装。签名权限、设备登记与有效期由所用签名方式决定。
 
-IPA 使用**免费个人团队临时签名**，有效期 7 天；过期后重新安装即可。可用 SideStore / iLoader / AltStore 等工具重新签名安装到自己的设备。
+公共 IPA 不包含个人课表快照、账号、Cookie、密码或 API Key。安装后在 App 内登录并同步自己的数据。`dist/` 是本机构建输出目录，不纳入 Git 源码。
 
-## 功能
+## 本次主要更新
 
-### 课表
-- 周课表：周次切换、隐藏周六日、今天高亮、课程块按真实时间比例排布
-- 课程卡片点击进入详情：教师、学分、周次、上课安排、同班同学、教室状态、挂科率、开课查询
-- 离线手动课表、课表备份与恢复、导出到系统日历、上课提醒、系统快捷指令
-- 大号**桌面小组件「周课表」**：一屏显示周一到周五全部课程，顶部显示日期／周次／星期与实时时钟，今天用强调色高亮
+- **教务认证**：兼容创新班、多学籍页面，优先选择主修学籍；未标注培养类型时回退首个卡片，编号无效即停止。登录后可取回教务系统密码，网络设置提供手动刷新与官方修改密码入口。
+- **考试联动**：考试安排同时出现在课程表与聚焦页。聚焦展示所有未来考试和当天尚未结束的考试；课表按考试日期投影到对应周次。
+- **个人日程**：普通日程与截止事项可新增、编辑、删除、克隆；克隆保留原记录并生成新标识，跨天普通日程分段显示在课程表。
+- **校车**：出行 / 所有安排、日期选择、起终点筛选与交换；今天过滤已经发车的班次，并随时钟刷新。
+- **聚焦**：首次进入立即更新时间，支持校园卡「无 / 充值 / 付款码」快捷按钮；生日祝福独立显示。
+- **备份**：v2 JSON 包含课表、个人日程与可移植偏好，兼容旧版课程数组；读取损坏时保留原文件，保存失败时提示错误。
+- **AI 助手**：原生 DeepSeek 连续对话；网页工具栏可提取正文并进入摘要对话。使用用户自己的 DeepSeek API Key，默认模型 `deepseek-flash`，可选 `deepseek-v4-pro`。
+- **天气与小组件**：天气卡片、气象预警可打开官方详情；保留免密钥实时天气来源。周课表小组件补齐空态、点击跳转与刷新策略。
 
-### 教务（统一身份认证后自动同步）
-- 统一身份认证（CAS），一次登录复用会话，无需每个栏目重复登录
-- 教务系统：课表同步、成绩、考试安排、培养方案、选课、评教、课程汇总、转专业、全校课程查询
-- 支持「校园网直连」与「校外 WebVPN」两种连接方式
+详细交互、数据来源差异和验证边界见 [更新说明](docs/ios/1.2.0.md)。
 
-### 查询中心（48 项校园服务）
-- 一卡通余额与流水、宿舍电费、校园网、洗浴、洗衣（智慧笑联）、第二课堂
-- 图书馆检索／在借书籍、空教室、挂科率、同班同学、智慧社区、今日校园
-- 慧新易校（校园卡、电费、洗浴、洗衣聚合平台）、费用中心（欠费明细与缴费二维码）
-- 作息与校历、节假日调休、网址导航（收藏夹 + 实验室）、WebVPN、快递取件码、校园地图、学期报告
-- 就业服务（就业系统学生端、合肥／宣城就业网）、校车 v2（按星期分组、起点终点筛选、线路示意）
+## 既有功能
 
-### 设置（选项）
-- 个人信息、更新版本、应用设置四大入口，与原版一致
-- 选项页支持**搜索设置项**（右上角放大镜），并有「常驻项目 → 刷新登录状态」
-- **外观**：深浅色（跟随系统／浅色／深色）、纯黑深色背景、强制网页深色模式、主题色自定义与鲜艳度、液态玻璃、课表方格显示教师、合并冲突方格、课表背景与前景模糊、底栏标签
-- **偏好与配置**：触感反馈、默认课程表数据源、当前学期与学期开始时间、聚焦显示已完成项目、宣城校园网月额度、**忽略平均成绩的排除计算**、课程提醒、备份与恢复、缓存清理
-- **网络**：一卡通密码（含合肥校区默认密码规则）、校园网密码、教务系统密码、自动刷新登录状态、大模型 ApiKey、数据上报、刷新登录状态、请求范围
+- 四个主栏目：**课程表 / 聚焦 / 查询中心 / 选项**。
+- 周课表、课程详情、离线手动课程、教务同步、系统日历导出、课程提醒与快捷指令。
+- CAS 原生认证与校方会话复用，支持校内直连和校外 WebVPN。
+- 成绩与分析、考试、学籍、培养方案、选课、评教、全校课程和空教室查询。
+- 48 项校园服务入口，包括校园卡、电费、校园网、洗浴、洗衣（**海乐生活**）、第二课堂、图书馆、宿舍评分、今日校园、慧新易校、费用中心、就业服务与校车。
+- 深色模式、外观与偏好设置、设置项搜索和大号 WidgetKit 周课表小组件。
 
-## 环境要求
-
-- iOS 17.0 及以上
-- Xcode 16 及以上（当前在 Xcode 27.2 beta 上验证）
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`
+服务的原生实现、网页入口和待验收范围分别列于 [迁移矩阵](ios/HFUTSchedule/MIGRATION.md)。
 
 ## 构建
 
-```bash
+运行要求为 **iOS 17.0 及以上**。建议使用 Xcode 27.x 和 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。在仓库根目录执行：
+
+```sh
+./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
+```
+
+或手动构建：
+
+```sh
 cd ios/HFUTSchedule
 xcodegen generate
 xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
@@ -55,61 +56,36 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-一键生成临时签名 IPA 并安装到已连接设备：
+模拟器测试、资源检查和签名说明见 [iOS 工程说明](ios/HFUTSchedule/README.md)。本次最终验证结果统一记录在 [1.2.0 更新说明](docs/ios/1.2.0.md#验证)。
 
-```bash
-./ios/HFUTSchedule/scripts/build_temporary_signed_ipa.sh <设备 UDID> yes
+## 目录
+
+```text
+app/                         上游 Android 应用
+network-api/                 上游接口与数据模型
+common-logic/ common-ui/      上游公共模块
+docs/update/                 上游更新说明
+docs/ios/                    iOS 发布说明与逐提交审计
+ios/HFUTSchedule/
+  HFUTSchedule/              SwiftUI 应用
+  HFUTScheduleWidget/        周课表小组件
+  Shared/                    小组件数据与共用视图
+  HFUTScheduleTests/         自动化回归测试
+  scripts/                   构建及本机签名工具
+  project.yml                XcodeGen 工程定义
+  dist/                      忽略的本机构建产物
 ```
 
-其它脚本：
+## 使用与实现边界
 
-- `scripts/finish_widget_install.sh`：刷新小组件快照 → 申请描述文件 → 签名 → 安装 → 输出 IPA
-- `scripts/sync_widget_snapshot.sh`：从真机拉取课表并写入小组件包内快照
-- `scripts/render_widget_preview.swift`：把小组件视图渲染成 PNG，便于在不装机的情况下检查排版
+- 真实校方账号、校内 / WebVPN 网络与真机交互仍需逐项验收，测试模型或模拟器构建不能代替在线验收。
+- 默认实时天气来自 Open-Meteo，天气详情和预警由和风天气官方页面提供；未配置和风天气接口时不会在 App 内声称「暂无预警」。本项目没有复制上游作者的天气签名凭据。
+- DeepSeek 请求仅在用户发送时发起；网页摘要会把页面正文作为资料发送到 DeepSeek，发送前可查看正文。API Key 保存在本机钥匙串。
+- 公共包使用空的小组件快照。个人快照、临时签名和设备安装脚本仅用于本机，不用于生成公共发布文件；小组件共享数据需要签名权限与 entitlement 配置匹配。
+- 默认课表数据源、自动刷新登录等既有设置不纳入本次“全部功能已完成”的声明，具体限制见迁移矩阵。
 
-## 目录结构
+## 上游与许可
 
-```
-HFUT-Schedule
-├── app/                     # 上游 Android 应用源码（未改动）
-├── network-api/             # 上游网络层：校方接口定义与数据模型
-├── common-logic/ common-ui/ # 上游公共模块
-├── docs/                    # 上游文档，含 docs/HfutApi.md 校内接口收集
-└── ios/HFUTSchedule/        # iOS 工程（本仓库新增）
-    ├── HFUTSchedule/        # SwiftUI 应用源码
-    ├── HFUTScheduleWidget/  # 桌面周课表小组件
-    ├── Shared/              # 主应用与小组件共享的数据通道与视图
-    ├── HFUTScheduleTests/   # 单元测试（接口解析、目录、密码规则等）
-    ├── scripts/             # 构建 / 签名 / 小组件脚本
-    ├── dist/                # 构建产物（IPA）
-    └── project.yml          # XcodeGen 工程定义（工程文件的唯一来源）
-```
+Android 应用、校方接口整理与上游文档来自 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule)。可查阅 [上游更新日志](docs/update)、[开发者文档](docs/Developer.md)、[校内接口文档](docs/HfutApi.md) 和 [DeepLink 说明](docs/DeepLink.md)。
 
-## 小组件数据通道
-
-免费个人团队不支持 App Groups，因此小组件按优先级使用三级数据通道：
-
-1. App Group（付费团队签名时自动生效）
-2. 共享钥匙串（免费团队描述文件自带 `TEAM.*` keychain 分组）
-3. 包内 `ScheduleSnapshot.json`（构建时从真机拉取的课表快照，保证任何时候都有内容）
-
-主应用每次保存、导入或同步课表都会刷新前两条通道并请求 `WidgetCenter` 重载时间线。
-
-## 已知说明
-
-- 校方接口随时可能调整，如遇某个栏目提示登录失败或数据为空，请先在「选项 → 安全登录」重新完成一次统一身份认证
-- 临时签名版本 7 天后失效，属免费开发者账号限制
-- 校内地址（如 `121.251.19.62`、`jxglstu.hfut.edu.cn`）在校外需要开启 WebVPN
-
-## 上游项目
-
-Android 版本与全部校方接口文档来自 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule)，其文档同样适用于本仓库的上游部分：
-
-- [更新日志](docs/update)
-- [开发者文档](docs/Developer.md)
-- [校内 Api 收集](docs/HfutApi.md)
-- [DeepLink 说明](docs/DeepLink.md)
-
-## 许可
-
-本仓库沿用上游 [Apache License 2.0](LICENSE)。接口与数据均来自学校公开系统，仅供学习交流使用。
+本仓库沿用 [Apache License 2.0](LICENSE)。

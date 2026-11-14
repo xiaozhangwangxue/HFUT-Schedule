@@ -5,6 +5,7 @@ import AppIntents
 struct HFUTScheduleApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var scheduleStore = ScheduleStore()
+    @StateObject private var customEventStore = CustomEventStore()
     @StateObject private var notificationManager = CourseNotificationManager()
     @StateObject private var academicRecordsStore = AcademicRecordsStore()
     @StateObject private var academicStudentStore = AcademicStudentStore()
@@ -20,6 +21,7 @@ struct HFUTScheduleApp: App {
             RootView()
                 .environmentObject(appState)
                 .environmentObject(scheduleStore)
+                .environmentObject(customEventStore)
                 .environmentObject(notificationManager)
                 .environmentObject(academicRecordsStore)
                 .environmentObject(academicStudentStore)

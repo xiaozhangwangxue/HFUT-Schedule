@@ -76,48 +76,82 @@ struct WorkServiceView: View {
     }
 }
 
-/// 校车 v2：对应上游 BusScreenV2，按星期分组展示班次与线路。
+/// 校车 v2：同步上游出行视图、自然星期班次与实时发车过滤。
 struct BusScheduleView: View {
+    @EnvironmentObject private var studentStore: AcademicStudentStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var routes: [CampusBusRoute] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var startQuery = ""
     @State private var endQuery = ""
-    @State private var selectedWeek: String?
+    @State private var mode = CampusBusDisplayMode.upcoming
+    @State private var selectedDate = Date()
+    @State private var now = Date()
+    @State private var holidayDay: HolidayDay?
 
-    private var weeks: [String] {
-        Array(Set(routes.map(\.week).filter { !$0.isEmpty })).sorted { lhs, rhs in
-            weekOrder(lhs) < weekOrder(rhs)
-        }
+    private var selection: CampusBusSelection {
+        CampusBusService.select(routes, mode: mode, date: selectedDate, now: now,
+                                from: startQuery, to: endQuery)
     }
 
-    private var filtered: [CampusBusRoute] {
-        routes.filter { route in
-            if let selectedWeek, route.week != selectedWeek { return false }
-            if !startQuery.isEmpty, !route.from.localizedCaseInsensitiveContains(startQuery) { return false }
-            if !endQuery.isEmpty, !route.to.localizedCaseInsensitiveContains(endQuery) { return false }
-            return true
-        }
-    }
+    private var startPoints: [String] { Array(Set(routes.map(\.from))).sorted() }
+    private var endPoints: [String] { Array(Set(routes.map(\.to))).sorted() }
 
     var body: some View {
         List {
-            Section("筛选") {
-                TextField("起点", text: $startQuery)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                TextField("终点", text: $endQuery)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                if !weeks.isEmpty {
-                    Picker("星期", selection: Binding(
-                        get: { selectedWeek ?? "" },
-                        set: { selectedWeek = $0.isEmpty ? nil : $0 }
-                    )) {
-                        Text("全部").tag("")
-                        ForEach(weeks, id: \.self) { week in
-                            Text(week).tag(week)
+            Section {
+                Picker("校车安排", selection: $mode) {
+                    ForEach(CampusBusDisplayMode.allCases) { value in
+                        Text(value.rawValue).tag(value)
+                    }
+                }
+                .pickerStyle(.segmented)
+                if mode == .upcoming {
+                    DatePicker("出行日期", selection: $selectedDate,
+                               in: Calendar.current.startOfDay(for: now)...,
+                               displayedComponents: .date)
+                }
+                HStack {
+                    Menu {
+                        Button("全部起点") { startQuery = "" }
+                        ForEach(startPoints, id: \.self) { point in
+                            Button(point) { startQuery = point }
                         }
+                    } label: {
+                        Text(startQuery.isEmpty ? "起点" : startQuery)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .accessibilityLabel("起点：\(startQuery.isEmpty ? "全部" : startQuery)")
+                    Button {
+                        swap(&startQuery, &endQuery)
+                    } label: {
+                        Image(systemName: "arrow.left.arrow.right")
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("交换起点和终点")
+                    Menu {
+                        Button("全部终点") { endQuery = "" }
+                        ForEach(endPoints, id: \.self) { point in
+                            Button(point) { endQuery = point }
+                        }
+                    } label: {
+                        Text(endQuery.isEmpty ? "终点" : endQuery)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .accessibilityLabel("终点：\(endQuery.isEmpty ? "全部" : endQuery)")
+                }
+            }
+
+            if mode == .upcoming,
+               let advisory = CampusBusService.holidayAdvisory(for: holidayDay),
+               let feature = FeatureCatalog.all.first(where: { $0.nativeDestination == .holidays }) {
+                Section {
+                    NavigationLink {
+                        FeatureDetailView(feature: feature)
+                    } label: {
+                        Label(advisory, systemImage: "calendar.badge.exclamationmark")
+                            .font(.footnote)
                     }
                 }
             }
@@ -129,20 +163,19 @@ struct BusScheduleView: View {
                     Text(errorMessage).font(.footnote).foregroundStyle(.secondary)
                     Button("重新读取") { Task { await load() } }
                 }
-            } else if filtered.isEmpty {
-                Text("没有符合条件的班次。").font(.footnote).foregroundStyle(.secondary)
+            } else if selection.routes.isEmpty {
+                ContentUnavailableView(selection.emptyMessage, systemImage: "bus")
             }
 
-            ForEach(filtered) { route in
+            ForEach(selection.routes) { route in
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Image(systemName: "bus")
-                            .foregroundStyle(.secondary)
-                        Text("\(route.week) \(route.time)").font(.headline)
+                        Image(systemName: "bus").foregroundStyle(.secondary)
+                        Text("\(route.from) → \(route.to)").font(.headline)
                         Spacer()
                         Text("\(route.count) 辆").font(.subheadline).foregroundStyle(.secondary)
                     }
-                    Text("上车地点：\(route.place)")
+                    Text("\(route.time) · \(route.week) · \(route.place)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if route.points.count > 1 {
@@ -162,37 +195,44 @@ struct BusScheduleView: View {
                 }
                 .accessibilityLabel("查看网页最新数据")
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(selectedWeek == nil ? "全部" : selectedWeek!) {
-                    cycleWeek()
-                }
+        }
+        .task {
+            // 只有学籍明确指出具体校区时才预选，合肥区域本身无法区分屯溪路与翡翠湖。
+            let campus = studentStore.info?.campus ?? ""
+            if startQuery.isEmpty, endQuery.isEmpty,
+               let keyword = ["翡翠湖", "屯溪路", "宣城"].first(where: campus.contains) {
+                startQuery = keyword
+            }
+            await load()
+            if !startQuery.isEmpty,
+               let point = startPoints.first(where: { $0.contains(startQuery) }) {
+                startQuery = point
             }
         }
-        .task { await load() }
-        .refreshable { await load() }
-    }
-
-    private func cycleWeek() {
-        guard !weeks.isEmpty else { return }
-        guard let current = selectedWeek, let index = weeks.firstIndex(of: current) else {
-            selectedWeek = weeks.first
-            return
+        .task {
+            now = Date()
+            while !Task.isCancelled {
+                let delay = CampusBusService.secondsUntilNextMinute(from: Date())
+                do { try await Task.sleep(for: .seconds(delay)) }
+                catch { break }
+                now = Date()
+            }
         }
-        selectedWeek = index == weeks.count - 1 ? nil : weeks[index + 1]
-    }
-
-    private func weekOrder(_ week: String) -> Int {
-        // 学校表格里的分组是「周一至周五 / 周六 / 周日」
-        if week.contains("周一至周五") || week.contains("工作日") { return 0 }
-        let names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-        if let index = names.firstIndex(of: week) { return index }
-        return names.firstIndex { week.hasPrefix($0) } ?? names.count
+        .task(id: selectedDate) {
+            await HolidayCalendarStore.shared.refreshIfNeeded()
+            holidayDay = HolidayCalendarStore.shared.day(on: selectedDate)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { now = Date() }
+        }
+        .refreshable { await load() }
     }
 
     @MainActor
     private func load() async {
         isLoading = routes.isEmpty
         errorMessage = nil
+        now = Date()
         do {
             routes = try await CampusBusService.fetchRoutes()
             if routes.isEmpty {

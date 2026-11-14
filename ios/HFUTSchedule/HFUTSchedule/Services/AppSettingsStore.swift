@@ -25,6 +25,15 @@ enum AppSettingsKey {
     static let manualTermStart = "appManualTermStart"          // 学期开始时间
     static let useDefaultCardPassword = "useDefaultCardPassword" // 使用默认一卡通密码
     static let ignoreExcludedGrades = "ignoreUnjoinedGradeItems" // 忽略平均成绩的排除计算
+    static let focusCardAction = "focusSchoolCardQuickButton"
+}
+
+enum FocusCardAction: Int, CaseIterable, Identifiable {
+    case none = 0, recharge = 1, payCode = 2
+    var id: Int { rawValue }
+    var title: String {
+        switch self { case .none: "无"; case .recharge: "充值"; case .payCode: "付款码" }
+    }
 }
 
 enum AppAppearance: String, CaseIterable, Identifiable {
