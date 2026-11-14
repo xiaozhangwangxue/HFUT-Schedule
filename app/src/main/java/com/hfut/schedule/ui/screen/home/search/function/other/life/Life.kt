@@ -33,18 +33,22 @@ import com.hfut.schedule.R
 import com.hfut.schedule.ui.model.NavigationBarItemData
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.ui.component.button.HazeBottomBar
+import com.hfut.schedule.ui.component.button.HazeBottomBarV2
 import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.icon.BrushIcon
 import com.hfut.schedule.ui.nav.destination.LifeDestination
 import com.hfut.schedule.ui.nav.destination.TermReportDestination
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
+import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.ui.util.nav2Composable
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.hfut.schedule.ui.util.navigation.currentRouteWithoutArgs
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.sharednav.common.helper.NoneRoundShape
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.color.topBarTransplantColor
@@ -71,25 +75,23 @@ fun Life() {
                 shape = CircleShape,
                 containerColor = IconButtonDefaults.filledTonalIconButtonColors().containerColor
             ) {
-                NoPadding {
-                    FilledTonalIconButton(
-                        shape = NoneRoundShape,
-                        modifier = Modifier.size(30.dp),
-                        onClick = {
-                            navController.push(TermReportDestination)
-                        }
-                    ) {
-                        val brush = Brush.sweepGradient(
-                            colors = listOf(
-                                Color(0xFFE53935), // 红
-                                Color(0xFFFB8C00), // 橙
-                                Color(0xFFFDD835), // 黄
-                                Color(0xFF43A047), // 绿
-                                Color(0xFF1E88E5), // 蓝
-                                Color(0xFF8E24AA), // 紫
-                                Color(0xFFE53935), // 闭环
-                            )
+                QuickButtonForSearchScreen(
+                    shape = NoneRoundShape,
+                    onClick = {
+                        navController.push(TermReportDestination)
+                    }
+                ) {
+                    val brush = Brush.sweepGradient(
+                        colors = listOf(
+                            Color(0xFFE53935), // 红
+                            Color(0xFFFB8C00), // 橙
+                            Color(0xFFFDD835), // 黄
+                            Color(0xFF43A047), // 绿
+                            Color(0xFF1E88E5), // 蓝
+                            Color(0xFF8E24AA), // 紫
+                            Color(0xFFE53935), // 闭环
                         )
+                    )
 //                        val angle by rememberInfiniteTransition()
 //                            .animateFloat(
 //                                initialValue = 0f,
@@ -101,11 +103,10 @@ fun Life() {
 //                                    )
 //                                )
 //                            )
-                        BrushIcon(
-                            icon = R.drawable.kid_star,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    BrushIcon(
+                        icon = R.drawable.kid_star,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         },
@@ -161,6 +162,7 @@ fun LifeScreen(
         }
     }
 
+    val backdrop = rememberLayerBackdrop()
 
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -182,8 +184,9 @@ fun LifeScreen(
             )
         },
         bottomBar = {
-            HazeBottomBar(
+            HazeBottomBarV2(
                 hazeState,
+                backdrop,
                 items,
                 lifeNavController,
             )
@@ -198,7 +201,9 @@ fun LifeScreen(
             exitTransition = {
                 AppAnimationManager.centerAnimation.exit
             },
-            modifier = Modifier.hazeSource(state = hazeState)
+            modifier = Modifier
+                .hazeSource(state = hazeState)
+                .backDropSource(backdrop)
         ) {
             nav2Composable(LifeBarItems.CAMPUS.name) {
                 Box(modifier = Modifier.fillMaxSize()) {

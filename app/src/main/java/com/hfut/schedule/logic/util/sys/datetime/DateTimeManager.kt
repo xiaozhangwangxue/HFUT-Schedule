@@ -31,7 +31,13 @@ object DateTimeManager {
             DataStoreManager.termStartDate.first(),
             formatter_YYYY_MM_DD
         )
-       currentWeek =  ChronoUnit.WEEKS.between(firstWeekStartJxglstu, today) + 1
+        val days = ChronoUnit.DAYS.between(firstWeekStartJxglstu, today)
+        currentWeek = if (days >= 0) {
+            (days / 7) + 1
+        } else {
+            (days - 6) / 7
+        }
+        LogUtil.debug("result=$currentWeek firstWeekStartJxglstu=$firstWeekStartJxglstu currentDate=$Date_yyyy_MM_dd")
     }
 
     fun isInVacation() : Boolean = currentWeek !in 1..MyApplication.MAX_WEEK
@@ -153,6 +159,7 @@ object DateTimeManager {
                 TimeState.ONGOING
             }
         } catch (e: Exception) {
+            LogUtil.error(e)
             return TimeState.NOT_STARTED
         }
     }
@@ -172,6 +179,7 @@ object DateTimeManager {
                 TimeState.ONGOING
             }
         } catch (e: Exception) {
+            LogUtil.error(e)
             return TimeState.NOT_STARTED
         }
     }
@@ -187,20 +195,28 @@ object DateTimeManager {
         ENDED         // 已结束
     }
 
+    fun getTimeStateReal(startTime: String, endTime: String) = getTimeState(startTime,endTime, LocalTime.now().format(formatterTime_HH_MM))
+
     // 空 则用初始化的时间作为now，若想传入最新时间，需要自己在外面更新，用updateTime方法
-    fun getTimeState(startTime: String, endTime: String,nowTime : String? = null): TimeState {
+    fun getTimeState(startTime: String, endTime: String,nowTime : String? = null): Pair<TimeState, Float> {
         try {
             val start = LocalTime.parse(startTime, formatterTime_HH_MM)
             val end = LocalTime.parse(endTime, formatterTime_HH_MM)
             val now = LocalTime.parse(nowTime ?: Time_HH_MM, formatterTime_HH_MM)
 
             return when {
-                now.isBefore(start) -> TimeState.NOT_STARTED // 当前时间早于开始时间
-                now.isAfter(end) -> TimeState.ENDED         // 当前时间晚于结束时间
-                else -> TimeState.ONGOING                  // 当前时间在开始和结束之间
+                now.isBefore(start) -> Pair(TimeState.NOT_STARTED,0f) // 当前时间早于开始时间
+                now.isAfter(end) -> Pair(TimeState.ENDED,1f)       // 当前时间晚于结束时间
+                else -> {
+                    // 当前时间在开始和结束之间
+                    val total = Duration.between(start, end).toMillis()
+                    val elapsed = Duration.between(start, now).toMillis()
+                    Pair(TimeState.ONGOING,elapsed.toFloat() safeDiv total.toFloat() )
+                }
             }
         } catch (e : Exception) {
-            return TimeState.NOT_STARTED
+            LogUtil.error(e)
+            return Pair(TimeState.NOT_STARTED,0f)
         }
     }
 
@@ -221,6 +237,7 @@ object DateTimeManager {
             val todayMonthDay = MonthDay.from(today)
             inputMonthDay == todayMonthDay
         } catch (e: Exception) {
+            LogUtil.error(e)
             false // 日期格式不对时，返回 false
         }
     }

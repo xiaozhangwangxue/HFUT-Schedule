@@ -51,6 +51,8 @@ import com.hfut.schedule.logic.util.storage.file.LargeStringDataManager
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
 import com.hfut.schedule.logic.util.sys.showToast
+import com.hfut.schedule.ui.component.button.CalendarSquareBackDropSource
+import com.hfut.schedule.ui.component.button.calendarSquareBackDrop
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.LargeCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
@@ -70,7 +72,9 @@ import com.hfut.schedule.ui.style.CalendarStyle
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.style.special.calendarSquareGlass
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.kyant.backdrop.Backdrop
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.shader.state.ShaderState
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.ClickScale
@@ -82,6 +86,8 @@ import com.xah.container.model.ContainerFilledStrategy
 
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.isEmptyOrBlank
+import com.xah.common.logic.util.remove
 import dev.chrisbanes.haze.HazeState
 import java.time.LocalDate
 
@@ -146,7 +152,7 @@ fun JxglstuCourseTableTwo(
     dataSource : TotalCourseDataSource,
     onDateChange: (LocalDate) ->Unit,
     today: LocalDate,
-    backGroundHaze : ShaderState?,
+    backGroundHaze : Backdrop?,
     onSwapShowAll : (Boolean) -> Unit
 ) {
     val list by produceState(initialValue = emptyList(),key1 = dataSource) {
@@ -176,7 +182,7 @@ fun JxglstuCourseTableSearch(
     list : List<JxglstuLesson>,
     onDateChange: ((LocalDate) ->Unit)? = null,
     today: LocalDate? = null,
-    backGroundHaze : ShaderState? = null,
+    backGroundHaze : Backdrop? = null,
     onSwapShowAll : (Boolean) -> Unit
 ) {
     val customBackgroundAlpha by DataStoreManager.customCalendarSquareAlpha.collectAsState(initial = MyApplication.CALENDAR_SQUARE_ALPHA)
@@ -216,9 +222,9 @@ fun JxglstuCourseTableSearch(
     // 记录上一次的学期开始时间
     var lastTermStartDate by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val weekSwap = remember(currentWeek) { object : TimeTableWeekSwap {
+    val weekSwap = remember(currentWeek,today) { object : TimeTableWeekSwap {
         override fun backToCurrentWeek() {
-            if(DateTimeManager.currentWeek < 1 || DateTimeManager.currentWeek > 20) {
+            if(DateTimeManager.currentWeek !in 1..MyApplication.MAX_WEEK) {
                 if(termStartDate == null) {
                     return
                 }
@@ -294,7 +300,7 @@ fun JxglstuCourseTableSearch(
                     val text =
                         "${item.periodRange.first}-${item.periodRange.second}节" +"\n" +
                                 (if(onDateChange == null) "(${lessonItem.code.substringAfter("--")}班)" else "")+ lessonItem.course.nameZh +
-                                (item.place?.let { "\n" + it } ?: "")
+                                (item.place?.let { "\n" + it } ?: EMPTY_STRING)
                     val bean = CardBean(i,text)
                     val weekday = item.weekday
                     val weekRange = item.weekRange
@@ -561,7 +567,7 @@ fun JxglstuCourseTableSearch(
     ) {
         val scrollState = rememberLazyGridState()
         val shouldShowAddButton by remember { derivedStateOf { scrollState.firstVisibleItemScrollOffset == 0 } }
-        val style = CalendarStyle(showAll)
+        val style = remember(showAll) { CalendarStyle(showAll) }
         val hasBackground = backGroundHaze != null
         val noAlpha = customBackgroundAlpha == 1f
 
@@ -574,7 +580,9 @@ fun JxglstuCourseTableSearch(
             items(style.rowCount*style.columnCount) { cell ->
                 val texts = if(showAll)tableAll[cell].toMutableList() else table[cell].toMutableList()
                 if(texts.isEmpty() && hasBackground) {
-                    Box(modifier = Modifier.height(calendarSquareHeight.dp).padding(style.everyPadding))
+                    Box(modifier = Modifier
+                        .height(calendarSquareHeight.dp)
+                        .padding(style.everyPadding))
                 } else {
                     val dest = if (texts.size == 1) {
                         try {
@@ -600,8 +608,8 @@ fun JxglstuCourseTableSearch(
                                 key = dest?.key,
                                 shape = style.containerCorner,
                                 containerFilledStrategy =
-                                    if(hasBackground) {
-                                        if(noAlpha) {
+                                    if (hasBackground) {
+                                        if (noAlpha) {
                                             ContainerFilledStrategy.Pixel(
                                                 ContainerFilledStrategy.Color(style.containerColor)
                                             )
@@ -615,16 +623,18 @@ fun JxglstuCourseTableSearch(
                                     }
                             )
                             .let {
-                                if(!hasBackground) {
+                                if (!hasBackground) {
                                     it
                                 } else {
-                                    it.calendarSquareGlass(
+                                    it.calendarSquareBackDrop(
                                         backGroundHaze,
-                                        style.containerColor.copy(customBackgroundAlpha)
+                                        CalendarSquareBackDropSource.SQUARE,
+                                        style.containerCorner,
+                                        style.containerColor
                                     )
                                 }
                             }
-                            .clickableWithScale(ClickScale.SMALL.scale){
+                            .clickableWithScale(ClickScale.SMALL.scale) {
                                 // 只有一节课
                                 if (texts.size == 1) {
                                     dest?.let { navController.push(it) }
@@ -643,7 +653,9 @@ fun JxglstuCourseTableSearch(
                             val name = l[1]
                             val place = if(l.size>=3) l[2] else null
                             Column(
-                                modifier = Modifier.fillMaxSize().padding(horizontal = CARD_NORMAL_DP) ,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = CARD_NORMAL_DP) ,
                                 verticalArrangement = Arrangement.SpaceBetween,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -695,7 +707,9 @@ fun JxglstuCourseTableSearch(
                                 null
                             }
                             Column(
-                                modifier = Modifier.fillMaxSize().padding(horizontal = CARD_NORMAL_DP) ,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = CARD_NORMAL_DP) ,
                                 verticalArrangement = Arrangement.SpaceBetween,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -750,7 +764,8 @@ fun JxglstuCourseTableSearch(
             shaderState = backGroundHaze,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = innerPadding.calculateBottomPadding() - if(enableNewBottomBar) 0.dp else if(onDateChange != null) navigationBarHeightPadding else 0.dp).let { if(onDateChange == null) it.navigationBarsPadding() else it }
+                .padding(bottom = innerPadding.calculateBottomPadding() - if (enableNewBottomBar) 0.dp else if (onDateChange != null) navigationBarHeightPadding else 0.dp)
+                .let { if (onDateChange == null) it.navigationBarsPadding() else it }
                 .padding(
                     horizontal = APP_HORIZONTAL_DP,
                     vertical = APP_HORIZONTAL_DP
@@ -800,6 +815,7 @@ private fun parseScheduleText(text : String) : List<Schedule> {
         }
         return result
     } catch (e : Exception) {
+        LogUtil.error(e)
         return result
     }
 }
@@ -818,11 +834,16 @@ private fun parseWeekday(text: String): Int = when (text) {
 // 解析 1~3(双),5~9周 为list(1,2,3,5,6,7,8,9)
 private fun parseWeek(text: String) : List<Int> {
     // 去掉括号及其中的内容
-    val cleaned = text.replace(Regex("[(（][^)）]*[)）]"), "")
+    val cleaned = text.remove(Regex("[(（][^)）]*[)）]"))
         .let {
-            if (it.endsWith("周")) it.dropLast(1) else it
+            if (it.endsWith("周"))
+                it.dropLast(1)
+            else
+                it
         }
-    if (cleaned.isBlank()) return emptyList()
+    if (cleaned.isEmptyOrBlank()) {
+        return emptyList()
+    }
 
     val textList = cleaned.split(",")
     return textList.flatMap { part ->

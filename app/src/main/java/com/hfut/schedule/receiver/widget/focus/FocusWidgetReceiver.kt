@@ -44,7 +44,7 @@ import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import com.hfut.schedule.R
 import com.hfut.schedule.activity.MainActivity
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.model.enumeration.BottomBarItems
 import com.hfut.schedule.network.api.model.response.json.community.CommunityCourseDetail
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
@@ -346,7 +346,7 @@ class FocusWidget : GlanceAppWidget() {
                                             val time = item.classTime
                                             val startTime = time.substringBefore("-")
                                             val endTime = time.substringAfter("-")
-                                            val state = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+                                            val state = DateTimeManager.getTimeState(startTime, endTime,timeNow).first
                                             WidgetCardListItem(
                                                 textSize = textSize,
                                                 textDecoration = if (state == ENDED) TextDecoration.LineThrough else TextDecoration.None,
@@ -418,7 +418,7 @@ class FocusWidget : GlanceAppWidget() {
                                             val time = item.time
                                             val startTime = with(time.start) { parseTimeItem(hour) + ":" + parseTimeItem(minute) }
                                             val endTime = with(time.end) { parseTimeItem(hour) + ":" + parseTimeItem(minute) }
-                                            val state = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+                                            val state = DateTimeManager.getTimeState(startTime, endTime,timeNow).first
                                             WidgetCardListItem(
                                                 textSize = textSize,
                                                 textDecoration = if (state == ENDED) TextDecoration.LineThrough else TextDecoration.None,

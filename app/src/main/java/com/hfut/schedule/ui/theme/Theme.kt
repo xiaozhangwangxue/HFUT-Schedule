@@ -29,6 +29,7 @@ import com.hfut.schedule.ui.model.ColorStyle
 import com.hfut.schedule.ui.util.deepen
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.materialkolor.rememberDynamicColorScheme
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.color.TransparentSystemBars
 
 private val list = ColorStyle.entries
@@ -114,7 +115,8 @@ fun AppTheme(
                 it.copy(
                     primaryContainer = it.secondaryContainer.deepen(if(isInDark) 0.3f else 0.2f,isInDark),
                     primary = it.primary.deepen(-0.2f,isInDark),
-                    surfaceVariant = it.surface.deepen(0.1f,isInDark)
+                    surfaceVariant = it.surface.deepen(0.1f,isInDark),
+                    onPrimaryContainer = it.onSecondaryContainer.deepen(0.1f,isInDark)
                 )
             } else {
                 it
@@ -153,7 +155,7 @@ fun rememberAnimatedColorScheme(
             durationMillis = durationMillis,
             easing = FastOutSlowInEasing
         ),
-        label = ""
+        label = EMPTY_STRING
     ).value
     return if(enableLowPerformance) {
         ColorScheme(

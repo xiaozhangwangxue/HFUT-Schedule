@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.hfut.schedule.R
 import com.hfut.schedule.application.MyApplication
+import com.hfut.schedule.logic.model.enumeration.FocusSchoolCardQuickButton
 import com.xah.common.logic.model.CampusRegion
 import com.hfut.schedule.logic.model.enumeration.Language
 import com.hfut.schedule.logic.util.helper.getCampusRegion
@@ -50,13 +51,13 @@ import kotlinx.coroutines.withContext
 /**
  * 键值对存储
  *
- * 尽量别用SP了，要弃用了，存键值对来这里存
+ * 尽量别用[SharedPrefs]了，要弃用了，存键值对来这里存
  *
  * 需要数据变更时，在key的尾部添加版本号。例如  enable_new_style_bottom_bar_v2
  *
- * 对于多个选项的存储，有封装好的BaseChoice，可以去看一下怎么用的，然后子类就不要放在这里了目前已有的我后续也会清理出去
+ * 对于多个选项的存储，有封装好的[BaseChoice]，可以去看一下怎么用的，然后子类就不要放在这里了目前已有的我后续也会清理出去
  *
- * 对于大文本的存储，建议去LargeDataStoreManager
+ * 对于大文本的存储，建议去[LargeStringDataManager]
  *
  * 对于简单的List、Map等，允许在这里存储
  *
@@ -76,7 +77,7 @@ object DataStoreManager : IDataStore {
     val SEARCH_DEFAULT_STR = GlobalUiStateHolder.funcDefault.map { it.id }.joinToString(",")
     val SHORTCUT_DEFAULT_STR = AppShortcutManager.getStorageStr()
 
-    private const val EMPTY_STRING = ""
+    private const val EMPTY_STRING = com.xah.common.logic.util.EMPTY_STRING
 
     override suspend fun <T> saveValue(key: Preferences.Key<T>, value: T) {
         dataStore.edit { it[key] = value }
@@ -138,6 +139,7 @@ object DataStoreManager : IDataStore {
     private val FOCUS_SHOW_WEATHER_WARN = booleanPreferencesKey("focus_show_weather_warn")
     private val CARD_PASSWORD = stringPreferencesKey("card_password")
     private val USE_DEFAULT_CARD_PASSWORD = booleanPreferencesKey("use_default_card_password")
+    private val USE_DEFAULT_SCHOOL_NET_PASSWORD = booleanPreferencesKey("use_default_school_net_password")
     private val USE_DEFAULT_JXGLSTU_PASSWORD = booleanPreferencesKey("use_default_jxglstu_password")
     private val DEFAULT_CALENDAR_ACCOUNT = longPreferencesKey("default_calendar_account")
     private val COURSE_TABLE_TIME = stringPreferencesKey("course_table_time")
@@ -146,13 +148,14 @@ object DataStoreManager : IDataStore {
     private val AUTO_TERM_VALUE = intPreferencesKey("auto_term_value")
     private val COURSE_BOOK = stringPreferencesKey("course_book")
     private val WEB_VIEW_DARK = booleanPreferencesKey("web_view_dark")
-    private val PREDICTIVE = booleanPreferencesKey("predictive")
+    private val PREDICTIVE = booleanPreferencesKey(if(AppVersion.sdkInt == 33) "predictive_v2" else "predictive")
     private val INFINITE_WHEEL_PICKER = booleanPreferencesKey("infinite")
     private val WX_AUTH = stringPreferencesKey("wx_auth")
     private val CUSTOM_COLOR = longPreferencesKey("custom_color")
     private val CUSTOM_BACKGROUND = stringPreferencesKey("custom_background")
     private val CUSTOM_COLOR_STYLE = intPreferencesKey("custom_color_style_2")
     private val CUSTOM_CALENDAR_SQUARE_ALPHA = floatPreferencesKey("custom_calendar_square_alpha")
+    private val CUSTOM_CALENDAR_SQUARE_BLUR = floatPreferencesKey("custom_calendar_square_blur")
     private val SEARCH_SORT = stringPreferencesKey("search_sort")
     private val SHORTCUT_SORT = stringPreferencesKey("shortcut_sort")
     private val MAX_FLOW = intPreferencesKey("max_flow")
@@ -180,6 +183,7 @@ object DataStoreManager : IDataStore {
     private val SCREEN_CORNER = floatPreferencesKey("screen_corner")
     private val XWX_PASSWORD = stringPreferencesKey("xwx_password")
     private val JXGLSTU_PASSWORD = stringPreferencesKey("jxglstu_password")
+    private val SCHOOL_NET_PASSWORD = stringPreferencesKey("school_net_password")
     private val UNI_APP_JWT = stringPreferencesKey("uni_app_jwt")
     private val TERM_START_DATE = stringPreferencesKey("term_start_date")
     private val DEFAULT_CALENDAR = intPreferencesKey("default_calendar")
@@ -196,11 +200,16 @@ object DataStoreManager : IDataStore {
     private val SHOW_FOCUS_SCHOOL_NET = booleanPreferencesKey("show_focus_school_net")
     private val SHOW_FOCUS_SCHOOL_CARD = booleanPreferencesKey("show_focus_school_card")
     private val SHOW_FOCUS_TODAY = booleanPreferencesKey("show_focus_today")
-    private val SHOW_FOCUS_SCHOOL_CARD_ADD_BUTTON = booleanPreferencesKey("show_focus_school_card_add_button")
+    private val FOCUS_SCHOOL_CARD_QUICK_BUTTON = intPreferencesKey("focus_school_card_quick_button")
     private val SHOW_FOCUS_GRADE = intPreferencesKey("show_focus_grade")
     private val CAN_USE = booleanPreferencesKey("can_use")
     private val UNI_APP_GRADE_COUNT = intPreferencesKey("uni_app_grade_count")
     private val NEW_BOTTOM_BAR = booleanPreferencesKey("new_bottom_bar")
+    private val NEW_BOTTOM_BAR_SAFELY_PADDING = booleanPreferencesKey("new_bottom_bar_safely_padding")
+    private val SHOW_CALENDAR_TIME_LINE = booleanPreferencesKey("show_calendar_time_line")
+    private val UNJOINED_GRADE_ITEMS = stringPreferencesKey("unjoined_grade_items")
+    private val IGNORE_UNJOINED_GRADE_ITEMS = booleanPreferencesKey("ignore_unjoined_grade_items")
+    private val ENABLE_ROOM_DATA_STORE = booleanPreferencesKey("enable_room_data_store")
 
     suspend fun saveAnimationType(value: Int) = saveValue(ANIMATION_TYPE,value)
     suspend fun savePureDark(value: Boolean) = saveValue(PURE_DARK,value)
@@ -216,6 +225,8 @@ object DataStoreManager : IDataStore {
     suspend fun saveSupabaseFilterEvent(value: Boolean) = saveValue(SUPABASE_FILTER_EVENT,value)
 //    suspend fun saveSupabaseAutoCheck(value: Boolean) = saveValue(SUPABASE_AUTO_CHECK,value)
     suspend fun saveFocusShowWeatherWarn(value: Boolean) = saveValue(FOCUS_SHOW_WEATHER_WARN,value)
+    suspend fun saveSchoolNetPassword(value: String) = saveValue(SCHOOL_NET_PASSWORD,value)
+    suspend fun saveUseDefaultSchoolNetPassword(value: Boolean) = saveValue(USE_DEFAULT_SCHOOL_NET_PASSWORD,value)
     suspend fun saveCardPassword(value: String) = saveValue(CARD_PASSWORD,value)
     suspend fun saveUseDefaultCardPassword(value: Boolean) = saveValue(USE_DEFAULT_CARD_PASSWORD,value)
     suspend fun saveUseDefaultJxglstuPassword(value: Boolean) = saveValue(USE_DEFAULT_JXGLSTU_PASSWORD,value)
@@ -233,10 +244,12 @@ object DataStoreManager : IDataStore {
     suspend fun saveCustomColor(value: Long) = saveValue(CUSTOM_COLOR, value)
     suspend fun saveCustomBackground(value: String?) = saveValue(CUSTOM_BACKGROUND, value ?: EMPTY_STRING)
     suspend fun saveCustomSquareAlpha(value: Float) = saveValue(CUSTOM_CALENDAR_SQUARE_ALPHA,value)
+    suspend fun saveCustomSquareBlur(value: Float) = saveValue(CUSTOM_CALENDAR_SQUARE_BLUR,value)
     suspend fun saveScreenCorner(value: Float) = saveValue(SCREEN_CORNER,value)
     suspend fun saveSearchSort(value: List<Int>) = saveValue(SEARCH_SORT, value.joinToString(","))
     suspend fun saveShortcutSort(value: List<String>?) = saveValue(SHORTCUT_SORT, value?.joinToString(",") ?: DataStoreManager.SHORTCUT_DEFAULT_STR)
     suspend fun saveReadNotifications(value: List<Int>) = saveValue(READ_NOTIFICATIONS, value.joinToString(","))
+    suspend fun saveUnjoinedGrades(value: List<String>) = saveValue(UNJOINED_GRADE_ITEMS, value.joinToString(","))
     suspend fun saveMaxFlow(value: Int) = saveValue(MAX_FLOW, value)
     suspend fun saveShowBottomBarLabel(value: Boolean) = saveValue(SHOW_BOTTOM_BAR_LABEL,value)
     private suspend fun saveHefeiBuildingNumber(value: String) = saveValue(HEFEI_BUILDING_NUMBER, value)
@@ -286,11 +299,15 @@ object DataStoreManager : IDataStore {
     suspend fun saveEnableFocusElectric(value: Boolean) = saveValue(SHOW_FOCUS_ELECTRIC, value)
     suspend fun saveEnableFocusSchoolNet(value: Boolean) = saveValue(SHOW_FOCUS_SCHOOL_NET, value)
     suspend fun saveEnableFocusSchoolCard(value: Boolean) = saveValue(SHOW_FOCUS_SCHOOL_CARD, value)
-    suspend fun saveEnableFocusSchoolCardAddButton(value: Boolean) = saveValue(SHOW_FOCUS_SCHOOL_CARD_ADD_BUTTON, value)
+    suspend fun saveFocusSchoolCardQuickButton(value: FocusSchoolCardQuickButton) = saveValue(FOCUS_SCHOOL_CARD_QUICK_BUTTON, value.code)
     suspend fun saveEnableUse(value: Boolean) = saveValue(CAN_USE, value)
     suspend fun saveEnableShowFocusGrade(value: GradeAutoCheckMode) = saveValue(SHOW_FOCUS_GRADE, value.code)
     suspend fun saveUniAppGradeCount(value: Int) = saveValue(UNI_APP_GRADE_COUNT, value)
     suspend fun saveEnableNewBottomBar(value: Boolean) = saveValue(NEW_BOTTOM_BAR, value)
+    suspend fun saveEnableNewBottomBarSafelyPadding(value: Boolean) = saveValue(NEW_BOTTOM_BAR_SAFELY_PADDING, value)
+    suspend fun saveEnableSHowCalendarTimeLine(value: Boolean) = saveValue(SHOW_CALENDAR_TIME_LINE, value)
+    suspend fun saveEnableIgnoreUnjoinedGradeItems(value: Boolean) = saveValue(IGNORE_UNJOINED_GRADE_ITEMS, value)
+    suspend fun saveEnableDataStore(value: Boolean) = saveValue(ENABLE_ROOM_DATA_STORE, value)
 
 
     private val hefeiBuildingNumber = getFlow(HEFEI_BUILDING_NUMBER,EMPTY_STRING)
@@ -322,6 +339,7 @@ object DataStoreManager : IDataStore {
     val customCardPassword = getFlow(CARD_PASSWORD,EMPTY_STRING)
     val enableUseDefaultCardPassword = getFlow(USE_DEFAULT_CARD_PASSWORD,true)
     val enableUseDefaultJxglstuPassword = getFlow(USE_DEFAULT_JXGLSTU_PASSWORD,true)
+    val enableUseDefaultSchoolNetPassword = getFlow(USE_DEFAULT_SCHOOL_NET_PASSWORD,true)
 //    val enableKeepPreviousPage = getFlow(KEEP_PREVIOUS_PAGE,false)
     val defaultCalendarAccountId = getFlow(DEFAULT_CALENDAR_ACCOUNT,1)
     val webVpnCookies = getFlow(WEBVPN_COOKIE,EMPTY_STRING)
@@ -334,9 +352,11 @@ object DataStoreManager : IDataStore {
     val searchSort = getFlow(SEARCH_SORT, SEARCH_DEFAULT_STR)
     val shortcutSort = getFlow(SHORTCUT_SORT, SHORTCUT_DEFAULT_STR)
     val readNotifications = getFlow(READ_NOTIFICATIONS, EMPTY_STRING)
+    val unjoinedGradeItems = getFlow(UNJOINED_GRADE_ITEMS, EMPTY_STRING)
     val customColor = getFlow(CUSTOM_COLOR,-1)
     val customBackground = getFlow(CUSTOM_BACKGROUND,EMPTY_STRING)
     val customCalendarSquareAlpha = getFlow(CUSTOM_CALENDAR_SQUARE_ALPHA,MyApplication.CALENDAR_SQUARE_ALPHA)
+    val customCalendarSquareBlur = getFlow(CUSTOM_CALENDAR_SQUARE_BLUR,MyApplication.CALENDAR_SQUARE_BLUR)
     val customColorStyle = getFlow(CUSTOM_COLOR_STYLE, ColorStyle.DEFAULT.code)
     val customTermValue: Flow<Int> =  dataStore.data.map { it[AUTO_TERM_VALUE] ?: SemesterParser.getSemester() }
     val maxFlow = getFlow(MAX_FLOW, MyApplication.DEFAULT_MAX_FREE_FLOW)
@@ -361,6 +381,7 @@ object DataStoreManager : IDataStore {
     val calendarSquareTextPadding = getFlow(CALENDAR_SQUARE_TEXT_PADDING, MyApplication.CALENDAR_SQUARE_TEXT_PADDING)
     val xwxPassword = getFlow(XWX_PASSWORD, EMPTY_STRING)
     val jxglstuPassword = getFlow(JXGLSTU_PASSWORD, getJxglstuDefaultPassword() ?: EMPTY_STRING)
+    val schoolNetPassword = getFlow(SCHOOL_NET_PASSWORD, EMPTY_STRING)
     val uniAppJwt = getFlow(UNI_APP_JWT,  EMPTY_STRING)
     val apiKey = getFlow(API_KEY,  EMPTY_STRING)
     val defaultCalendar = getFlow(DEFAULT_CALENDAR, CourseType.JXGLSTU.code)
@@ -374,12 +395,16 @@ object DataStoreManager : IDataStore {
     val enableShowFocusElectric = getFlow(SHOW_FOCUS_ELECTRIC,true)
     val enableShowFocusSchoolNet = getFlow(SHOW_FOCUS_SCHOOL_NET,true)
     val enableShowFocusSchoolCard = getFlow(SHOW_FOCUS_SCHOOL_CARD,true)
-    val enableShowFocusSchoolCardAddButton = getFlow(SHOW_FOCUS_SCHOOL_CARD_ADD_BUTTON,true)
+    val focusSchoolCardQuickButton = getFlow(FOCUS_SCHOOL_CARD_QUICK_BUTTON,FocusSchoolCardQuickButton.NONE.code)
     val enableShowFocusGrade = getFlow(SHOW_FOCUS_GRADE,GradeAutoCheckMode.ONLY_VACATION.code)
     val enableMergeSquare = getFlow(MERGE_SQUARE,false)
     val enableUse = getFlow(CAN_USE, false)
     val uniAppGradeCount = getFlow(UNI_APP_GRADE_COUNT, -1)
     val enableNewBottomBar = getFlow(NEW_BOTTOM_BAR, false)
+    val enableNewBottomBarSafelyPadding = getFlow(NEW_BOTTOM_BAR_SAFELY_PADDING, false)
+    val enableShowCalendarTimeLine = getFlow(SHOW_CALENDAR_TIME_LINE, false)
+    val enableIgnoreUnjoinedGradeItems = getFlow(IGNORE_UNJOINED_GRADE_ITEMS, false)
+    val enableDataStore = getFlow(ENABLE_ROOM_DATA_STORE, true)
 
     fun getSyncDefaultCalendar(): Int? {
         return runBlocking {

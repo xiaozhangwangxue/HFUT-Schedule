@@ -41,6 +41,7 @@ import com.hfut.schedule.ui.component.screen.pager.CustomTabRow
 import com.hfut.schedule.ui.component.status.EmptyIcon
 import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
 import com.hfut.schedule.ui.nav.destination.HaiLeWashingDestination
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
 
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.xah.container.component.base.SharedContainer
@@ -48,6 +49,7 @@ import com.xah.navigation.util.LocalNavController
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 
@@ -72,7 +74,7 @@ fun Washing(
     TransplantListItem(
         headlineContent = { ScrollText(text = stringResource(R.string.navigation_label_laundry)) },
         leadingContent = {
-            Icon(painterResource(id = R.drawable.local_laundry_service), contentDescription = "")
+            Icon(painterResource(id = R.drawable.local_laundry_service), contentDescription = EMPTY_STRING)
         },
         trailingContent = {
             SharedContainer(
@@ -80,20 +82,17 @@ fun Washing(
                 shape = CircleShape,
                 containerColor = IconButtonDefaults.filledTonalIconButtonColors().containerColor
             ) {
-                NoPadding {
-                    FilledTonalIconButton(
-                        shape = NoneRoundShape,
-                        modifier = Modifier.size(30.dp),
-                        onClick = {
-                            navController.push(HaiLeWashingDestination)
-                        },
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.search),
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
+                QuickButtonForSearchScreen(
+                    shape = NoneRoundShape,
+                    onClick = {
+                        navController.push(HaiLeWashingDestination)
                     }
+                ) {
+                    Icon(
+                        painterResource(R.drawable.search),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         },

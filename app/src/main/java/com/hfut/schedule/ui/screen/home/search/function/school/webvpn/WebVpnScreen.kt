@@ -39,11 +39,13 @@ import com.hfut.schedule.logic.util.sys.ClipBoardHelper
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BottomButton
 import com.hfut.schedule.ui.component.button.BottomTextButtonGroup
 import com.hfut.schedule.ui.component.button.CardBottomButton
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
@@ -65,6 +67,7 @@ import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
@@ -114,7 +117,7 @@ fun WebVpnScreen(
                                 }
                             },
                             backdrop = backdrop,
-                            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING)
                         ) {
                             Text("${if(webVpn) "已" else "未"}登录WebVpn")
                         }
@@ -134,7 +137,7 @@ fun WebVpnScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     when(page) {
                         PAGE_TO_WEBVPN -> {
-                            var input by remember { mutableStateOf("") }
+                            var input by remember { mutableStateOf(EMPTY_STRING) }
                             var result by remember { mutableStateOf<String?>(null) }
 
                             LazyColumn {
@@ -193,7 +196,7 @@ fun WebVpnScreen(
                                             label = { Text("输入以http://或https://开头的合法链接")},
                                             input = input,
                                             trailingIcon = {
-                                                IconButton(onClick = { input = "" }) {
+                                                IconButton(onClick = { input = EMPTY_STRING }) {
                                                     Icon(painterResource(R.drawable.close),null)
                                                 }
                                             },
@@ -239,7 +242,7 @@ fun WebVpnScreen(
                                                                 }
                                                             }
                                                         },
-                                                        CardBottomButton("清除") {
+                                                        CardBottomButton("清除", errorColor = true) {
                                                             result = null
                                                         },
                                                     )
@@ -255,7 +258,7 @@ fun WebVpnScreen(
                             }
                         }
                         PAGE_TO_PUBLIC -> {
-                            var input by remember { mutableStateOf("") }
+                            var input by remember { mutableStateOf(EMPTY_STRING) }
                             var result by remember { mutableStateOf<String?>(null) }
 
                             LazyColumn {
@@ -292,7 +295,7 @@ fun WebVpnScreen(
                                             label = { Text("输入以${Constant.WEBVPN_URL}开头的合法链接")},
                                             input = input,
                                             trailingIcon = {
-                                                IconButton(onClick = { input = "" }) {
+                                                IconButton(onClick = { input = EMPTY_STRING }) {
                                                     Icon(painterResource(R.drawable.close),null)
                                                 }
                                             },
@@ -333,7 +336,7 @@ fun WebVpnScreen(
                                                                 Starter.startWebUrlInner(context,it)
                                                             }
                                                         },
-                                                        CardBottomButton("清除") {
+                                                        CardBottomButton("清除", errorColor = true) {
                                                             result = null
                                                         },
                                                     )
@@ -366,21 +369,6 @@ suspend fun getWebVpnCookie() : String? =
     } else {
         null
     }
-
-suspend fun autoWebVpnForNews(
-    context: Context,
-    url: String,
-    title: String = getPureUrl(url),
-    cookie: String? = null,
-    icon: Int? = null
-) {
-    if(cookie == null) {
-        Starter.startWebUrlInner(context,url,title,null,icon)
-    } else {
-        Starter.startWebUrlInner(context,WebVpnConvertor.getWebVpnUrl(url),title,cookie,icon)
-    }
-}
-
 
 @Composable
 private fun EnableGlobalWebVpn(

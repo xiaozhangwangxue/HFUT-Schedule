@@ -48,6 +48,7 @@ import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.storage.file.LargeStringDataManager
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.network.core.GsonInstance
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
@@ -86,9 +87,11 @@ import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.SharedContainer
 import com.xah.container.component.base.sharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.floating.util.LocalFloatingController
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -357,7 +360,7 @@ fun ProgramCompetitionDetailScreen(
     programTypeMap : Map<Long,String?>
 ) {
     val hazeState = rememberHazeBlur()
-    var input by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val backDrop = rememberLayerBackdrop()
 
@@ -402,7 +405,7 @@ fun ProgramCompetitionDetailScreen(
                                 SharedContainer(
                                     key = window.key,
                                     shape = CircleShape,
-                                    modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP),
+                                    modifier = Modifier.padding(end = BUTTON_END_PADDING),
                                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                                 ) {
                                     LiquidButton (
@@ -482,12 +485,12 @@ private fun PerformanceInfo(
     var showBottomSheet by remember { mutableStateOf(false) }
     var itemForInfo by remember { mutableStateOf(
         JxglstuProgramCompetitionCourse(
-            "",
+            EMPTY_STRING,
             "详情",
             0.0,
-            listOf(""),
+            listOf(EMPTY_STRING),
             true,
-            "",
+            EMPTY_STRING,
             null,
             null,
             null
@@ -539,12 +542,12 @@ private fun PerformanceInfo(
                                 }
                             ) {
                                 TransplantListItem(
-                                    headlineContent = { Text(text = item.nameZh.replace("&nbsp;","") ) },
+                                    headlineContent = { Text(text = item.nameZh.remove("&nbsp;") ) },
                                     supportingContent = {
                                         if(type == JxglstuProgramCompetitionType.FAILED || type == JxglstuProgramCompetitionType.PASSED) {
                                             Text(text =
                                                 "均分 ${item.score ?: "--"} 绩点 ${item.gp ?: "--"} " +
-                                                        if(item.rank != null) "等级 ${item.rank ?: "--"}" else ""
+                                                        if(item.rank != null) "等级 ${item.rank ?: "--"}" else EMPTY_STRING
                                             )
                                         }
                                     },
@@ -631,7 +634,7 @@ private fun PerformanceInfo(
                                 if(type == JxglstuProgramCompetitionType.PASSED || type == JxglstuProgramCompetitionType.FAILED) {
                                     Text(text =
                                         "均分 ${item.score} 绩点 ${item.gp} " +
-                                                if(item.rank != null) "等级 ${item.rank}" else ""
+                                                if(item.rank != null) "等级 ${item.rank}" else EMPTY_STRING
                                     )
                                 }
                             },
@@ -680,7 +683,7 @@ fun transferTerm(term : List<String>) : List<String>? {
 fun ProgramInfoItem(item : JxglstuProgramCompetitionCourse) {
     val term = transferTerm(item.terms)
     val type = getProgramCompetitionType(item.resultType)
-    var text = ""
+    var text = EMPTY_STRING
     if (term != null) {
         for(i in term.indices) {
             text = text + term[i] + " "

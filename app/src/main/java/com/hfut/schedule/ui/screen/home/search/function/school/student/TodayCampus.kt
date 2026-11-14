@@ -46,6 +46,7 @@ import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.prefs
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.network.core.GsonInstance
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.StartAppIconButton
@@ -67,6 +68,7 @@ import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
@@ -104,7 +106,7 @@ fun StuTodayCampusScreen(
     val context = LocalContext.current
     val backDrop = rememberLayerBackdrop()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var input by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
 
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -120,7 +122,7 @@ fun StuTodayCampusScreen(
                         TopBarNavigationIcon()
                     },
                     actions = {
-                        Row(modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)) {
+                        Row(modifier = Modifier.padding(end = BUTTON_END_PADDING)) {
                             StartAppIconButton(backDrop,Starter.AppPackages.TODAY_CAMPUS)
                             Spacer(Modifier.width(BUTTON_PADDING))
                             LiquidButton(
@@ -196,7 +198,7 @@ fun StuAppsScreen(
             val data = localList.flatMap { it.apps }.filter { it.name.contains(input) }
             LazyVerticalGrid(columns = GridCells.Fixed(2),modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP-3.dp)) {
                 item(span = { GridItemSpan(maxLineSpan) }) { InnerPaddingHeight(innerPadding, true) }
-                items(data.size, key = { it }) { index ->
+                items(data.size, key = { data[it].openUrl }) { index ->
                     val item = data[index]
                     with(item) {
                         val route = WebViewDestination.getKey(openUrl)
@@ -225,7 +227,7 @@ fun StuAppsScreen(
                     }
                 }
                 dataCommunity?.let { list ->
-                    items(list.size, key = { it }) { index ->
+                    items(list.size, key = { list[it].hashCode() }) { index ->
                         val item = list[index]
                         with(item) {
                             if(url == null) {

@@ -2,6 +2,7 @@ package com.hfut.schedule.ui.screen.home.search.function.my.holiday
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.xah.common.ui.component.text.BottomTip
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.xah.common.ui.component.text.ScrollText
@@ -52,6 +54,8 @@ import com.hfut.schedule.ui.nav.destination.NewsApiDestination
 import com.hfut.schedule.ui.screen.news.home.TotalNewsScreen
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
+import com.hfut.schedule.ui.util.layout.currentUiWidthSizeColumnsForCard
+import com.hfut.schedule.ui.util.layout.currentUiWidthSizeColumnsForSmallCard
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.xah.container.component.base.SharedContainer
@@ -103,7 +107,7 @@ fun HolidayScreen(
                     SharedContainer(
                         key = dest.key,
                         shape = CircleShape,
-                        modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP),
+                        modifier = Modifier.padding(end = BUTTON_END_PADDING),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         LiquidButton(
@@ -133,9 +137,15 @@ fun HolidayScreen(
 
 @Composable
 fun HolidayUI(innerPadding : PaddingValues) {
+    val columns = currentUiWidthSizeColumnsForSmallCard()
     val list by remember { mutableStateOf(getHolidays()) }
-    LazyVerticalGrid(columns = GridCells.Fixed(2),modifier = Modifier.padding(horizontal = 11.dp)) {
-        items(2) { InnerPaddingHeight(innerPadding,true) }
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        modifier = Modifier.padding(horizontal = 11.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            InnerPaddingHeight(innerPadding,true)
+        }
         items(list.size) { index->
             val item = list[index]
             val isOffDay = item.isOffDay
@@ -153,7 +163,9 @@ fun HolidayUI(innerPadding : PaddingValues) {
         item(span = { GridItemSpan(maxLineSpan) })  {
             BottomTip("数据来源:国务院")
         }
-        items(2) { InnerPaddingHeight(innerPadding,false) }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            InnerPaddingHeight(innerPadding,false)
+        }
     }
 }
 

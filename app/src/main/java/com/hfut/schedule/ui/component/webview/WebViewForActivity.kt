@@ -94,6 +94,7 @@ fun WebViewScreenForActivity(
             currentUrl,
             currentTitle,
             url,
+            loading = loading,
             onSearch = {
                 showSearch = !showSearch
             }
@@ -140,15 +141,19 @@ fun WebViewScreenForActivity(
                 }
 
                 webViewClient = object : WebViewClient() {
+                    override fun onPageCommitVisible(view: WebView?, url: String?) {
+                        super.onPageCommitVisible(view, url)
+                        view?.evaluateJs(isDark, webViewDark, bottom) {
+                            topColor = it
+                        }
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
                         // 更新
                         webView = view
                         updateUrl(url) {
                             currentUrl = it
-                        }
-                        view?.evaluateJs(isDark, webViewDark, bottom) {
-                            topColor = it
                         }
                         loading = false
                     }

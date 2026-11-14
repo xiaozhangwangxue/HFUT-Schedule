@@ -72,7 +72,7 @@ import com.hfut.schedule.ui.component.network.onListenStateHolder
 import com.hfut.schedule.ui.component.screen.pager.PaddingForPageControllerButton
 import com.hfut.schedule.ui.component.status.EmptyIcon
 import com.hfut.schedule.ui.nav.destination.ClassroomDestination
-import com.hfut.schedule.ui.nav.destination.CourseClassmatesScreen
+import com.hfut.schedule.ui.nav.destination.CourseClassmatesDestination
 import com.hfut.schedule.ui.nav.destination.CourseDetailDestination
 import com.hfut.schedule.ui.nav.destination.CourseSearchApiDestination
 import com.hfut.schedule.ui.nav.destination.CourseSearchTableDestination
@@ -96,6 +96,8 @@ import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.SharedContainer
 import com.xah.container.component.base.sharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
 import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
@@ -115,7 +117,7 @@ fun CourseTotalUI(
     ifSaved : Boolean,
     state: LazyListState = rememberLazyListState(),
     innerPadding : PaddingValues? = null,
-    input : String = "",
+    input : String = EMPTY_STRING,
 ) {
     val courseBookData : Map<Long, JxglstuTextbook> by produceState(initialValue = emptyMap()) {
         val json = LargeStringDataManager.read(LargeStringDataManager.getBookKey(SemesterParser.getSemester())) ?: return@produceState
@@ -154,7 +156,7 @@ fun CourseTotalUI(
 
     val sortList =  list
         .filter {
-            input.isBlank() || it.course.nameZh.contains(input) || it.course.courseType.nameZh.contains(input) || it.openDepartment.nameZh.contains(input) || it.code.contains(input) ||( it.remark?.contains(input) == true)
+            input.isEmptyOrBlank() || it.course.nameZh.contains(input) || it.course.courseType.nameZh.contains(input) || it.openDepartment.nameZh.contains(input) || it.code.contains(input) ||( it.remark?.contains(input) == true)
         }
         .let { filtered ->
             if (sortType) {
@@ -187,8 +189,8 @@ fun CourseTotalUI(
                     headlineContent = {  Text(data.course.nameZh) },
                     overlineContent = { ScrollText(text =
                         "学分 ${data.course.credits}" +
-                                (if(data.scheduleWeeksInfo != null) " | $weeksInfo" else "") +
-                                (if(isSearch && code.contains("--")) " | " + code.substringAfter("--") + "班" else "")
+                                (if(data.scheduleWeeksInfo != null) " | $weeksInfo" else EMPTY_STRING) +
+                                (if(isSearch && code.contains("--")) " | " + code.substringAfter("--") + "班" else EMPTY_STRING)
                     ) },
                     trailingContent = {
                         val type = data.courseType.nameZh
@@ -271,7 +273,7 @@ fun DetailItems(
             }
         }
         item {
-            val dest = CourseClassmatesScreen(
+            val dest = CourseClassmatesDestination(
                 lessons.id,
                 lessons.course.nameZh,
                 lessons.stdCount == 0
@@ -336,7 +338,7 @@ fun DetailItems(
                         Row  {
                             TransplantListItem(
                                 color = MaterialTheme.colorScheme.surface,
-                                overlineContent = { Text("教师 " + if(teacherNum == 1) "" else (i+1).toString()) },
+                                overlineContent = { Text("教师 " + if(teacherNum == 1) EMPTY_STRING else (i+1).toString()) },
                                 headlineContent = {
                                     Text( teacherList.person.nameZh )
                                 },
@@ -402,7 +404,7 @@ fun DetailItems(
                                     .clickable { navController.push(dest) }
                             ) {
                                 TransplantListItem(
-                                    overlineContent = { Text("教师 " + if(teacherNum == 1) "" else (i+1).toString()) },
+                                    overlineContent = { Text("教师 " + if(teacherNum == 1) EMPTY_STRING else (i+1).toString()) },
                                     headlineContent = {
                                         Text( teacherList.person.nameZh )
                                     },
@@ -418,7 +420,7 @@ fun DetailItems(
                                 TransplantListItem(
                                     headlineContent = {
                                         val t = teacherList.teacher?.title?.nameZh ?: "未知"
-                                        ScrollText( t  +" " + (teacherList.teacher?.type?.nameZh ?: ""))
+                                        ScrollText( t  +" " + (teacherList.teacher?.type?.nameZh ?: EMPTY_STRING))
                                     },
                                     overlineContent = {
                                         Text(text =
@@ -529,12 +531,12 @@ fun DetailItems(
         }
         item {
             courseBookData[lessons.course.id]?.let {
-                val t1 : String? = if(it.textbook.isEmpty() || it.textbook.isBlank()) {
+                val t1 : String? = if(it.textbook.isEmptyOrBlank()) {
                     null
                 } else {
                     "基本教材: " + it.textbook.replace("<br/>"," ").replace("<br>"," ")
                 }
-                val t2 : String? = if(it.specialTextbook.isEmpty() || it.specialTextbook.isBlank()) {
+                val t2 : String? = if(it.specialTextbook.isEmptyOrBlank()) {
                     null
                 } else {
                     "辅助教材: " + it.specialTextbook.replace("<br/>"," ").replace("<br>"," ")
@@ -546,7 +548,7 @@ fun DetailItems(
                 } else if(t2 != null && t1 != null) {
                     t1 + "\n" + t2
                 } else {
-                    ""
+                    EMPTY_STRING
                 }
                 if(!(t1 == null && t2 == null)) {
                     TransplantListItem(
@@ -718,7 +720,7 @@ fun ClassmatesScreen(
     LaunchedEffect(Unit) {
         refreshNetwork()
     }
-    var input by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
     val hazeState = rememberHazeBlur()
     val backdrop = rememberLayerBackdrop()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.hfut.schedule.R
+import com.hfut.schedule.application.MyApplication
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.JumpTransitionEffectWallpaper
 import com.hfut.schedule.logic.util.sys.Starter
@@ -41,6 +42,8 @@ import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPerson
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
 import com.xah.navigation.model.action.LaunchMode
 import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.HazeState
@@ -51,7 +54,7 @@ fun SupabaseSettingsScreen(vm : NetWorkViewModel,innerPadding : PaddingValues,ha
     val filter by DataStoreManager.enableSupabaseFilterEvent.collectAsState(initial = false)
     val supabaseAutoCheck by DataStoreManager.enableSupabaseAutoCheck.collectAsState(initial = true)
     val context = LocalContext.current
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
     val navController = LocalNavController.current
 
     val scope = rememberCoroutineScope()
@@ -130,7 +133,7 @@ fun SupabaseSettingsScreen(vm : NetWorkViewModel,innerPadding : PaddingValues,ha
         DividerTextExpandedWith("设置") {
             CustomCard(color = MaterialTheme.colorScheme.surface) {
                 TransplantListItem(
-                    headlineContent = { Text(if(jwt.isEmpty() || jwt.isBlank()) "注册/登录" else "刷新登陆状态") },
+                    headlineContent = { Text(if(jwt.isEmptyOrBlank()) "注册/登录" else "刷新登陆状态") },
                     leadingContent = { Icon(painterResource(R.drawable.login), null) },
                     modifier = Modifier.clickable {
                         navController.push(SupabaseLoginDestination, effect = JumpTransitionEffectWallpaper())
@@ -150,7 +153,7 @@ fun SupabaseSettingsScreen(vm : NetWorkViewModel,innerPadding : PaddingValues,ha
                 )
             }
         }
-        BottomTip("平台管理请联系 zsh0908@outlook.com")
+        BottomTip("平台管理请联系 ${MyApplication.DEVELOPER_EMAIL}")
         InnerPaddingHeight(innerPadding,false)
     }
 }

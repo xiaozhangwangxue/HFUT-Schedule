@@ -36,7 +36,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.hfut.schedule.R
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.CustomEventDTO
 import com.hfut.schedule.logic.database.entity.CustomEventType
 import com.hfut.schedule.network.api.model.response.json.github.GithubIoSchedule
@@ -65,7 +65,7 @@ import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
 import com.hfut.schedule.ui.component.dialog.LittleDialog
-import com.hfut.schedule.ui.component.icon.LoadingIcon
+import com.hfut.schedule.ui.component.icon.CircleProgressIcon
 import com.hfut.schedule.ui.component.network.onListenStateHolder
 import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
 import com.hfut.schedule.ui.nav.destination.AddEventDestination
@@ -84,7 +84,9 @@ import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.align.ColumnVertical
 import com.xah.container.component.base.sharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -110,7 +112,7 @@ fun ScheduleItem(listItem : GithubIoSchedule, isFuture: Boolean, activity : Acti
         val getEndTime = "${endYear}${endMonthStr}${endDateStr}".toLong()
 
 
-        val nowTime = DateTimeManager.Date_yyyy_MM_dd.replace("-","").toLong()
+        val nowTime = DateTimeManager.Date_yyyy_MM_dd.remove("-").toLong()
 
 
         if(!isFuture) {
@@ -155,6 +157,8 @@ private fun ScheduleItemUI(listItem: GithubIoSchedule, isFuture : Boolean, activ
                             } catch (e : SecurityException) {
                                 showToast("未授予权限")
                                 LogUtil.error(e)
+                            } catch (e : Exception) {
+                                LogUtil.error(e)
                             }
                         }
                     }
@@ -189,7 +193,7 @@ fun NetCourseItem(listItem : GithubIoSchedule, isFuture: Boolean, activity: Acti
             val getEndTime = "${endYear}${endMonthStr}${endDateStr}".toLong()
 
 
-            val nowTime = DateTimeManager.Date_yyyy_MM_dd.replace("-","").toLong()
+            val nowTime = DateTimeManager.Date_yyyy_MM_dd.remove("-").toLong()
 
 
             if(isFuture) {
@@ -264,7 +268,8 @@ fun CommunityTodayCourseItem(list : CommunityCourseDetail, timeNow : String) {
     val endTime = time.substringAfter("-")
 
 
-    val state = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+    val timeState = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+    val state = timeState.first
 
     if (showBottomSheet) {
         HazeBottomSheet (
@@ -291,7 +296,7 @@ fun CommunityTodayCourseItem(list : CommunityCourseDetail, timeNow : String) {
                         )
                     }
                     ONGOING -> {
-                        LoadingIcon()
+                        CircleProgressIcon(timeState.second)
                     }
                     ENDED -> {
                         Icon(
@@ -301,9 +306,10 @@ fun CommunityTodayCourseItem(list : CommunityCourseDetail, timeNow : String) {
                     }
                 }
             },
-            modifier = Modifier.clickable {
-                showBottomSheet = true
-            },
+            modifier = Modifier
+                .clickable {
+                    showBottomSheet = true
+                },
             trailingContent = {
                 Text(
                     when(state) {
@@ -371,7 +377,7 @@ fun CustomItem(
     refresh : () -> Unit
 ) {
     val dateTime = item.dateTime
-    val nowTimeNum = (DateTimeManager.Date_yyyy_MM_dd.replace("-","") + DateTimeManager.Time_HH_MM.replace(":","")).toLong()
+    val nowTimeNum = (DateTimeManager.Date_yyyy_MM_dd.remove("-") + DateTimeManager.Time_HH_MM.remove(":")).toLong()
     val endNum = with(dateTime.end) { "$year${parseTimeItem(month)}${parseTimeItem(day)}${parseTimeItem(hour)}${parseTimeItem(minute)}" }.toLong()
     val startNum = with(dateTime.start) { "$year${parseTimeItem(month)}${parseTimeItem(day)}${parseTimeItem(hour)}${parseTimeItem(minute)}" }.toLong()
     val isOutOfDate = nowTimeNum > endNum
@@ -468,7 +474,7 @@ fun CustomItemUI(
 
     val dest = AddEventDestination(
         item.id,
-        AddEventOrigin.FOCUS_EDITED.name
+        "FOCUS_EDITED"
     )
 
     CardListItem(
@@ -567,7 +573,7 @@ fun TimeStampItem() = BottomTip(getTimeStamp())
 
 @Composable
 fun TermTip() {
-    val v by produceState(initialValue = "") {
+    val v by produceState(initialValue = EMPTY_STRING) {
         value = parseSemester(getSemester())  ?: "未知学期"
     }
     BottomTip(v)
@@ -588,14 +594,14 @@ fun TodayUI(vm: NetWorkViewModel) {
                 TransplantListItem(
                     headlineContent = { ScrollText(text = "节假日休息" ) },
                     overlineContent = { ScrollText(text = "明天") },
-                    leadingContent = { Icon(painter = painterResource(R.drawable.sentiment_very_satisfied) , contentDescription = "")},
+                    leadingContent = { Icon(painter = painterResource(R.drawable.sentiment_very_satisfied) , contentDescription = EMPTY_STRING)},
                 )
             }
             isSpecificWorkDayTomorrow() -> {
                 TransplantListItem(
                     headlineContent = { ScrollText(text = "调休非休息" ) },
                     overlineContent = { ScrollText(text = "明天") },
-                    leadingContent = { Icon(painter = painterResource(R.drawable.work) , contentDescription = "")},
+                    leadingContent = { Icon(painter = painterResource(R.drawable.work) , contentDescription = EMPTY_STRING)},
 //                    colors = MaterialTheme.colorScheme.errorContainer
                 )
             }
@@ -654,7 +660,7 @@ fun TodayUI(vm: NetWorkViewModel) {
                 TransplantListItem(
                     headlineContent = { ScrollText(text = result.first) },
                     overlineContent = { ScrollText(text = "明天") },
-                    leadingContent = { Icon(painter = painterResource(result.second) , contentDescription = "")},
+                    leadingContent = { Icon(painter = painterResource(result.second) , contentDescription = EMPTY_STRING)},
                 )
             }
         }
@@ -691,7 +697,7 @@ fun TodayUI(vm: NetWorkViewModel) {
                             TransplantListItem(
                                 headlineContent = { ScrollText(text = it, color = MaterialTheme.colorScheme.error) },
                                 overlineContent = { ScrollText(text = "${place?.simplifyPlace()} $startTime", color = MaterialTheme.colorScheme.error) },
-                                leadingContent = { Icon(painter = painterResource(R.drawable.draw), contentDescription = "", tint = MaterialTheme.colorScheme.error)},
+                                leadingContent = { Icon(painter = painterResource(R.drawable.draw), contentDescription = EMPTY_STRING, tint = MaterialTheme.colorScheme.error)},
                                 modifier = Modifier
                                     .background(cardNormalColor())
                                     .zIndex(4f)
@@ -703,7 +709,7 @@ fun TodayUI(vm: NetWorkViewModel) {
                             TransplantListItem(
                                 headlineContent = { ScrollText(text = it) },
                                 overlineContent = { ScrollText(text =  place?.simplifyPlace() + " " +  startTime) },
-                                leadingContent = { Icon(painter = painterResource(R.drawable.schedule), contentDescription = "")},
+                                leadingContent = { Icon(painter = painterResource(R.drawable.schedule), contentDescription = EMPTY_STRING)},
                                 modifier = Modifier
                                     .background(cardNormalColor())
                                     .zIndex(3f)
@@ -715,7 +721,7 @@ fun TodayUI(vm: NetWorkViewModel) {
                             TransplantListItem(
                                 headlineContent = { ScrollText(text = it) },
                                 overlineContent = { ScrollText(text =  returnTime.toString()) },
-                                leadingContent = { Icon(painter = painterResource(R.drawable.book_5), contentDescription = "")},
+                                leadingContent = { Icon(painter = painterResource(R.drawable.book_5), contentDescription = EMPTY_STRING)},
                                 modifier = Modifier
                                     .background(cardNormalColor())
                                     .zIndex(2f)
@@ -727,7 +733,7 @@ fun TodayUI(vm: NetWorkViewModel) {
                             TransplantListItem(
                                 headlineContent = { ScrollText(text = it) },
                                 overlineContent = { ScrollText(text =  startTime.toString()) },
-                                leadingContent = { Icon(painter = painterResource(R.drawable.person_play), contentDescription = "")},
+                                leadingContent = { Icon(painter = painterResource(R.drawable.person_play), contentDescription = EMPTY_STRING)},
                                 modifier = Modifier
                                     .background(cardNormalColor())
                                     .zIndex(1f)
@@ -760,7 +766,8 @@ fun JxglstuTodayCourseItem(
     val time = item.time
     val startTime = with(time.start) { parseTimeItem(hour) + ":" + parseTimeItem(minute) }
     val endTime = with(time.end) { parseTimeItem(hour) + ":" + parseTimeItem(minute) }
-    val state = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+    val timeState = DateTimeManager.getTimeState(startTime, endTime,timeNow)
+    val state = timeState.first
     val name = item.courseName
     val dest = CourseDetailApiDestination(
         name,
@@ -784,7 +791,7 @@ fun JxglstuTodayCourseItem(
                         )
                     }
                     ONGOING -> {
-                        LoadingIcon()
+                        CircleProgressIcon(timeState.second)
                     }
                     ENDED -> {
                         Icon(
@@ -795,7 +802,9 @@ fun JxglstuTodayCourseItem(
                 }
 
             },
-            modifier = Modifier.clickable { navController.push(dest) },
+            modifier = Modifier
+                .clickable { navController.push(dest) }
+            ,
             shape = NoneRoundShape,
             color = cardNormalColor(),
             trailingContent = {

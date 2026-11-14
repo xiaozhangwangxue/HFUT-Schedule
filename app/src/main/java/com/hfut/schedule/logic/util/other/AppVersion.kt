@@ -5,7 +5,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.hfut.schedule.BuildConfig
 import com.hfut.schedule.application.MyApplication
+import com.hjq.device.compat.DeviceOs
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import java.io.ByteArrayInputStream
 import java.security.MessageDigest
 import java.security.cert.CertificateFactory
@@ -29,7 +32,7 @@ object AppVersion {
         var versionCode = 0
         try {
             versionCode = packageName.versionCode
-        } catch ( e : PackageManager.NameNotFoundException) {
+        } catch (e : Exception) {
             LogUtil.error(e)
         }
         return versionCode
@@ -51,10 +54,10 @@ object AppVersion {
     }
 
     fun getVersionName() : String {
-        var versionName = ""
+        var versionName = EMPTY_STRING
         try {
             versionName = packageName.versionName.toString()
-        } catch ( e : PackageManager.NameNotFoundException) {
+        } catch (e : Exception) {
             LogUtil.error(e)
         }
         return versionName
@@ -72,7 +75,7 @@ object AppVersion {
     val HAZE_BLUR_FOR_S = sdkInt == 31 || sdkInt == 32
     val CAN_DYNAMIC_COLOR = sdkInt >= 31
 
-    val CAN_PREDICTIVE = sdkInt >= 33
+    val CAN_PREDICTIVE = sdkInt >= 34
     val CAN_LIVE_UPDATE = sdkInt >= 36
     val CAN_SHADER = sdkInt >= 33
 
@@ -95,7 +98,7 @@ object AppVersion {
                 pm.getPackageInfo(appPackageName, PackageManager.GET_SIGNATURES).signatures
             } ?: return false
 
-            val expected = SIGN_SHA_256.replace(":", "").uppercase()
+            val expected = SIGN_SHA_256.remove(":").uppercase()
             val digest = MessageDigest.getInstance("SHA-256")
 
             signatures.any { sig ->
@@ -110,9 +113,21 @@ object AppVersion {
     }
 
     val isSignatureValid by lazy { getIsSignatureValid() }
-    val isRunningOnAvd = deviceName.startsWith("sdk_gphone") == true || deviceName.startsWith("Android SDK built for") == true
-    val isRunningOnWsa = deviceName.startsWith("Subsystem for Android")
-    val isDev : Boolean = !Regex("^\\d+\\.\\d+(\\.\\d+)*$").matches(getVersionName())
+    val isRunningOnAvd by lazy{ deviceName.startsWith("sdk_gphone") || deviceName.startsWith("Android SDK built for") }
+    val isRunningOnWsa by lazy { deviceName.startsWith("Subsystem for Android") }
+    val isRunningOnHarmonyNext by lazy { DeviceOs.isHarmonyOsNextAndroidCompatible() }
+    val isRunningOnHusk by lazy {
+        try {
+            Class.forName("husk.Native", false, this::class.java.classLoader)
+            true
+        } catch (e : Exception) {
+            LogUtil.error(e)
+            false
+        }
+    }
+    val isDev : Boolean by lazy { !Regex("^\\d+\\.\\d+(\\.\\d+)*$").matches(getVersionName()) }
+
+    val isNormalEnv : Boolean by lazy { !isDebug && isSignatureValid && !isDev && !isRunningOnAvd && !isRunningOnWsa && !isRunningOnHarmonyNext && !isRunningOnHusk }
 
     data class SignatureInfo(
         val issuer: String,

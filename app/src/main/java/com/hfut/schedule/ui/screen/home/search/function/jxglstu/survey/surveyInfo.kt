@@ -38,12 +38,14 @@ import com.hfut.schedule.network.core.StatusCode
 import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.network.core.GsonInstance
+import com.hfut.schedule.ui.component.button.LARGE_BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LargeButton
 import com.hfut.schedule.ui.component.dialog.LittleDialog
 import com.hfut.schedule.ui.component.input.CustomTextField
 import com.hfut.schedule.ui.component.network.CommonNetworkScreen
 import com.hfut.schedule.ui.screen.home.getJxglstuCookie
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.align.RowHorizontal
 import kotlinx.coroutines.CoroutineScope
@@ -111,7 +113,7 @@ private fun SurveyList(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             Icon(
                 painterResource(R.drawable.arrow_upward),
-                contentDescription = "",
+                contentDescription = EMPTY_STRING,
                 Modifier.size(100.dp),
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -148,7 +150,7 @@ private fun SurveyList(
                 icon = R.drawable.edit,
             )
         }
-        Spacer(Modifier.height(APP_HORIZONTAL_DP/2))
+        Spacer(Modifier.height(LARGE_BUTTON_PADDING))
         RowHorizontal {
             LargeButton(
                 modifier = Modifier.fillMaxWidth().weight(.5f),
@@ -161,8 +163,8 @@ private fun SurveyList(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            Spacer(Modifier.width(APP_HORIZONTAL_DP/2))
-            LargeButton (
+            Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+            LargeButton(
                 modifier = Modifier.fillMaxWidth().weight(.5f),
                 onClick = {
                     postMode = PostMode.LOW
@@ -174,7 +176,7 @@ private fun SurveyList(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
-        Spacer(Modifier.height(APP_HORIZONTAL_DP/2))
+        Spacer(Modifier.height(LARGE_BUTTON_PADDING))
         RowHorizontal {
             LargeButton(
                 modifier = Modifier.fillMaxWidth().weight(.5f),
@@ -185,8 +187,8 @@ private fun SurveyList(
                 text = "好评 100分",
                 icon = R.drawable.thumb_up,
             )
-            Spacer(Modifier.width(APP_HORIZONTAL_DP/2))
-            LargeButton (
+            Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+            LargeButton(
                 modifier = Modifier.fillMaxWidth().weight(.5f),
                 onClick = {
                     postMode = PostMode.NONE

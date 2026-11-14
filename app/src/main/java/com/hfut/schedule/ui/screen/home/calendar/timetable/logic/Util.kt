@@ -2,13 +2,23 @@ package com.hfut.schedule.ui.screen.home.calendar.timetable.logic
 
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import kotlinx.coroutines.delay
+import java.util.Calendar
 
 
 @Composable
@@ -32,6 +42,85 @@ fun Modifier.drawLineTimeTable(
             )
         }
     }
+}
+
+@Composable
+fun Modifier.drawCurrentTimeLine(
+    hourPx: Float,
+    startTime: Float,
+    endTime: Float,
+    zipTime: List<Pair<Float, Float>>,
+    zipTimeFactor: Float,
+    todayColumnIndex: Int? = null,
+    columnWidthPx: Float = 0f,
+): Modifier {
+    val enableShowCalendarTimeLine by DataStoreManager.enableShowCalendarTimeLine.collectAsState(initial = false)
+    if(!enableShowCalendarTimeLine) {
+        return this
+    }
+
+    // 非本周不画线
+    if (todayColumnIndex == null) {
+        return this
+    }
+
+    val color = remember { Color.Red }
+    val lineWidth = remember { 1.5.dp }
+    val dotRadius = lineWidth*2
+
+    var currentTime by remember { mutableFloatStateOf(currentTimeToFloat()) }
+
+    // 分钟刷新
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = Calendar.getInstance()
+            val second = now.get(Calendar.SECOND)
+            val millis = now.get(Calendar.MILLISECOND)
+            delay((60 - second) * 1000L - millis)
+            currentTime = currentTimeToFloat()
+        }
+    }
+
+    return if (currentTime < startTime || currentTime > endTime) {
+        this
+    } else {
+        this.drawWithContent {
+            val y = timeToY(currentTime, hourPx, startTime, zipTime, zipTimeFactor)
+            val w = size.width
+
+            drawLine(
+                color = color,
+                strokeWidth = lineWidth.toPx(),
+                start = Offset(0f, y),
+                end = Offset(w, y)
+            )
+
+            drawContent()
+
+            if (columnWidthPx > 0f) {
+                val left = todayColumnIndex * columnWidthPx
+                val right = left + columnWidthPx
+                drawLine(
+                    color = color,
+                    strokeWidth = lineWidth.toPx(),
+                    start = Offset(left, y),
+                    end = Offset(right, y)
+                )
+//                drawCircle(
+//                    color = color,
+//                    radius = dotRadius.toPx(),
+//                    center = Offset(left, y)
+//                )
+            }
+        }
+    }
+}
+
+private fun currentTimeToFloat(): Float {
+    val now = Calendar.getInstance()
+    val hour = now.get(Calendar.HOUR_OF_DAY)
+    val minute = now.get(Calendar.MINUTE)
+    return hour + minute / 60f
 }
 
 fun parseTimeToFloat(time: String): Float {

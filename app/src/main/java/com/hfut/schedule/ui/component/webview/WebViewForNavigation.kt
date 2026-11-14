@@ -8,8 +8,6 @@ import android.webkit.WebViewClient
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,9 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
-import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.ui.component.screen.CustomTransitionScaffold
@@ -46,7 +42,6 @@ import com.hfut.schedule.ui.util.updateTitle
 import com.hfut.schedule.ui.util.updateUrl
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.logic.util.LogUtil
-import kotlinx.coroutines.launch
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -97,6 +92,7 @@ fun WebViewScreenForNavigation(
             currentUrl,
             currentTitle,
             url,
+            loading = loading,
             onSearch = { showSearch = !showSearch }
         ) {
         }
@@ -153,15 +149,19 @@ fun WebViewScreenForNavigation(
                 }
 
                 webViewClient = object : WebViewClient() {
+                    override fun onPageCommitVisible(view: WebView?, url: String?) {
+                        super.onPageCommitVisible(view, url)
+                        view?.evaluateJs(isDark, webViewDark, bottom) {
+                            topColor = it
+                        }
+                    }
+
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
                         // 更新
                         webView = view
                         updateUrl(url) {
                             currentUrl = it
-                        }
-                        view?.evaluateJs(isDark, webViewDark, bottom) {
-                            topColor = it
                         }
                         loading = false
                     }

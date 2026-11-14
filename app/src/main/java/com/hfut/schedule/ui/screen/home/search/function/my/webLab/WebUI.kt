@@ -30,6 +30,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
@@ -37,16 +38,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -54,52 +52,44 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.hfut.schedule.R
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.WebURLType
 import com.hfut.schedule.logic.database.entity.WebUrlDTO
-import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.saveString
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.datetime.isInGraduation
 import com.hfut.schedule.logic.util.sys.datetime.isInLanding
 import com.hfut.schedule.logic.util.sys.showToast
-import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
-import com.hfut.schedule.ui.component.divider.DashedDivider
-import com.hfut.schedule.ui.component.icon.BrushIcon
+import com.hfut.schedule.ui.component.divider.PaddingHorizontalDivider
 import com.hfut.schedule.ui.component.input.CustomTextField
 import com.hfut.schedule.ui.component.screen.pager.PaddingForPageControllerButton
 import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
-import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
 import com.hfut.schedule.ui.nav.destination.DepartmentsDestination
 import com.hfut.schedule.ui.nav.destination.NotificationBoxDestination
-import com.hfut.schedule.ui.nav.destination.SettingsAboutDeveloperDestination
 import com.hfut.schedule.ui.nav.destination.SettingsBackupDestination
-import com.hfut.schedule.ui.nav.destination.SettingsTipsDestination
+import com.hfut.schedule.ui.nav.destination.TipsDestination
 import com.hfut.schedule.ui.nav.destination.VersionInfoDestination
 import com.hfut.schedule.ui.nav.destination.WebFolderDestination
 import com.hfut.schedule.ui.screen.home.cube.screen.QR_CODE_PADDING
 import com.hfut.schedule.ui.screen.home.cube.screen.createQrCode
-import com.hfut.schedule.ui.screen.home.cube.screen.rememberCreateQrCode
-
 import com.hfut.schedule.ui.screen.home.cube.sub.MyAPIItem
 import com.hfut.schedule.ui.screen.home.search.function.my.notification.NotificationItems
 import com.hfut.schedule.ui.screen.home.search.function.my.notification.getNotifications
 import com.hfut.schedule.ui.screen.home.search.function.other.life.HuoZaiFeiXuan
-import com.hfut.schedule.ui.screen.news.department.SchoolsUI
-import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.ui.util.getPureUrl
-import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.sharednav.common.helper.NoneRoundShape
-import com.xah.navigation.util.LocalNavController
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.align.RowHorizontal
@@ -107,8 +97,8 @@ import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.SharedContainer
 import com.xah.container.component.base.sharedContainer
+import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
 
@@ -125,41 +115,6 @@ fun WebUI() {
             navController.push(WebFolderDestination)
         }
     )
-}
-// TODO
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun Schools(vm : NetWorkViewModel) {
-    var showBottomSheet_School by remember { mutableStateOf(false) }
-
-    if (showBottomSheet_School) {
-        HazeBottomSheet (
-            onDismissRequest = { showBottomSheet_School = false },
-            showBottomSheet = showBottomSheet_School
-        ) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = Color.Transparent,
-                topBar = {
-                    HazeBottomSheetTopBar("学院")
-                },
-            ) { innerPadding ->
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize()
-                ) {
-                    SchoolsUI(vm,null)
-                }
-            }
-        }
-    }
-
-    FilledTonalButton(
-        onClick = { showBottomSheet_School = true }
-    ) {
-        Text(text = "学院集锦")
-    }
 }
 
 fun isValidWebUrl(url: String, strict : Boolean = false): Boolean {
@@ -181,8 +136,8 @@ fun WebNavigationScreen(
 
     if(showBottomSheet_Add) {
         val scope = rememberCoroutineScope()
-        var inputName by remember { mutableStateOf("") }
-        var inputUrl by remember { mutableStateOf("") }
+        var inputName by remember { mutableStateOf(EMPTY_STRING) }
+        var inputUrl by remember { mutableStateOf(EMPTY_STRING) }
         Dialog(onDismissRequest = { showBottomSheet_Add = false}) {
             Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)) {
                 Column(modifier = Modifier.padding(vertical = APP_HORIZONTAL_DP)) {
@@ -220,7 +175,7 @@ fun WebNavigationScreen(
                                         showToast("不合理链接")
                                         return@launch
                                     }
-                                    if(inputName.isEmpty() || inputName.isBlank()) {
+                                    if(inputName.isEmptyOrBlank()) {
                                         showToast("空名")
                                         return@launch
                                     }
@@ -245,7 +200,7 @@ fun WebNavigationScreen(
     }
     val context = LocalContext.current
     var input by rememberSaveable { mutableStateOf("https://") }
-    var inputCookies by remember { mutableStateOf("") }
+    var inputCookies by remember { mutableStateOf(EMPTY_STRING) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scope = rememberCoroutineScope()
     val backdrop = rememberLayerBackdrop()
@@ -266,7 +221,7 @@ fun WebNavigationScreen(
                     SharedContainer(
                         key = DepartmentsDestination.key,
                         shape = CircleShape,
-                        modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP),
+                        modifier = Modifier.padding(end = BUTTON_END_PADDING),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         NoPadding {
@@ -311,10 +266,18 @@ fun WebNavigationScreen(
                                 IconButton(
                                     enabled = input.isNotEmpty() && input.isNotBlank(),
                                     onClick = {
-                                        qrPainter = createQrCode(input,color)
+                                        if(qrPainter == null) {
+                                            qrPainter = createQrCode(input,color)
+                                        } else {
+                                            qrPainter = null
+                                        }
                                     },
                                 ) {
-                                    Icon(painterResource(R.drawable.qr_code_2),null)
+                                    Icon(
+                                        painterResource(R.drawable.qr_code_2),
+                                        null,
+                                        tint = if(qrPainter == null) LocalContentColor.current else MaterialTheme.colorScheme.primary
+                                    )
                                 }
                                 IconButton(
                                     enabled = isValidWebUrl(input),
@@ -324,7 +287,7 @@ fun WebNavigationScreen(
                                                 context,
                                                 url = input,
                                                 title = getPureUrl(input),
-                                                cookie = inputCookies.let { if(it.isEmpty() || it.isBlank()) null else it }
+                                                cookie = inputCookies.let { if(it.isEmptyOrBlank()) null else it }
                                             )
                                         }
                                     },
@@ -332,16 +295,42 @@ fun WebNavigationScreen(
                                     Icon(painterResource(R.drawable.arrow_forward),null)
                                 }
                             }
-                        }
+                        },
+                        shape = MaterialTheme.shapes.medium.copy(
+                            bottomStart = NoneRoundShape.bottomStart,
+                            bottomEnd = NoneRoundShape.bottomEnd,
+                        )
                     ) { input = it }
 
-                    qrPainter?.let {
-                        DashedDivider(modifier = Modifier.fillMaxWidth().padding(horizontal = APP_HORIZONTAL_DP).padding(top = QR_CODE_PADDING))
-                        Image(
-                            it.asImageBitmap(),
-                            contentDescription = "",
-                            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP - QR_CODE_PADDING)
+                    PaddingHorizontalDivider()
+                    CustomTextField(
+                        input = inputCookies,
+                        label = { Text("输入Cookies") },
+                        singleLine = false,
+                        shape = MaterialTheme.shapes.medium.copy(
+                            topStart = NoneRoundShape.topStart,
+                            topEnd = NoneRoundShape.topEnd,
                         )
+                    ) { inputCookies = it }
+
+                    qrPainter?.let {
+                        var first by remember { mutableStateOf(true) }
+                        LaunchedEffect(input) {
+                            if(first) {
+                                first = false
+                                return@LaunchedEffect
+                            }
+                            qrPainter = createQrCode(input,color)
+                        }
+                        Spacer(modifier = Modifier.height(QR_CODE_PADDING))
+                        PaddingHorizontalDivider(isDashed = true)
+                        RowHorizontal {
+                            Image(
+                                it.asImageBitmap(),
+                                contentDescription = EMPTY_STRING,
+                                modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP - QR_CODE_PADDING)
+                            )
+                        }
                     }
 
                     /*
@@ -424,14 +413,14 @@ fun NotificationBoxScreen(
                         Text("解锁聚在工大的更多场景与用法")
                     },
                     leadingContent = {
-                        Icon(painterResource(SettingsTipsDestination.icon),null)
+                        Icon(painterResource(TipsDestination.icon),null)
                     },
                     modifier = Modifier.clickable {
-                        navController.push(SettingsTipsDestination)
+                        navController.push(TipsDestination)
                     },
                     shape = NoneRoundShape,
                     cardModifier = Modifier.sharedContainer(
-                        SettingsTipsDestination.key,
+                        TipsDestination.key,
                         MaterialTheme.shapes.medium,
                         cardNormalColor()
                     )

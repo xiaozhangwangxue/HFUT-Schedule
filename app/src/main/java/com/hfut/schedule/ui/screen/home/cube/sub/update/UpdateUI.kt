@@ -51,12 +51,14 @@ import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.other.AppVersion
 
 import com.hfut.schedule.logic.util.parse.roundOffString
+import com.hfut.schedule.logic.util.sys.AppDownloadManager
 import com.hfut.schedule.logic.util.sys.AppDownloadManager.installApk
 import com.hfut.schedule.logic.util.sys.AppDownloadManager.installPatchedApk
 import com.hfut.schedule.logic.util.sys.AppDownloadManager.openDownload
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
-import com.hfut.schedule.ui.component.button.AnimatedIconButton
+import com.hfut.schedule.ui.component.button.AnimatedExpandIconButton
+import com.hfut.schedule.ui.component.button.BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.BottomButton
 import com.hfut.schedule.ui.component.button.LargeButton
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
@@ -64,10 +66,12 @@ import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.divider.PaddingHorizontalDivider
+import com.hfut.schedule.ui.component.icon.CircleProgressIcon
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.xah.bsdiffs.model.Patch
 import com.xah.bsdiffs.util.BsdiffUpdate
 import com.xah.bsdiffs.util.parsePatch
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.status.LoadingUI
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.logic.util.LogUtil
@@ -237,12 +241,14 @@ fun UpdateUI(
                 R.string.settings_update_title_failed
             )) },
             supportingContent = { Text(text = if(canDownload) "${AppVersion.getVersionName()} → ${update?.name}" else stringResource(
-                R.string.settings_update_description, update?.name ?: ""
+                R.string.settings_update_description, update?.name ?: EMPTY_STRING
             )) },
             leadingContent = {
                 BadgedBox(
                     badge = {
-                        Badge()
+                        if(update?.assets?.isNotEmpty() ?: false) {
+                            Badge()
+                        }
                     }
                 )  {
                     Icon(painterResource(R.drawable.arrow_upward), contentDescription = "Localized description",)
@@ -250,7 +256,7 @@ fun UpdateUI(
             },
             trailingContent = {
                 if(canDownload) {
-                    AnimatedIconButton(
+                    AnimatedExpandIconButton(
                         onClick = { expandItems = !expandItems },
                         valueState = expandItems,
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -303,7 +309,7 @@ fun UpdateUI(
                                         R.string.settings_update_button_download_file_size,
                                         (uiState as NetworkUiState.Success).data.roundOffString(2)
                                     )
-                                } else ""
+                                } else EMPTY_STRING
                             ),
                     )
                 }
@@ -314,11 +320,10 @@ fun UpdateUI(
 
     when (downloadState) {
         is DownloadResult.Downloaded -> {
-            Spacer(Modifier.height(CARD_NORMAL_DP))
             // 检查是否有下载好的文件 有就显示
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = APP_HORIZONTAL_DP),
+                .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP),
                 horizontalArrangement = Arrangement.Center
             )  {
                 LargeButton(
@@ -327,13 +332,26 @@ fun UpdateUI(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1 / 3f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_install),
                     icon = R.drawable.apk_document,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-                Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                LargeButton(
+                    onClick = {
+                        openDownload()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1/3f),
+                    text = stringResource(R.string.settings_update_button_download_manage),
+                    icon = R.drawable.folder_managed,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                 LargeButton(
                     onClick = {
                         (downloadState as DownloadResult.Downloaded).file.delete()
@@ -341,34 +359,22 @@ fun UpdateUI(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1 / 3f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_delete),
                     icon = R.drawable.delete,
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-                Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
-                LargeButton(
-                    onClick = {
-                        openDownload()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1 / 3f),
-                    text = stringResource(R.string.settings_update_button_download_manage),
-                    icon = R.drawable.folder_managed,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
         is DownloadResult.Prepare -> {}
         is DownloadResult.Progress -> {
-            Spacer(Modifier.height(CARD_NORMAL_DP))
+            val downloadId = (downloadState as DownloadResult.Progress).downloadId
+            val progress = (downloadState as DownloadResult.Progress).progress
             // 更新进度
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = APP_HORIZONTAL_DP),
+                .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP),
                 horizontalArrangement = Arrangement.Center
             )  {
                 LargeButton(
@@ -378,32 +384,48 @@ fun UpdateUI(
                     enabled = false,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
-                    text = "${(downloadState as DownloadResult.Progress).progress}%",
-                    icon = R.drawable.apk_install,
+                        .weight(1/3f),
+                    text = "${progress}%",
+                    icon = {
+                        CircleProgressIcon(progress/100f)
+                    },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-                Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                 LargeButton(
                     onClick = {
                         openDownload()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_download_manage),
                     icon = R.drawable.folder_managed,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                LargeButton(
+                    onClick = {
+                        AppDownloadManager.dlManager.remove(downloadId)
+                        viewModel.reset()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1/3f),
+                    text = stringResource(R.string.settings_update_button_delete),
+                    icon = R.drawable.delete,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             }
         }
         is DownloadResult.Success -> {
-            Spacer(Modifier.height(CARD_NORMAL_DP))
+            val downloadId = (downloadState as DownloadResult.Success).downloadId
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = APP_HORIZONTAL_DP),
+                .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP),
                 horizontalArrangement = Arrangement.Center
             )  {
                 LargeButton(
@@ -412,32 +434,46 @@ fun UpdateUI(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_install),
                     icon = R.drawable.apk_document,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
-                Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                 LargeButton(
                     onClick = {
                         openDownload()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_download_manage),
                     icon = R.drawable.folder_managed,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                LargeButton(
+                    onClick = {
+                        AppDownloadManager.dlManager.remove(downloadId)
+                        viewModel.reset()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1/3f),
+                    text = stringResource(R.string.settings_update_button_delete),
+                    icon = R.drawable.delete,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             }
         }
         is DownloadResult.Failed -> {
-            Spacer(Modifier.height(CARD_NORMAL_DP))
+            val downloadId = (downloadState as DownloadResult.Failed).downloadId
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = APP_HORIZONTAL_DP),
+                .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP),
                 horizontalArrangement = Arrangement.Center
             )  {
                 LargeButton(
@@ -446,24 +482,38 @@ fun UpdateUI(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_failed),
                     icon = R.drawable.refresh,
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
                 )
-                Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                 LargeButton(
                     onClick = {
                         openDownload()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(.5f),
+                        .weight(1/3f),
                     text = stringResource(R.string.settings_update_button_download_manage),
                     icon = R.drawable.folder_managed,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                LargeButton(
+                    onClick = {
+                        AppDownloadManager.dlManager.remove(downloadId)
+                        viewModel.reset()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1/3f),
+                    text = stringResource(R.string.settings_update_button_delete),
+                    icon = R.drawable.delete,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
             Spacer(Modifier.height(CARD_NORMAL_DP))
@@ -514,7 +564,7 @@ fun PatchUpdateUI(
             TransplantListItem(
                 headlineContent = { Text(text = stringResource(
                     R.string.settings_update_merge_patch_title,
-                    patch.newVersion.let { if (it == update?.name) stringResource(R.string.settings_update_patch_title_latest) else ("" + it) })
+                    patch.newVersion.let { if (it == update?.name) stringResource(R.string.settings_update_patch_title_latest) else (EMPTY_STRING + it) })
                 ) },
                 supportingContent = {
                     Text(text = stringResource(R.string.settings_update_patch_description))
@@ -552,7 +602,7 @@ fun PatchUpdateUI(
                                         R.string.settings_update_button_download_file_size,
                                         (uiStatePatch as NetworkUiState.Success).data.roundOffString(2)
                                     )
-                                } else ""  
+                                } else EMPTY_STRING  
                             }",
                     )
                 }
@@ -562,11 +612,10 @@ fun PatchUpdateUI(
 
         when (downloadState) {
             is DownloadResult.Downloaded -> {
-                Spacer(Modifier.height(CARD_NORMAL_DP))
                 // 检查是否有下载好的文件 有就显示
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = APP_HORIZONTAL_DP), horizontalArrangement = Arrangement.Center)  {
+                    .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP), horizontalArrangement = Arrangement.Center)  {
                     LargeButton(
                         onClick = {
                             coroutineScope.launch {
@@ -581,13 +630,26 @@ fun PatchUpdateUI(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1 / 3f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_install),
                         icon = R.drawable.apk_document,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                    LargeButton(
+                        onClick = {
+                            openDownload()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1/3f),
+                        text = stringResource(R.string.settings_update_button_download_manage),
+                        icon = R.drawable.folder_managed,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                     LargeButton(
                         onClick = {
                             (downloadState as DownloadResult.Downloaded).file.delete()
@@ -595,34 +657,22 @@ fun PatchUpdateUI(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1 / 3f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_delete),
                         icon = R.drawable.delete,
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
-                    LargeButton(
-                        onClick = {
-                            openDownload()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1 / 3f),
-                        text = stringResource(R.string.settings_update_button_download_manage),
-                        icon = R.drawable.folder_managed,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
                 }
             }
             is DownloadResult.Prepare -> {}
             is DownloadResult.Progress -> {
-                Spacer(Modifier.height(CARD_NORMAL_DP))
+                val progress = (downloadState as DownloadResult.Progress).progress
+                val downloadId = (downloadState as DownloadResult.Progress).downloadId
                 // 更新进度
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = APP_HORIZONTAL_DP), horizontalArrangement = Arrangement.Center)  {
+                    .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP), horizontalArrangement = Arrangement.Center)  {
                     LargeButton(
                         onClick = {
                             openDownload()
@@ -630,32 +680,48 @@ fun PatchUpdateUI(
                         enabled = false,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
-                        text = "${(downloadState as DownloadResult.Progress).progress}%",
-                        icon = R.drawable.apk_install,
+                            .weight(1/3f),
+                        text = "${progress}%",
+                        icon = {
+                            CircleProgressIcon(progress/100f)
+                        },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                     LargeButton(
                         onClick = {
                             openDownload()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_download_manage),
                         icon = R.drawable.folder_managed,
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                    LargeButton(
+                        onClick = {
+                            AppDownloadManager.dlManager.remove(downloadId)
+                            viewModel.reset()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1/3f),
+                        text = stringResource(R.string.settings_update_button_delete),
+                        icon = R.drawable.delete,
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
             is DownloadResult.Success -> {
-                Spacer(Modifier.height(CARD_NORMAL_DP))
+                val downloadId = (downloadState as DownloadResult.Success).downloadId
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = APP_HORIZONTAL_DP), horizontalArrangement = Arrangement.Center)  {
+                    .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP), horizontalArrangement = Arrangement.Center)  {
                     LargeButton(
                         onClick = {
                             coroutineScope.launch {
@@ -670,56 +736,84 @@ fun PatchUpdateUI(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_install),
                         icon = R.drawable.apk_document,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                     LargeButton(
                         onClick = {
                             openDownload()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_download_manage),
                         icon = R.drawable.folder_managed,
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                    LargeButton(
+                        onClick = {
+                            AppDownloadManager.dlManager.remove(downloadId)
+                            viewModel.reset()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1/3f),
+                        text = stringResource(R.string.settings_update_button_delete),
+                        icon = R.drawable.delete,
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
                 }
             }
             is DownloadResult.Failed -> {
-                Spacer(Modifier.height(CARD_NORMAL_DP))
+                val downloadId = (downloadState as DownloadResult.Failed).downloadId
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = APP_HORIZONTAL_DP), horizontalArrangement = Arrangement.Center)  {
+                    .padding(horizontal = APP_HORIZONTAL_DP, vertical = BUTTON_PADDING-CARD_NORMAL_DP), horizontalArrangement = Arrangement.Center)  {
                     LargeButton(
                         onClick = {
                             viewModel.reset()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
+                            .weight(1/3f),
                         text =  stringResource(R.string.settings_update_button_failed),
                         icon = R.drawable.refresh,
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/3))
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                     LargeButton(
                         onClick = {
                             openDownload()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(.5f),
+                            .weight(1/3f),
                         text = stringResource(R.string.settings_update_button_download_manage),
                         icon = R.drawable.folder_managed,
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                    LargeButton(
+                        onClick = {
+                            AppDownloadManager.dlManager.remove(downloadId)
+                            viewModel.reset()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1/3f),
+                        text = stringResource(R.string.settings_update_button_delete),
+                        icon = R.drawable.delete,
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
                 Spacer(Modifier.height(CARD_NORMAL_DP))
@@ -740,3 +834,5 @@ fun PatchUpdateUI(
         }
     }
 }
+
+private val LARGE_BUTTON_PADDING = BUTTON_PADDING

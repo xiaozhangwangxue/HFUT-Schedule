@@ -4,7 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 
 import com.hfut.schedule.application.MyApplication
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.CustomEventType
 import com.hfut.schedule.logic.database.util.CustomEventMapper.entityToDto
 import com.hfut.schedule.network.api.model.response.json.jxglstu.lesson.JxglstuCourseTableResponse
@@ -22,6 +22,7 @@ import com.hfut.schedule.ui.screen.home.calendar.common.weekToDate
 import com.hfut.schedule.ui.screen.home.calendar.jxglstu.distinctUnit
 import com.hfut.schedule.ui.screen.home.focus.funiction.parseTimeItem
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.totalCourse.getCoursesFromCommunity
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -326,7 +327,7 @@ private suspend fun examToTimeTableData(): List<List<TimeTableItem>> {
             list.add(
                 TimeTableItem(
                     type = TimeTableType.EXAM,
-                    name = (name + (item.type?.let { "-$it" } ?: "")).trim(),
+                    name = (name + (item.type?.let { "-$it" } ?: EMPTY_STRING)).trim(),
                     dayOfWeek = weekInfo.second,
                     startTime = startTime,
                     endTime = endTime,

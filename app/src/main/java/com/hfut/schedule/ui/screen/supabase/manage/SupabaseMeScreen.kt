@@ -45,13 +45,16 @@ import com.hfut.schedule.ui.screen.home.focus.funiction.parseTimeItem
 import com.xah.common.ui.style.align.ColumnVertical
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
+import com.xah.common.logic.util.remove
 import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SupabaseMeScreenRefresh(vm : NetWorkViewModel,innerPadding : PaddingValues) {
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
     val uiState by vm.supabaseGetMyEventsResp.state.collectAsState()
     val refreshNetwork : suspend () -> Unit = {
         vm.supabaseGetMyEventsResp.clear()
@@ -65,7 +68,7 @@ fun SupabaseMeScreenRefresh(vm : NetWorkViewModel,innerPadding : PaddingValues) 
     })
 
     LaunchedEffect(jwt) {
-        if ((jwt.isEmpty() || jwt.isBlank())) {
+        if (jwt.isEmptyOrBlank()) {
             showToast("未登录")
             return@LaunchedEffect
         }
@@ -93,8 +96,8 @@ fun SupabaseMeScreenRefresh(vm : NetWorkViewModel,innerPadding : PaddingValues) 
 
 @Composable
 private fun SupabaseMeScreen(vm : NetWorkViewModel,innerPadding : PaddingValues,onRefresh :  () -> Unit) {
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
-    var input by remember { mutableStateOf("") }
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
+    var input by remember { mutableStateOf(EMPTY_STRING) }
     var id by remember { mutableIntStateOf(-1) }
     var showDialogDel by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -143,7 +146,7 @@ private fun SupabaseMeScreen(vm : NetWorkViewModel,innerPadding : PaddingValues,
         items(list.size) { index ->
             val item = list[index]
             val dateTime = item.dateTime
-            val nowTimeNum = DateTimeManager.Date_yyyy_MM_dd.replace("-","").toLong()
+            val nowTimeNum = DateTimeManager.Date_yyyy_MM_dd.remove("-").toLong()
             val endNum = with(dateTime.end) { "$year${parseTimeItem(month)}${parseTimeItem(day)}" }.toLong()
             val isOutOfDate = nowTimeNum > endNum
             CardListItem(

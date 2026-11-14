@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Trace
 import android.util.Log
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.LogUtil
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -84,7 +86,7 @@ object AppTracer {
 
     private const val TAG = "AppTracer"
     private var isTracing = false
-    private var traceFile: String = ""
+    private var traceFile: String = EMPTY_STRING
     private var autoStopRunnable: Runnable? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -196,6 +198,7 @@ object AppTracer {
             val method = clazz.getMethod("currentPackageName")
             method.invoke(null) as String
         } catch (e: Exception) {
+            LogUtil.error(e)
             "unknown"
         }
     }

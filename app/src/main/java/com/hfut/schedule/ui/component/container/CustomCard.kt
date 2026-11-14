@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hfut.schedule.ui.style.special.coverBlur
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager.ANIMATION_SPEED
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.shimmerEffect
@@ -39,11 +40,13 @@ fun CustomCard(
     shadow : Dp = 0.dp,
     shape: Shape = MaterialTheme.shapes.medium,
     border : BorderStroke? = null,
+    horizontalPadding : Boolean = true,
+    verticalPadding : Boolean = true,
     content: @Composable () -> Unit
 ) {
     val baseModifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = APP_HORIZONTAL_DP, vertical = CARD_NORMAL_DP)
+        .padding(horizontal = if(horizontalPadding) APP_HORIZONTAL_DP else 0.dp, vertical = if(verticalPadding) CARD_NORMAL_DP else 0.dp)
 
     Card(
         border = border,
@@ -126,10 +129,12 @@ private fun PCardListItem(
     color : Color? = null,
     shape: Shape = MaterialTheme.shapes.medium,
     shadow: Dp = 0.dp,
+    horizontalPadding : Boolean = true,
+    verticalPadding : Boolean = true,
     modifier: Modifier = Modifier,
     cardModifier : Modifier = Modifier
 ) {
-    CustomCard( color = color, modifier = cardModifier, shape = shape, shadow = shadow) {
+    CustomCard( color = color, modifier = cardModifier, shape = shape, shadow = shadow, horizontalPadding = horizontalPadding, verticalPadding = verticalPadding) {
         TransplantListItem(
             headlineContent = headlineContent,
             overlineContent = overlineContent,
@@ -153,11 +158,13 @@ fun CardListItem(
     color : Color? = null,
     shape: Shape = MaterialTheme.shapes.medium,
     shadow: Dp = 0.dp,
+    horizontalPadding : Boolean = true,
+    verticalPadding : Boolean = true,
     modifier: Modifier = Modifier,
     cardModifier: Modifier = Modifier,
 ) {
     PCardListItem(
-        headlineContent, overlineContent, supportingContent, trailingContent,leadingContent, modifier = modifier, cardModifier = cardModifier,
+        headlineContent, overlineContent, supportingContent, trailingContent,leadingContent, modifier = modifier, cardModifier = cardModifier, horizontalPadding = horizontalPadding, verticalPadding = verticalPadding,
         color = color ?: cardNormalColor(),
         shape = shape, shadow = shadow
     )
@@ -226,13 +233,13 @@ fun LoadingLargeCard(
     val scale = animateFloatAsState(
         targetValue = if (loading) 0.9f else 1f, // 按下时为0.9，松开时为1
         animationSpec = tween(speed, easing = LinearOutSlowInEasing),
-        label = "" // 使用弹簧动画
+        label = EMPTY_STRING // 使用弹簧动画
     )
 
     val scale2 = animateFloatAsState(
         targetValue = if (loading) 0.97f else 1f, // 按下时为0.9，松开时为1
         animationSpec = tween(speed, easing = LinearOutSlowInEasing),
-        label = "" // 使用弹簧动画
+        label = EMPTY_STRING // 使用弹簧动画
     )
 
     Card(

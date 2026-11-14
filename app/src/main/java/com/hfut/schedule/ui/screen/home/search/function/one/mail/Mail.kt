@@ -38,6 +38,7 @@ import com.hfut.schedule.ui.component.container.TransplantListItem
  
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.ui.component.button.LARGE_BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LargeButton
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
@@ -45,6 +46,7 @@ import com.hfut.schedule.ui.screen.supabase.login.getSchoolEmail
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder.isSupabaseRegistering
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
@@ -60,7 +62,7 @@ fun Mail(
     TransplantListItem(
         headlineContent = { ScrollText(text = stringResource(R.string.navigation_label_school_email)) },
 //        overlineContent = { ScrollText(text = MyApplication.EMAIL) },
-        leadingContent = { Icon(painter = painterResource(id = R.drawable.mail), contentDescription = "") },
+        leadingContent = { Icon(painter = painterResource(id = R.drawable.mail), contentDescription = EMPTY_STRING) },
         modifier = Modifier.clickable {
             showBottomSheet = true
         }
@@ -122,8 +124,8 @@ fun MailUI(vm: NetWorkViewModel) {
                         text = "进入邮箱",
                         icon = R.drawable.mail
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/2))
-                    LargeButton (
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
+                    LargeButton(
                         onClick = {
                             response.data.let {
                                 if(it != null) {

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,7 +18,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,9 +45,10 @@ import com.hfut.schedule.ui.component.status.StatusIcon
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.ui.screen.home.cube.sub.CirclePoint
 import com.hfut.schedule.ui.screen.home.cube.sub.KeyBoard
-import com.hfut.schedule.ui.screen.home.search.function.huiXin.loginWeb.getCardPsk
+import com.hfut.schedule.ui.screen.home.search.function.huiXin.loginWeb.getHuiXinPsk
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import com.xah.common.ui.util.text
 import dev.chrisbanes.haze.HazeState
@@ -68,7 +66,7 @@ fun PayFor(vm : NetWorkViewModel, payNumber : Float, tipInfo : String, json : St
     val scale = animateFloatAsState(
         targetValue = if (isPressed) 0.9f else 1f, // 按下时为0.9，松开时为1
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "" // 使用弹簧动画
+        label = EMPTY_STRING // 使用弹簧动画
     )
 
     if(showDialog) {
@@ -85,7 +83,7 @@ fun PayFor(vm : NetWorkViewModel, payNumber : Float, tipInfo : String, json : St
     }
 
     val psk = SharedPrefs.prefs.getString("pins",null)
-    var password by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf(EMPTY_STRING) }
     var passwordStatus by remember { mutableStateOf("请输入密码") }
     var showBottomSheet_pin by remember { mutableStateOf(false) }
 
@@ -123,7 +121,7 @@ fun PayFor(vm : NetWorkViewModel, payNumber : Float, tipInfo : String, json : St
             } else {
                 //密码错了
                 passwordStatus = "密码错误"
-                password = ""
+                password = EMPTY_STRING
             }
         }
     }
@@ -149,7 +147,7 @@ fun PayFor(vm : NetWorkViewModel, payNumber : Float, tipInfo : String, json : St
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         Icon(
             painter = painterResource(R.drawable.send_money),
-            contentDescription = "",
+            contentDescription = EMPTY_STRING,
             Modifier.size(100.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -196,8 +194,8 @@ private fun PayStatusUI(vm : NetWorkViewModel, payNumber : Float, json: String, 
         val orderId = (vm.orderIdData.state.value as? NetworkUiState.Success)?.data ?: return@LaunchedEffect
         vm.payStep2(auth,orderId,type)
         val map = (vm.uuIdData.state.value as? NetworkUiState.Success)?.data ?: return@LaunchedEffect
-        var uuid = ""
-        var passwordKey = ""
+        var uuid = EMPTY_STRING
+        var passwordKey = EMPTY_STRING
         for((key,value) in map) {
             uuid = key
             passwordKey = value
@@ -213,9 +211,9 @@ private fun PayStatusUI(vm : NetWorkViewModel, payNumber : Float, json: String, 
 }
 
 suspend fun getPsk(key : String) : String? {
-    var result = ""
+    var result = EMPTY_STRING
     return try {
-        val psk = getCardPsk()
+        val psk = getHuiXinPsk()
         if (psk != null) {
             for(i in psk.indices) {
                 for(j in key.indices) {

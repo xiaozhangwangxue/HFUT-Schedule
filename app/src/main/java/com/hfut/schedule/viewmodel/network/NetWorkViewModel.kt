@@ -26,8 +26,6 @@ import com.hfut.schedule.network.api.model.response.json.huixin.HuiXinHefeiBuild
 import com.hfut.schedule.network.api.model.response.html.news.News
 import com.hfut.schedule.network.api.model.response.json.hall.OfficeHallSearchRecord
 import com.hfut.schedule.network.api.model.response.json.one.OneFeeData
-import com.hfut.schedule.network.api.model.response.json.qweather.QWeatherNow
-import com.hfut.schedule.network.api.model.response.json.qweather.QWeatherWarning
 import com.hfut.schedule.network.api.model.response.json.second.SecondClassActivity
 import com.hfut.schedule.logic.model.supabase.SupabaseEventOutput
 import com.hfut.schedule.logic.model.supabase.SupabaseEventsInput
@@ -116,18 +114,26 @@ import com.xah.bsdiffs.model.Patch
 import com.xah.bsdiffs.util.parsePatch
 import com.xah.common.logic.model.HuiXinBill
 import com.consumption.forecast.model.result.TotalResult
+import com.hfut.schedule.logic.model.enumeration.DeepSeekModel
 import com.hfut.schedule.logic.network.repo.AdmissionRepository
+import com.hfut.schedule.logic.network.repo.DeepSeekRepository
 import com.hfut.schedule.logic.network.repo.GithubRepository
 import com.hfut.schedule.network.api.model.response.html.FloorMap
 import com.hfut.schedule.network.api.model.request.community.CommunityLibraryContent
 import com.hfut.schedule.network.api.model.request.haile.HaiLeNearPositionRequestDto
 import com.hfut.schedule.network.api.model.response.dto.SchoolNetInfo
+import com.hfut.schedule.network.api.model.response.html.Bus
 import com.hfut.schedule.network.api.model.response.html.JxglstuExam
 import com.hfut.schedule.network.api.model.response.html.JxglstuTransferMajorDetail
+import com.hfut.schedule.network.api.model.response.json.ai.AiChatChoice
+import com.hfut.schedule.network.api.model.response.json.ai.AiChatMsg
 import com.hfut.schedule.network.api.model.response.json.jxglstu.JxglstuSelectedCourseConfirmation
 import com.hfut.schedule.network.api.model.response.json.jxglstu.JxglstuSelectedCourseConfirmationType
 import com.hfut.schedule.network.api.model.response.json.one.OneSchoolEmailResponse
+import com.hfut.schedule.network.api.model.response.json.qweather.QWeatherNowResponse
+import com.hfut.schedule.network.api.model.response.json.qweather.QWeatherWarnResponse
 import com.hfut.schedule.network.api.model.response.json.zhijian.ZhiJianCourseTableDto
+import com.xah.common.logic.util.EMPTY_STRING
 
 class NetWorkViewModel() : ViewModel() {
     val studentId = UiStateHolder<Int>()
@@ -362,6 +368,9 @@ class NetWorkViewModel() : ViewModel() {
 
     suspend fun getInfo(cookie : String) = JxglstuRepository.getInfo(cookie,studentId)
 
+    val jxglstuPasswordResp = UiStateHolder<String>()
+    suspend fun getAccount(cookie : String) = JxglstuRepository.getAccount(cookie,jxglstuPasswordResp)
+
     val lessonTimesResponse = UiStateHolder<List<JxglstuCourseTime>>()
     suspend fun getLessonTimes(cookie: String,timeCampusId : Int) = JxglstuRepository.getLessonTimes(cookie,timeCampusId,lessonTimesResponse)
 
@@ -375,7 +384,7 @@ class NetWorkViewModel() : ViewModel() {
     suspend fun getProgramPerformance(cookie: String) = JxglstuRepository.getProgramPerformance(cookie,studentId, programPerformanceData)
 
     val teacherSearchData = UiStateHolder<TeacherResponse>()
-    suspend fun searchTeacher(name: String = "", direction: String = "") = OthersRepository.searchTeacher(name = name,direction = direction,teacherSearchData)
+    suspend fun searchTeacher(name: String = EMPTY_STRING, direction: String = EMPTY_STRING) = OthersRepository.searchTeacher(name = name,direction = direction,teacherSearchData)
 
     val courseSearchResponse = UiStateHolder<List<JxglstuLesson>>()
     suspend fun searchCourse(cookie: String, className : String?, courseName : String?, semester : Int, courseId : String?) = JxglstuRepository.searchCourse(cookie,className,courseName,semester,courseId,studentId,courseSearchResponse)
@@ -545,6 +554,9 @@ class NetWorkViewModel() : ViewModel() {
     val busResponse = UiStateHolder<List<CommunityBus>>()
     suspend fun getBus(token : String) = CommunityRepository.getBus(token,busResponse)
 
+    val busResponseV2 = UiStateHolder<Map<String,List<Bus>>>()
+    suspend fun getBusV2() = OthersRepository.getBus(busResponseV2)
+
     val booksChipData = UiStateHolder<List<CommunityBorrowRecord>>()
     suspend fun communityBooks(token : String, type : CommunityLibraryContent, page : Int = 1) = CommunityRepository.communityBooks(token,type,page,booksChipData)
 
@@ -555,9 +567,9 @@ class NetWorkViewModel() : ViewModel() {
 
     fun checkApplying(token : String, id : String, isOk : Boolean) = CommunityRepository.checkApplying(token,id,isOk)
 
-    val weatherWarningData = UiStateHolder<List<QWeatherWarning>>()
+    val weatherWarningData = UiStateHolder<QWeatherWarnResponse>()
     suspend fun getWeatherWarn(campus: CampusRegion) = QWeatherRepository.getWeatherWarn(campus,weatherWarningData)
-    val qWeatherResult = UiStateHolder<QWeatherNow>()
+    val qWeatherResult = UiStateHolder<QWeatherNowResponse>()
     suspend fun getWeather(campus: CampusRegion) = QWeatherRepository.getWeather(campus,qWeatherResult)
 
     val loginSchoolNetResponse = UiStateHolder<Boolean>()
@@ -645,4 +657,7 @@ class NetWorkViewModel() : ViewModel() {
 
     val jxglstuSelectedCourseConfirmationResp = UiStateHolder<Map<JxglstuSelectedCourseConfirmationType, List<JxglstuSelectedCourseConfirmation>>>()
     suspend fun getSelectCourseConfirmation(cookie : String) = JxglstuRepository.getSelectCourseConfirmation(cookie,studentId,jxglstuSelectedCourseConfirmationResp)
+
+    val aiChatResp = UiStateHolder<List<AiChatChoice>>()
+    suspend fun chatWithAi(apiKey : String,msgs : List<AiChatMsg>,model : DeepSeekModel = DeepSeekModel.FLASH) = DeepSeekRepository.chat(apiKey,msgs,model,aiChatResp)
 }

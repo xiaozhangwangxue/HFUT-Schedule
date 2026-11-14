@@ -1,3 +1,9 @@
-# 默认忽略的文件
-/shelf/
-/workspace.xml
+*
+!/.gitignore
+!/.name
+!/icon.png
+!/gradle.xml
+!/runConfigurations/
+!/runConfigurations/.xml
+!/runConfigurations/app.xml
+!/runConfigurations/lite.xml

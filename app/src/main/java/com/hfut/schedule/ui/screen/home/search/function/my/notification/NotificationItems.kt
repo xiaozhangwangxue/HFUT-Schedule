@@ -23,28 +23,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavHostController
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.showToast
-import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
-import com.hfut.schedule.ui.component.button.CardBottomButton
 import com.hfut.schedule.ui.component.button.BottomTextButtonGroup
+import com.hfut.schedule.ui.component.button.CardBottomButton
+import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
-
 import com.hfut.schedule.ui.component.status.EmptyIcon
 import com.hfut.schedule.ui.nav.destination.NotificationsDestination
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
-
 import com.hfut.schedule.ui.style.special.topBarBlur
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -62,6 +60,8 @@ suspend fun calculatedReadNotificationCount() : Int {
     return (allIds - readIds).size
 }
 
+private fun handleReadNotifications(string : String) = string.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SuspiciousIndentation")
 @Composable
@@ -69,8 +69,8 @@ fun NotificationItems() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val list = remember { getNotifications() }
-    val readNotifications by DataStoreManager.readNotifications.collectAsState(initial = "")
-    val readIds = readNotifications.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+    val readNotifications by DataStoreManager.readNotifications.collectAsState(initial = EMPTY_STRING)
+    val readIds = remember(readNotifications) { handleReadNotifications(readNotifications) }
     // 清理保存的id：readIds中存在list中没有的id，就删除
     LaunchedEffect(readIds, list) {
         if (list.isEmpty() || readIds.isEmpty()) return@LaunchedEffect
@@ -100,15 +100,26 @@ fun NotificationItems() {
             CustomCard(color = cardNormalColor()) {
                 Column {
                     TransplantListItem(
-                        headlineContent = { Text(text = item.title) },
-                        supportingContent = { Text(text = item.info) },
+                        headlineContent = {
+                            Text(
+                                text = item.title,
+                                textDecoration = if(read) TextDecoration.LineThrough else TextDecoration.None,
+                                maxLines = if(read) 1 else  Int.MAX_VALUE,
+                                overflow = if(read) TextOverflow.Ellipsis else TextOverflow.Clip,
+                            )
+                        },
+                        supportingContent = if(!read) {
+                            { Text(text = item.info) }
+                        } else {
+                            null
+                        },
                         leadingContent = {
                             Icon(
                                 painter = painterResource(id =
                                     if(read) R.drawable.check
                                     else R.drawable.notifications_unread
                                 ),
-                                contentDescription = ""
+                                contentDescription = EMPTY_STRING
                             )
                         },
                         modifier = Modifier.clickable {

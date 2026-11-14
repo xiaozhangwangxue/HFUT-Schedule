@@ -1,27 +1,26 @@
 package com.hfut.schedule.ui.screen.home.search.function.my.supabase
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.sys.JumpTransitionEffectWallpaper
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.nav.destination.SupabaseDestination
 import com.hfut.schedule.ui.nav.destination.SupabaseLoginDestination
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.navigation.util.LocalNavController
 
 @Composable
 fun Supabase() {
-//    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
-//    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = "")
+//    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
+//    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = EMPTY_STRING)
 //    val scope = rememberCoroutineScope()
 //    var loading by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -33,17 +32,19 @@ fun Supabase() {
 //            if(loading) {
 //                LoadingIcon()
 //            } else {
-                Icon(painterResource(id = R.drawable.cloud), contentDescription = "")
+                Icon(painterResource(id = R.drawable.cloud), contentDescription = EMPTY_STRING)
 //            }
         },
         trailingContent = {
-            FilledTonalIconButton(
-                modifier = Modifier.size(30.dp),
+            QuickButtonForSearchScreen(
                 onClick = {
                     navController.push(SupabaseLoginDestination, effect = JumpTransitionEffectWallpaper())
                 }
             ) {
-                Icon(painterResource(R.drawable.refresh),null)
+                Icon(
+                    painterResource(R.drawable.refresh),
+                    null
+                )
             }
         },
         modifier = Modifier.clickable {

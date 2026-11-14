@@ -26,9 +26,11 @@ import com.hfut.schedule.ui.component.icon.LoadingIcon
 import com.hfut.schedule.ui.nav.destination.GradeDestination
 import com.hfut.schedule.ui.nav.destination.XiaoWuXingDestination
 import com.hfut.schedule.ui.nav.destination.XiaoWuXingLoginDestination
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
 import com.hfut.schedule.ui.screen.xwx.checkXwxLogin
 import com.hfut.schedule.ui.util.state.GlobalEventHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.navigation.controller.NavigationController
@@ -64,22 +66,20 @@ fun Grade(
                 }) {
                     Icon(
                         painterResource(id = R.drawable.article),
-                        contentDescription = "",
+                        contentDescription = EMPTY_STRING,
                     )
                 }
             }
         },
         trailingContent = {
-            FilledTonalIconButton(
-                modifier = Modifier
-                    .size(30.dp),
+            QuickButtonForSearchScreen(
                 onClick = {
                     scope.launch {
                         loading = true
                         goToXwx(vm,navController)
                         loading = false
                     }
-                },
+                }
             ) {
                 Icon(
                     painterResource(R.drawable.attach_file), contentDescription = "Localized description",

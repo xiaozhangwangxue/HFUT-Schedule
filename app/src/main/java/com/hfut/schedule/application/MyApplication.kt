@@ -12,6 +12,7 @@ import com.hfut.schedule.BuildConfig
 import com.xah.common.logic.model.Campus
 import com.hfut.schedule.logic.model.enumeration.AppStatus
 import com.hfut.schedule.logic.model.Location
+import com.hfut.schedule.logic.util.dev.CrashHandler
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.CourseLiveUpdateScheduler
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
@@ -34,6 +35,8 @@ class MyApplication : Application() {
         super.onCreate()
         // 暴露全局Context
         context = applicationContext
+        // 初始化崩溃处理
+        CrashHandler.init()
         // 初始化日志工具
         LogUtil.init(APP_NAME)
         // 控制SharedNav库的日志
@@ -102,6 +105,7 @@ class MyApplication : Application() {
         const val CALENDAR_SQUARE_HEIGHT = 70f
         const val CALENDAR_SQUARE_TEXT_PADDING = 1.35f
         const val CALENDAR_SQUARE_ALPHA = 0.6f
+        const val CALENDAR_SQUARE_BLUR = 0.2f
         const val SWIPE = 5f
         // HAZE模糊半径
         const val BLUR_RADIUS = 20
@@ -128,12 +132,14 @@ class MyApplication : Application() {
                 "Today1337" to 110648923,
                 "zxbmmmmmmmmm" to 96322503,
                 "Junpgle" to 81464408,
+                "G-E-E-D" to 131581653
             )
         }
         // App名称
         const val APP_NAME = "聚在工大"
         // 邮箱后缀
         const val EMAIL = "@mail.hfut.edu.cn"
+        const val DEVELOPER_EMAIL = "zsh0908@outlook.com"
         // Activity栈
         private val activities = Collections.synchronizedList(mutableListOf<Activity>())
         // 安全地退出App

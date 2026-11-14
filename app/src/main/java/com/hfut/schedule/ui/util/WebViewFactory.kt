@@ -61,10 +61,11 @@ import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.get
 import com.hfut.schedule.R
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.WebURLType
 import com.hfut.schedule.logic.database.entity.WebUrlDTO
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.prefs
 import com.hfut.schedule.logic.util.sys.ClipBoardHelper
 import com.hfut.schedule.logic.util.sys.ShareTo
 import com.hfut.schedule.logic.util.sys.Starter
@@ -78,13 +79,16 @@ import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
 import com.hfut.schedule.ui.style.color.textFiledTransplant
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.model.choice.ColorMode
+import com.hfut.schedule.ui.nav.destination.AiDestination
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.materialkolor.ktx.darken
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.launch
 import org.intellij.lang.annotations.Language
+import org.json.JSONObject
 
 fun getWebView(
     context : Context,
@@ -122,6 +126,7 @@ fun WebViewTools(
     currentTitle : String,
     url : String,
     onSearch : () -> Unit,
+    loading : Boolean,
     onExtend :  @Composable (() -> Unit) = {},
 ) {
     val scope = rememberCoroutineScope()
@@ -233,41 +238,53 @@ fun WebViewTools(
     if(webView?.canGoBack() == true) {
         IconButton(onClick = {
             webView.goBack()
-        }) { Icon(painterResource(R.drawable.arrow_back), contentDescription = "") }
+        }) { Icon(painterResource(R.drawable.arrow_back), contentDescription = EMPTY_STRING) }
     } else {
-        IconButton(onClick = onExit) { Icon(painterResource(R.drawable.close), contentDescription = "") }
+        IconButton(onClick = onExit) { Icon(painterResource(R.drawable.close), contentDescription = EMPTY_STRING) }
     }
 
     IconButton(onClick = { webView?.reload() }) { Icon(
-        painterResource(id = R.drawable.rotate_right), contentDescription = "") }
+        painterResource(id = R.drawable.rotate_right), contentDescription = EMPTY_STRING) }
 
     IconButton(onClick = {
         on = { Starter.startWebUrlOuter(context,it) }
         showBottomSheet = true
     }) { Icon(
-        painterResource(id = R.drawable.net), contentDescription = "") }
+        painterResource(id = R.drawable.net), contentDescription = EMPTY_STRING) }
 
     IconButton(onClick = {
         onSearch()
-    }) { Icon(painterResource(id = R.drawable.search), contentDescription = "") }
+    }) { Icon(painterResource(id = R.drawable.search), contentDescription = EMPTY_STRING) }
+
+    IconButton(
+        onClick = {
+            webView?.getTextByEvalJs {
+                Starter.startDeepLink(
+                    context,
+                    AiDestination("简明扼要地归纳 关键信息：\n$it").toDeepLink()
+                )
+            }
+        },
+        enabled = !loading
+    ) { Icon(painterResource(id = R.drawable.wand_stars), contentDescription = EMPTY_STRING) }
 
     IconButton(onClick = {
         on = {}
         operationFavorite = true
         showBottomSheet = true
     }) { Icon(
-        painterResource(id = if(isExist) R.drawable.star_filled else  R.drawable.star ), contentDescription = "") }
+        painterResource(id = if(isExist) R.drawable.star_filled else  R.drawable.star ), contentDescription = EMPTY_STRING) }
     IconButton(onClick = {
         on = { ClipBoardHelper.copy(it) }
         showBottomSheet = true
     }) { Icon(
-        painterResource(id = R.drawable.copy_all), contentDescription = "") }
+        painterResource(id = R.drawable.copy_all), contentDescription = EMPTY_STRING) }
 
     IconButton(onClick = {
         on = { ShareTo.shareString(currentUrl) }
         showBottomSheet = true
     }) { Icon(
-        painterResource(id = R.drawable.ios_share), contentDescription = "") }
+        painterResource(id = R.drawable.ios_share), contentDescription = EMPTY_STRING) }
 
     onExtend()
 }
@@ -286,9 +303,9 @@ fun WebViewTopBar(
     currentTitle : String,
     currentUrl : String
 ) {
-    var input by remember { mutableStateOf("") }
-    var activeMatchOrdinal by remember { mutableStateOf(0) }
-    var numberOfMatches by remember { mutableStateOf(0) }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
+    var activeMatchOrdinal by remember { mutableIntStateOf(0) }
+    var numberOfMatches by remember { mutableIntStateOf(0) }
 
     val searchEmpty by remember(numberOfMatches) { derivedStateOf { numberOfMatches == 0 } }
 
@@ -355,7 +372,7 @@ fun WebViewTopBar(
                             label = {
                                 Text(
                                     "页面内搜索" +
-                                            if(input.isEmpty()) ""
+                                            if(input.isEmpty()) EMPTY_STRING
                                             else if(searchEmpty) " 无结果"
                                             else " ${activeMatchOrdinal}/$numberOfMatches",
                                     color = topBarTitleColor
@@ -465,7 +482,7 @@ fun WebViewContent(
             ) {
                 tools()
                 IconButton(onClick = { onVisible(false) }) { Icon(
-                    painterResource(id = R.drawable.visibility_off), contentDescription = "") }
+                    painterResource(id = R.drawable.visibility_off), contentDescription = EMPTY_STRING) }
             }
         }
         if(loading) {
@@ -667,6 +684,13 @@ fun WebView.setInitial(
         loadUrl(url,additionalHttpHeaders)
         return
     }
+    var finalUrl = url
+    var finalCookies = cookies
+    if(url.startsWith(Constant.HUI_XIN_URL + "plat/pay?synjones-auth=") && finalCookies == "FORM_SHORTCUT") {
+        finalUrl += prefs.getString("auth","")
+        // 消费后清空
+        finalCookies = null
+    }
     // 启用 Cookie
     cookieManager.setAcceptCookie(true)//true
     cookieManager.setAcceptThirdPartyCookies(this, true)//true
@@ -677,15 +701,15 @@ fun WebView.setInitial(
     cookieManager.flush()
 
     // **异步设置 Cookie，并确保生效后再加载 URL**
-    cookies?.let {
-        cookieManager.setCookie(url, it) {
+    finalCookies?.let {
+        cookieManager.setCookie(finalUrl, it) {
             cookieManager.flush()
             post {
-                loadUrl(url)
+                loadUrl(finalUrl)
             }
         }
     } ?: run {
-        loadUrl(url) // 没有 Cookie 直接加载
+        loadUrl(finalUrl) // 没有 Cookie 直接加载
     }
 }
 
@@ -746,10 +770,31 @@ fun WebView.evaluateJs(
     onColorChange : (Color?) -> Unit
 ) {
     if (isDark && webViewDark) {
+        // 办事大厅不适配
+        if(url?.contains(Constant.OFFICE_HALL_URL) == true) {
+            return
+        }
         val js = FORCE_DARK_JS.trimIndent()
         this.evaluateJavascript(js, null)
     }
     selectColor(this, onColor = onColorChange)
     // 注入 JS，为网页内容添加 padding（单位 px）
     this.evaluateJavascript(getPaddingPxJs(null,bottom), null)
+}
+
+
+private fun WebView.getTextByEvalJs(
+    onResult : (String) -> Unit
+) {
+    // 注入JS，提取网页文本供AI
+    this.evaluateJavascript(
+        """
+    (function() {
+        return document.body.innerText;
+    })();
+    """.trimIndent()
+    ) { result ->
+        val text = JSONObject("""{"value":$result}""").getString("value")
+        onResult(text)
+    }
 }

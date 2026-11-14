@@ -74,6 +74,7 @@ import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.align.ColumnVertical
 import com.xah.common.ui.style.color.topBarTransplantColor
@@ -196,8 +197,8 @@ private fun LoginUI(
     val navController = LocalNavController.current
 
     var hidden by rememberSaveable { mutableStateOf(true) }
-    var password by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf(prefs.getString("Username", "") ?: "") }
+    var password by remember { mutableStateOf(EMPTY_STRING) }
+    var username by remember { mutableStateOf(prefs.getString("Username", EMPTY_STRING) ?: EMPTY_STRING) }
     val savedInfo by produceState<XiaoWuXingLoginInfoDto?>(initialValue = null) {
         value = getXwxLogin()
     }
@@ -322,8 +323,8 @@ private fun LoginUI(
                     leadingIcon = { Icon( painterResource(R.drawable.person), contentDescription = "Localized description") },
                     trailingIcon = {
                         IconButton(onClick = {
-                            username = ""
-                            password = ""
+                            username = EMPTY_STRING
+                            password = EMPTY_STRING
                         }) { Icon(painter = painterResource(R.drawable.close), contentDescription = "description") }
                     }
                 )

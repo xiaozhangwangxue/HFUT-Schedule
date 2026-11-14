@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -50,6 +51,7 @@ import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.network.api.model.response.html.FloorMap
 import com.hfut.schedule.network.api.model.response.html.RoomRect
+import com.hfut.schedule.network.api.model.response.json.qweather.QWeatherNowResponse
 import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.StartAppIcon
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
@@ -159,7 +161,7 @@ fun StarterScreen() {
             Text("校园卡缴费")
         },
         modifier = Modifier.clickable {
-            Starter.startAppUrl(context, Constant.ALIPAY_CARD_URL, Starter.AppPackages.ALIPAY.appName)
+            Starter.startAppUrl(context, Constant.ALIPAY_CARD_URL)
         },
         leadingContent = {
             StartAppIcon(Starter.AppPackages.ALIPAY)
@@ -171,7 +173,7 @@ fun StarterScreen() {
             Text("海乐生活热水机")
         },
         modifier = Modifier.clickable {
-            Starter.startAppUrl(context, Constant.ALIPAY_HOT_WATER_URL, Starter.AppPackages.ALIPAY.appName)
+            Starter.startAppUrl(context, Constant.ALIPAY_HOT_WATER_URL)
         },
         leadingContent = {
             StartAppIcon(Starter.AppPackages.ALIPAY)
@@ -199,6 +201,54 @@ fun StarterScreen() {
         },
         leadingContent = {
             StartAppIcon(Starter.AppPackages.TODAY_CAMPUS)
+        }
+    )
+    CardListItem(
+        headlineContent = { Text(Starter.AppPackages.RAIN_CLASSROOM.appName) },
+        supportingContent = {
+            Text("考勤、作业等课堂功能")
+        },
+        modifier = Modifier.clickable {
+            Starter.startAppLaunch(Starter.AppPackages.RAIN_CLASSROOM,context)
+        },
+        leadingContent = {
+            StartAppIcon(Starter.AppPackages.RAIN_CLASSROOM)
+        }
+    )
+    CardListItem(
+        headlineContent = { Text(Starter.AppPackages.CHAO_XING.appName) },
+        supportingContent = {
+            Text("考勤、作业等课堂功能")
+        },
+        modifier = Modifier.clickable {
+            Starter.startAppLaunch(Starter.AppPackages.CHAO_XING,context)
+        },
+        leadingContent = {
+            StartAppIcon(Starter.AppPackages.CHAO_XING)
+        }
+    )
+    CardListItem(
+        headlineContent = { Text(Starter.AppPackages.MOOC.appName) },
+        supportingContent = {
+            Text("网课、作业等课堂功能")
+        },
+        modifier = Modifier.clickable {
+            Starter.startAppLaunch(Starter.AppPackages.MOOC,context)
+        },
+        leadingContent = {
+            StartAppIcon(Starter.AppPackages.MOOC)
+        }
+    )
+    CardListItem(
+        headlineContent = { Text(Starter.AppPackages.WECHAT.appName) },
+        supportingContent = {
+            Text("合工大教务公众号、第二课堂小程序等")
+        },
+        modifier = Modifier.clickable {
+            Starter.startAppLaunch(Starter.AppPackages.WECHAT,context)
+        },
+        leadingContent = {
+            StartAppIcon(Starter.AppPackages.WECHAT)
         }
     )
 }
@@ -323,6 +373,8 @@ fun CampusMapScreen(
 }
 @Composable
 fun WeatherScreen(vm: NetWorkViewModel) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var campus by remember { mutableStateOf(getCampusRegion()) }
     val uiState by vm.qWeatherResult.state.collectAsState()
     val uiStateWarn by vm.weatherWarningData.state.collectAsState()
@@ -346,16 +398,32 @@ fun WeatherScreen(vm: NetWorkViewModel) {
         CampusRegion.HEFEI -> "合肥"
         CampusRegion.XUANCHENG -> "宣城"
     } + "市"
-    var data by remember { mutableStateOf( QWeatherNow("XX","XX","晴","X风","X","XX","XXX")) }
+    var bean by remember {
+        mutableStateOf(
+            QWeatherNowResponse(
+                QWeatherNow(
+                    "XX",
+                    "XX",
+                    "晴",
+                    "X风",
+                    "X",
+                    "XX",
+                    "XXX"
+                ),
+                null
+            )
+        )
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is NetworkUiState.Success) {
             val response = (uiState as NetworkUiState.Success).data
-            data = response
+            bean = response
         }
     }
     Column {
         DividerTextExpandedWith(text = "实时天气",false) {
+            val data = bean.now
             LoadingLargeCard(
                 prepare = false,
                 title = data.text + " " + data.temp + "℃",
@@ -363,6 +431,23 @@ fun WeatherScreen(vm: NetWorkViewModel) {
                 leftTop = {
                     QWeatherIcon(data.icon.toIntOrNull())
                 },
+                rightTop = {
+                    FilledTonalIconButton(
+                        onClick = {
+                            bean.fxLink?.let {
+                                scope.launch {
+                                    Starter.startWebUrlInner(context,it,"和风天气")
+                                }
+                            }
+                        },
+                        enabled = bean.fxLink != null
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.more_vert),
+                            null
+                        )
+                    }
+                }
             ) {
                 Row {
                     TransplantListItem(
@@ -425,7 +510,8 @@ fun WeatherScreen(vm: NetWorkViewModel) {
             }
         }
         if (uiStateWarn is NetworkUiState.Success) {
-            val list = (uiStateWarn as NetworkUiState.Success).data
+            val bean = (uiStateWarn as NetworkUiState.Success).data
+            val list = bean.warning
             if(list.isNotEmpty()) {
                 DividerTextExpandedWith("气象预警") {
                     Column {
@@ -435,7 +521,14 @@ fun WeatherScreen(vm: NetWorkViewModel) {
                                     headlineContent = { Text(title) },
                                     supportingContent = { Text(text) },
                                     overlineContent = { Text(typeName) },
-                                    leadingContent = { Icon(painterResource(R.drawable.warning),null)}
+                                    leadingContent = { Icon(painterResource(R.drawable.warning),null)},
+                                    modifier = Modifier.clickable {
+                                        bean.fxLink?.let {
+                                            scope.launch {
+                                                Starter.startWebUrlInner(context,it,"和风天气")
+                                            }
+                                        }
+                                    }
                                 )
                             }
                         }
@@ -443,8 +536,6 @@ fun WeatherScreen(vm: NetWorkViewModel) {
                 }
             }
         }
-        Spacer(Modifier.height(APP_HORIZONTAL_DP/2))
-        BottomTip("天气数据源为和风天气")
         DividerTextExpandedWith(text = TermReportDestination.title.asString()) {
             val navController = LocalNavController.current
             CardListItem(

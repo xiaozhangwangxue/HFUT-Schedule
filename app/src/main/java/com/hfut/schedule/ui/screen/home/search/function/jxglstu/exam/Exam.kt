@@ -36,9 +36,11 @@ import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.addToCalendars
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
 import com.hfut.schedule.network.api.model.response.html.JxglstuExam
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.status.EmptyIcon
@@ -58,8 +60,10 @@ import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.SharedContainer
 import com.xah.container.component.base.sharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
@@ -99,7 +103,7 @@ fun ExamScreen() {
                     SharedContainer(
                         key = AllExamDestination.key,
                         shape = CircleShape,
-                        modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP),
+                        modifier = Modifier.padding(end = BUTTON_END_PADDING),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         NoPadding {
@@ -196,9 +200,9 @@ private fun ExamItems(item : Int,status : Boolean) {
 fun JxglstuExamUI(item : JxglstuExam, status : Boolean) {
     //时隔一年修补这里的Bug
     val newDate = DateTimeManager.Date_yyyy_MM_dd
-    val newToday = newDate.replace("-","").toLongOrNull() ?: 0
+    val newToday = newDate.remove("-").toLongOrNull() ?: 0
     val examDate = item.dateTime
-    val examDateNum = examDate.substringBefore(" ").replace("-","").toLongOrNull() ?: 0
+    val examDateNum = examDate.substringBefore(" ").remove("-").toLongOrNull() ?: 0
 
     val activity = LocalActivity.current
 
@@ -220,7 +224,7 @@ fun JxglstuExamUI(item : JxglstuExam, status : Boolean) {
         val isFinished = examDateNum < newToday
 //            DateTimeUtils.compareTimeDate(endTime = endTime) == DateTimeUtils.TimeState.ENDED
         CardListItem(
-            headlineContent = {  Text(text = course + (item.type?.let { "-$it" } ?: ""), textDecoration = if(isFinished) TextDecoration.LineThrough else TextDecoration.None) },
+            headlineContent = {  Text(text = course + (item.type?.let { "-$it" } ?: EMPTY_STRING), textDecoration = if(isFinished) TextDecoration.LineThrough else TextDecoration.None) },
             overlineContent = { Text(text = examDate,textDecoration = if(isFinished) TextDecoration.LineThrough else TextDecoration.None) },
             supportingContent = { place?.let { Text(text = it,textDecoration = if(isFinished) TextDecoration.LineThrough else TextDecoration.None) } },
             leadingContent = {
@@ -302,7 +306,7 @@ fun JxglstuExamUI(item : JxglstuExam, status : Boolean) {
                                             }
                                         }
                                     }) {
-                                    Icon(painter = painterResource(id = R.drawable.event_upcoming), contentDescription = "")
+                                    Icon(painter = painterResource(id = R.drawable.event_upcoming), contentDescription = EMPTY_STRING)
                                 }
                                 Text("${DateTimeManager.daysBetween(time.substringBefore(" "))}天")
                             }

@@ -27,14 +27,17 @@ import com.hfut.schedule.R
 import com.hfut.schedule.network.api.model.response.json.jxglstu.lesson.JxglstuLesson
 import com.hfut.schedule.logic.util.parse.SemesterParser
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.nav.destination.CourseSearchTableDestination
 import com.hfut.schedule.ui.screen.home.calendar.jxglstu.JxglstuCourseTableSearch
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
 import dev.chrisbanes.haze.hazeSource
@@ -105,9 +108,9 @@ fun CourseSearchCalendarScreen(
                                 onClick = { showAll = !showAll },
                                 isCircle = true,
                                 backdrop = backdrop,
-                                modifier = Modifier.padding(end = APP_HORIZONTAL_DP)
+                                modifier = Modifier.padding(end = BUTTON_END_PADDING)
                             ) {
-                                Icon(painter = painterResource(id = if (showAll) R.drawable.collapse_content else R.drawable.expand_content), contentDescription = "")
+                                Icon(painter = painterResource(id = if (showAll) R.drawable.collapse_content else R.drawable.expand_content), contentDescription = EMPTY_STRING)
                             }
                         }
                     }

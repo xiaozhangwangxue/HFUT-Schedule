@@ -108,6 +108,7 @@ import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.common.logic.util.LogUtil
 import com.xah.common.logic.util.safeDiv
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
@@ -260,7 +261,7 @@ fun GradeItemJxglstuUI(
     val navController = LocalNavController.current
     val context = LocalContext.current
     var showBottomSheet_Survey by remember { mutableStateOf(false) }
-    var surveyCode by remember { mutableStateOf("") }
+    var surveyCode by remember { mutableStateOf(EMPTY_STRING) }
     if (showBottomSheet_Survey) {
         HazeBottomSheet (
             onDismissRequest = { showBottomSheet_Survey = false },
@@ -288,21 +289,27 @@ fun GradeItemJxglstuUI(
     val expandedMap = remember {
         mutableStateMapOf<String, Boolean>()
     }
+    val enableIgnoreUnjoinedGradeItems by DataStoreManager.enableIgnoreUnjoinedGradeItems.collectAsState(false)
 
     val ui = @Composable { gradeList : List<JxglstuTermGrade> ->
-        val safelyList = remember(gradeList) {
+        val safelyList = remember(gradeList,enableIgnoreUnjoinedGradeItems) {
             gradeList
                 .associate { it.term to it.list }
                 .map { (term, items) ->
                     JxglstuTermGrade(
                         term,
-                        items.filter { getGpa(it.gpa) != null }
+                        items.filter {
+                            if(enableIgnoreUnjoinedGradeItems) {
+                                return@filter true
+                            }
+                            getGpa(it.gpa) != null
+                        }
                     )
                 }
         }
 
 
-        val allTotalCredits by produceState(initialValue = 0f) {
+        val allTotalCredits by produceState(initialValue = 0f,key1 = safelyList) {
             value = safelyList.fold(0f) { init,acc -> init + getTotalCredits(acc) }
         }
 
@@ -563,6 +570,7 @@ fun GradeItemUIUniApp(
             }
         }
     )
+    val enableIgnoreUnjoinedGradeItems by DataStoreManager.enableIgnoreUnjoinedGradeItems.collectAsState(false)
 
     Box(modifier = Modifier
         .fillMaxHeight()
@@ -577,13 +585,16 @@ fun GradeItemUIUniApp(
         )
         CommonNetworkScreen(uiState, onReload = refreshNetwork) {
             val gradeList = (uiState as NetworkUiState.Success).data.toList().sortedByDescending { it.first }
-            val safelyList = remember(gradeList) {
+            val safelyList = remember(gradeList,enableIgnoreUnjoinedGradeItems) {
                 gradeList
                     .associate { it.first to it.second }
                     .map { (term, items) ->
                         JxglstuTermGrade(
                             term,
                             items.filter {
+                                if(enableIgnoreUnjoinedGradeItems) {
+                                    return@filter true
+                                }
                                 !(it.passed && it.gp == 0.0) && it.finalGrade != null
                             }.map {
                                 JxglstuGrade(
@@ -600,7 +611,7 @@ fun GradeItemUIUniApp(
             }
 
 
-            val allTotalCredits by produceState(initialValue = 0f) {
+            val allTotalCredits by produceState(initialValue = 0f,key1 = safelyList) {
                 value = safelyList.fold(0f) { init,acc -> init + getTotalCredits(acc) }
             }
 
@@ -862,8 +873,8 @@ fun GradeDetailScreen(
         ) { innerPadding ->
             Column(
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState())
                     .hazeSource(hazeState)
+                    .verticalScroll(rememberScrollState())
                     .fillMaxSize()
             ) {
                 InnerPaddingHeight(innerPadding,true)
@@ -945,7 +956,7 @@ fun GradeDetailScreen(
                                 leadingContent = {
                                     Icon(
                                         painter = painterResource(id = R.drawable.filter_vintage),
-                                        contentDescription = ""
+                                        contentDescription = EMPTY_STRING
                                     )
                                 },
                                 headlineContent = {
@@ -960,7 +971,7 @@ fun GradeDetailScreen(
                             )
                             TransplantListItem(
                                 leadingContent = {
-                                    Icon(painter = painterResource(R.drawable.percent), contentDescription = "")
+                                    Icon(painter = painterResource(R.drawable.percent), contentDescription = EMPTY_STRING)
                                 },
                                 headlineContent = {
                                     ScrollText(
@@ -988,7 +999,7 @@ fun GradeDetailScreen(
                             leadingContent = {
                                 Icon(
                                     painter = painterResource(id = R.drawable.tag),
-                                    contentDescription = ""
+                                    contentDescription = EMPTY_STRING
                                 )
                             },
                             headlineContent = {

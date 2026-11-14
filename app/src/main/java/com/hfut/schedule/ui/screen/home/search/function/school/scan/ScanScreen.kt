@@ -45,11 +45,13 @@ import com.hfut.schedule.logic.util.sys.ClipBoardHelper
 import com.hfut.schedule.logic.util.sys.PermissionSet
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.showToast
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BottomTextButtonGroup
 import com.hfut.schedule.ui.component.button.CardBottomButton
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.LiquidTopBarNavigateIcon
 import com.hfut.schedule.ui.component.camera.ScanQrCode
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.ShareTwoContainer2D
@@ -59,10 +61,12 @@ import com.hfut.schedule.ui.screen.home.search.function.my.webLab.isValidWebUrl
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.isEmptyOrBlank
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
@@ -73,10 +77,10 @@ fun ScanScreen(
     val hapticFeedback = LocalHapticFeedback.current
     val navController = LocalNavController.current
     val color = MaterialTheme.colorScheme.surface
-    var resultText by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf(EMPTY_STRING) }
     val context = LocalContext.current
     val activity = LocalActivity.current
-    val showTip = resultText.isEmpty() || resultText.isBlank()
+    val showTip = resultText.isEmptyOrBlank()
     val scope = rememberCoroutineScope()
     val pickMultipleMedia = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -134,25 +138,24 @@ fun ScanScreen(
                                     scope.launch {
                                         vm.wxLoginCasResponse.clear()
                                         vm.wxLoginCas(auth!!, resultText)
-                                        val loginResult =
-                                            (vm.wxLoginCasResponse.state.value as? NetworkUiState.Success)?.data
+                                        val loginResult = (vm.wxLoginCasResponse.state.value as? NetworkUiState.Success)?.data
                                         if (loginResult == null) {
                                             showToast("登陆失败")
-                                            resultText = ""
-                                        } else if (loginResult.second == true) {
+                                            resultText = EMPTY_STRING
+                                        } else if (loginResult.second) {
                                             // 解析uuid
                                             val uuid =
                                                 resultText.toUri().getQueryParameter("uuid")
                                             if (uuid == null) {
                                                 showToast("解析UUID失败")
-                                                resultText = ""
+                                                resultText = EMPTY_STRING
                                             } else {
                                                 vm.wxConfirmLogin(auth!!, uuid)
                                                 val confirmResult =
                                                     (vm.wxConfirmLoginResponse.state.value as? NetworkUiState.Success)?.data
                                                 if (confirmResult == null) {
                                                     showToast("登陆中途失败")
-                                                    resultText = ""
+                                                    resultText = EMPTY_STRING
                                                 } else {
                                                     showToast(confirmResult)
                                                     if(navController.canPop()) {
@@ -164,7 +167,7 @@ fun ScanScreen(
                                             }
                                         } else {
                                             showToast(loginResult.first)
-                                            resultText = ""
+                                            resultText = EMPTY_STRING
                                         }
                                     }
                                 }
@@ -204,7 +207,7 @@ fun ScanScreen(
                                 trailingContent = if (isCas) {
                                     {
                                         FilledTonalIconButton(
-                                            onClick = { resultText = "" },
+                                            onClick = { resultText = EMPTY_STRING },
                                             colors = IconButtonDefaults. filledTonalIconButtonColors(
                                                 containerColor = MaterialTheme.colorScheme.errorContainer
                                             )
@@ -228,7 +231,7 @@ fun ScanScreen(
                                             }
                                         },
                                         CardBottomButton("隐藏") {
-                                            resultText = ""
+                                            resultText = EMPTY_STRING
                                         },
                                     )
                                 )
@@ -240,7 +243,7 @@ fun ScanScreen(
                                             Starter.startWlanSettings(context)
                                         },
                                         CardBottomButton("隐藏") {
-                                            resultText = ""
+                                            resultText = EMPTY_STRING
                                         },
                                     )
                                 )
@@ -251,7 +254,7 @@ fun ScanScreen(
                                             ClipBoardHelper.copy(resultText)
                                         },
                                         CardBottomButton("隐藏") {
-                                            resultText = ""
+                                            resultText = EMPTY_STRING
                                         },
                                     )
                                 )
@@ -269,7 +272,7 @@ fun ScanScreen(
                     LiquidTopBarNavigateIcon(backdrop)
                 },
                 actions = {
-                    Row(modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)) {
+                    Row(modifier = Modifier.padding(end = BUTTON_END_PADDING)) {
                         LiquidButton(
                             onClick = {
                                 pickMultipleMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))

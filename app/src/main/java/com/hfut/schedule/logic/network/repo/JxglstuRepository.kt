@@ -53,6 +53,7 @@ import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.MyApply
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.PlaceAndTime
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.xah.common.logic.state.UiStateHolder
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,7 +66,6 @@ import org.jsoup.Jsoup
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Locale
 import java.util.Locale.getDefault
 
 object JxglstuRepository : JxglstuRepositoryInf {
@@ -113,7 +113,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
     }
     @JvmStatic
     private fun parsePostTransfer(result : String) : String = try {
-        var msg = ""
+        var msg = EMPTY_STRING
         if(result.contains("result")) {
             val data =  GsonInstance.fromJson(result, JxglstuTransferMajorPostResponse::class.java)
             if(data.result) {
@@ -232,7 +232,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                t.printStackTrace()
+                LogUtil.error(t)
             }
         })
     }
@@ -507,7 +507,9 @@ object JxglstuRepository : JxglstuRepositoryInf {
         val call = jxglstu.jxglstulogin(cookie)
         call.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {}
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) { t.printStackTrace() }
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                LogUtil.error(t)
+            }
         })
     }
 
@@ -550,7 +552,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
         holder = holder,
         request = { jxglstu.getStudentId(cookie) },
         transformRedirect = { headers -> parseStudentId(headers) },
-        transformSuccess = { _, _ -> -1 }
+        transformSuccess = { _, html -> parseStudentIdForMulti(html) }
     )
     @JvmStatic
     private fun parseStudentId(headers: Headers): Int {
@@ -566,6 +568,22 @@ object JxglstuRepository : JxglstuRepositoryInf {
         } catch (e : Exception) {
             throw e
         }
+    }
+    // 多学籍默认使用主修，兼容未标注培养类型的旧版页面。
+    @JvmStatic
+    private fun parseStudentIdForMulti(html: String): Int {
+        val document = Jsoup.parse(html)
+        val mainCard = document.select(".student-panel-block").firstOrNull { card ->
+            card.select("dt").any { label ->
+                label.text() == "培养类型" && label.nextElementSibling()?.text() == "主修"
+            }
+        }
+        val button = mainCard?.selectFirst("button[value]")
+            ?: document.selectFirst(".student-panel-block button[value]")
+        return button?.attr("value")?.trim()
+            ?.takeIf { it.matches(Regex("""\d+""")) }
+            ?.toIntOrNull()
+            ?: error("未找到StudentId，请联系开发者")
     }
 
     override suspend fun getLessonIds(cookie : String,studentId : Int,bizTypeId : Int,holder : UiStateHolder<JxglstuTermLessonResponse>) =
@@ -639,7 +657,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    t.printStackTrace()
+                    LogUtil.error(t)
                 }
             })
             val call2 = jxglstu.getMyProfile(cookie)
@@ -656,7 +674,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    t.printStackTrace()
+                    LogUtil.error(t)
                 }
             })
         }
@@ -837,7 +855,7 @@ object JxglstuRepository : JxglstuRepositoryInf {
                     }
 
                     override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                        t.printStackTrace()
+                        LogUtil.error(t)
                     }
                 })
             }
@@ -994,4 +1012,21 @@ object JxglstuRepository : JxglstuRepositoryInf {
         result
     } catch (e:Exception) { throw e }
 
+    override suspend fun getAccount(cookie: String, holder : UiStateHolder<String>) = launchRequestState(
+        holder = holder,
+        transformSuccess = { _, html -> parseAccount(html) },
+        request = { jxglstu.getAccount(cookie) }
+    )
+
+    private suspend fun parseAccount(html : String) : String = try {
+        val doc = Jsoup.parse(html)
+        val pwd = doc.selectFirst("form#save-form input#plainPassword")?.attr("value")
+
+        if(pwd == null) {
+            throw Exception("无法解析教务系统默认密码，尝试使用默认密码")
+        } else {
+            DataStoreManager.saveJxglstuPassword(pwd)
+            pwd
+        }
+    } catch (e:Exception) { throw e }
 }

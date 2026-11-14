@@ -151,8 +151,8 @@ fun About(vm : NetWorkViewModel) {
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .verticalScroll(scrollState)
                 .hazeSource(hazeState)
+                .verticalScroll(scrollState)
         ) {
             InnerPaddingHeight(innerPadding,true)
             DividerTextExpandedWith("开发人员") {
@@ -234,7 +234,7 @@ fun About(vm : NetWorkViewModel) {
                     Row(
                         modifier = Modifier.clickable {
                             scope.launch {
-                                Starter.startWebUrlInner(context,"${Constant.GITHUB_REPO_URL}/blob/main/docs/Chart.md","统计报表",null,R.drawable.github)
+                                Starter.startWebUrlInner(context,"${Constant.GITHUB_REPO_URL}/blob/dev/docs/Chart.md","统计报表",null,R.drawable.github)
                             }
                         }
                     ) {

@@ -19,7 +19,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,52 +47,45 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.hfut.schedule.R
 import com.hfut.schedule.logic.model.enumeration.NewsBarItems
-import com.hfut.schedule.ui.model.NavigationBarItemData
-import com.hfut.schedule.network.api.util.CryptoUtil
-import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.Starter
-import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.network.api.model.response.html.news.AcademicNewsType
+import com.hfut.schedule.network.api.model.response.html.news.AcademicNewsXuanChengType
+import com.hfut.schedule.network.api.util.CryptoUtil
 import com.hfut.schedule.network.api.util.WebVpnConvertor
-import com.hfut.schedule.ui.component.button.HazeBottomBar
+import com.hfut.schedule.ui.component.button.HazeBottomBarV2
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
-
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.network.CommonNetworkScreen
-
 import com.hfut.schedule.ui.component.screen.pager.CustomTabRow
 import com.hfut.schedule.ui.component.screen.pager.PaddingForPageControllerButton
 import com.hfut.schedule.ui.component.screen.pager.PageController
-import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
+import com.hfut.schedule.ui.model.NavigationBarItemData
 import com.hfut.schedule.ui.nav.destination.NewsApiDestination
 import com.hfut.schedule.ui.nav.destination.NewsDestination
-
-import com.hfut.schedule.ui.screen.home.search.function.school.webvpn.autoWebVpnForNews
 import com.hfut.schedule.ui.screen.home.search.function.school.webvpn.getWebVpnCookie
 import com.hfut.schedule.ui.screen.news.academic.AcademicTotalScreen
 import com.hfut.schedule.ui.screen.news.academic.AcademicXCScreen
 import com.hfut.schedule.ui.screen.news.department.SchoolsUI
 import com.hfut.schedule.ui.screen.news.xuancheng.XuanquNewsUI
 import com.hfut.schedule.ui.style.color.textFiledAllTransplant
-import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
-
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.ui.util.nav2Composable
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
-import com.hfut.schedule.viewmodel.network.NetWorkViewModel
-
 import com.hfut.schedule.ui.util.navigation.currentRouteWithoutArgs
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
+import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.state.NetworkUiState
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
+import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 
@@ -127,45 +119,15 @@ fun NewsScreen(
     val scope = rememberCoroutineScope()
     val newsTitles = listOf("总","宣城校区")
     val newsPagerState = rememberPagerState(pageCount = { newsTitles.size })
-    var showBottomSheet by remember { mutableStateOf(false) }
-    if (showBottomSheet) {
-        val cookies by produceState<String?>(initialValue = null) {
-            value = getWebVpnCookie()
-        }
-        HazeBottomSheet (
-            onDismissRequest = { showBottomSheet = false },
-            showBottomSheet = showBottomSheet
-        ) {
-            Column(){
-                HazeBottomSheetTopBar("选择校区", isPaddingStatusBar = false)
-
-                CardListItem(
-                    headlineContent = {
-                        Text("宣城校区教务处")
-                    },
-                    modifier = Modifier.clickable {
-                        scope.launch {
-                            autoWebVpnForNews(context,Constant.XC_ACADEMIC_URL, title = "宣城校区教务处", cookie = cookies)
-                        }
-                    }
-                )
-                CardListItem(
-                    headlineContent = {
-                        Text("总教务处")
-                    },
-                    modifier = Modifier.clickable {
-                        scope.launch {
-                            Starter.startWebUrlInner(context,Constant.ACADEMIC_URL, title = "总教务处", cookie = cookies)
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        }
-    }
     val backdrop = rememberLayerBackdrop()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var input by remember { mutableStateOf(NewsApiDestination.Keyword.HOLIDAY_SCHEDULE.keyword) }
+
+    val academicTotalTitles = remember { AcademicNewsType.entries.map { it.title } }
+    val academicTotalPageState = rememberPagerState(pageCount = { academicTotalTitles.size })
+
+    val academicXuanChengTitles = remember { AcademicNewsXuanChengType.entries.map { it.title } }
+    val academicXuanChengPageState = rememberPagerState(pageCount = { academicXuanChengTitles.size })
 
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -179,19 +141,6 @@ fun NewsScreen(
                     title = { Text(NewsDestination.title.asString()) },
                     navigationIcon = {
                         TopBarNavigationIcon()
-                    },
-                    actions = {
-                        Row(modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)) {
-                            if (targetPage == NewsBarItems.Academic) {
-                                FilledTonalIconButton(
-                                    onClick = {
-                                        showBottomSheet = true
-                                    }
-                                ) {
-                                    Icon(painterResource(R.drawable.net), null)
-                                }
-                            }
-                        }
                     }
                 )
                 if (targetPage != NewsBarItems.School) {
@@ -199,6 +148,22 @@ fun NewsScreen(
                         pagerState = newsPagerState,
                         titles = newsTitles
                     )
+                }
+                if (targetPage == NewsBarItems.Academic) {
+                    when(newsPagerState.currentPage) {
+                        TAB_TOTAL -> {
+                            CustomTabRow(
+                                pagerState = academicTotalPageState,
+                                titles = academicTotalTitles
+                            )
+                        }
+                        TAB_XC -> {
+                            CustomTabRow(
+                                pagerState = academicXuanChengPageState,
+                                titles = academicXuanChengTitles
+                            )
+                        }
+                    }
                 }
                 if(targetPage == NewsBarItems.News && newsPagerState.currentPage == TAB_TOTAL) {
                     Row(
@@ -236,7 +201,7 @@ fun NewsScreen(
             }
         },
         bottomBar = {
-            HazeBottomBar(hazeState,items,navController)
+            HazeBottomBarV2(hazeState,backdrop,items,navController)
         }
     ) { innerPadding ->
         NavHost(navController = navController,
@@ -255,7 +220,7 @@ fun NewsScreen(
                 NewsScreenMini(innerPadding,vm,newsPagerState,input)
             }
             nav2Composable(NewsBarItems.Academic.name) {
-                AcademicScreen(innerPadding,vm,newsPagerState)
+                AcademicScreen(innerPadding,vm,newsPagerState,academicTotalPageState,academicXuanChengPageState)
             }
             nav2Composable(NewsBarItems.School.name) {
                 SchoolsUI(vm,innerPadding)
@@ -276,11 +241,11 @@ fun NewsScreenMini(innerPadding : PaddingValues,vm : NetWorkViewModel,pagerState
     }
 }
 @Composable
-fun AcademicScreen(innerPadding : PaddingValues,vm : NetWorkViewModel,pagerState : PagerState) {
+fun AcademicScreen(innerPadding : PaddingValues,vm : NetWorkViewModel,pagerState : PagerState,academicTotalPageState : PagerState,academicXuanChengPageState : PagerState) {
     HorizontalPager(state = pagerState) { page ->
         when(page) {
-            TAB_TOTAL -> AcademicTotalScreen(innerPadding,vm)
-            TAB_XC -> AcademicXCScreen(innerPadding,vm)
+            TAB_TOTAL -> AcademicTotalScreen(innerPadding,vm,academicTotalPageState)
+            TAB_XC -> AcademicXCScreen(innerPadding,vm,academicXuanChengPageState)
         }
     }
 }
@@ -344,6 +309,7 @@ fun TotalNewsScreen(
                 }
             }
         }
+        val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
 
         val listState = rememberLazyListState()
         Box(modifier = Modifier.fillMaxSize()) {
@@ -357,7 +323,7 @@ fun TotalNewsScreen(
                         leadingContent = { Text(text = (item + 1).toString()) },
                         modifier = Modifier.clickable {
                             scope.launch {
-                                autoWebVpnForNews(context,listItem.link,listItem.title, icon = R.drawable.stream, cookie = cookies)
+                                Starter.startWebUrlInner(context,listItem.link,listItem.title, icon = R.drawable.stream, cookie = cookies)
                             }
                         },
                     )
@@ -370,12 +336,16 @@ fun TotalNewsScreen(
                 page,
                 onNextPage = { page = it },
                 onPreviousPage = { page = it },
-                paddingSafely = false,
+                paddingSafely = if(!paddingBottom) enableNewBottomBar else true,
                 modifier = Modifier
                     .let {
-                        innerPadding?.let { padding ->
-                            it.padding(bottom = padding.calculateBottomPadding())
-                        } ?: it
+                        if(!paddingBottom) {
+                            innerPadding?.let { padding ->
+                                it.padding(bottom = padding.calculateBottomPadding()- if(enableNewBottomBar) 0.dp else navigationBarHeightPadding)
+                            } ?: it
+                        } else {
+                            it
+                        }
                     }
                 ,
                 paddingBottom = paddingBottom

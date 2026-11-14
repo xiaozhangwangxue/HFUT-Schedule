@@ -20,13 +20,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
@@ -49,16 +46,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastMap
 import com.hfut.schedule.R
-import com.xah.common.logic.model.CampusRegion
 import com.hfut.schedule.logic.model.enumeration.WorkSearchType
 import com.hfut.schedule.logic.util.helper.getCampusRegion
-import com.xah.common.logic.state.NetworkUiState
-import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
-import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
@@ -71,23 +65,23 @@ import com.hfut.schedule.ui.component.screen.pager.CustomTabRow
 import com.hfut.schedule.ui.component.screen.pager.PaddingForPageControllerButton
 import com.hfut.schedule.ui.component.screen.pager.PageController
 import com.hfut.schedule.ui.nav.destination.WorkDestination
-
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
 import com.hfut.schedule.ui.style.color.textFiledAllTransplant
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.sharednav.common.helper.NoneRoundShape
-
-import com.xah.navigation.util.LocalNavController
+import com.xah.common.logic.model.CampusRegion
+import com.xah.common.logic.state.NetworkUiState
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
-import com.xah.container.component.base.SharedContainer
+import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -103,15 +97,15 @@ fun Work() {
             Icon(painterResource(WorkDestination.icon),null)
         },
         trailingContent = {
-            FilledTonalIconButton(
+            QuickButtonForSearchScreen(
                 onClick = {
                     scope.launch {
                         Starter.startWebUrlInner(context, Constant.WORK_SYSTEM_URL + "Login.aspx","就业系统（学生端）")
                     }
-                },
-                modifier = Modifier.size(30.dp)
+                }
             ) {
-                Icon(painterResource(R.drawable.person),null, modifier = Modifier.size(20.dp))
+                // 特殊加大size
+                Icon(painterResource(R.drawable.person),null, modifier = Modifier.size(20.dp+2.dp))
             }
         },
         modifier = Modifier.clickable {
@@ -132,10 +126,10 @@ fun WorkScreen(
     val pagerState = rememberPagerState(pageCount = { types.size })
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val scope = rememberCoroutineScope()
-    var input by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
     val refreshNetwork: suspend (Int,Int) -> Unit =  { currentPage,page ->
         vm.workSearchResult.clear()
-        vm.searchWorks(keyword = input.let { if(it.isBlank() || it.isEmpty()) null else it }, page = currentPage, type = page,campus)
+        vm.searchWorks(keyword = input.let { if(it.isEmptyOrBlank()) null else it }, page = currentPage, type = page,campus)
     }
     val context = LocalContext.current
     Scaffold (
@@ -152,7 +146,7 @@ fun WorkScreen(
                         TopBarNavigationIcon()
                     },
                     actions = {
-                        Row(modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)) {
+                        Row(modifier = Modifier.padding(end = BUTTON_END_PADDING)) {
                             val url = when(campus) {
                                 CampusRegion.HEFEI -> Constant.WORK_URL
                                 CampusRegion.XUANCHENG -> Constant.WORK_XC_URL
@@ -175,6 +169,18 @@ fun WorkScreen(
                             }
                             Spacer(Modifier.width(BUTTON_PADDING))
                             LiquidButton(
+                                isCircle = true,
+                                backdrop = backDrop,
+                                onClick = {
+                                    scope.launch {
+                                        Starter.startWebUrlInner(context, Constant.WORK_SYSTEM_URL + "Login.aspx","就业系统（学生端）")
+                                    }
+                                },
+                            ) {
+                                Icon(painterResource(R.drawable.person),null)
+                            }
+                            Spacer(Modifier.width(BUTTON_PADDING))
+                            LiquidButton(
                                 backdrop = backDrop,
                                 onClick = {
                                     campus = when(campus) {
@@ -184,17 +190,6 @@ fun WorkScreen(
                                 },
                             ) {
                                 Text(campus.description)
-                            }
-                            Spacer(Modifier.width(BUTTON_PADDING))
-                            LiquidButton(
-                                backdrop = backDrop,
-                                onClick = {
-                                    scope.launch {
-                                        Starter.startWebUrlInner(context, Constant.WORK_SYSTEM_URL + "Login.aspx","就业系统（学生端）")
-                                    }
-                                },
-                            ) {
-                                Text("就业系统")
                             }
                         }
                     }
@@ -212,12 +207,12 @@ fun WorkScreen(
                     trailingIcon = { IconButton(
                         onClick = { scope.launch { refreshNetwork(1,pagerState.currentPage) } }
                     ) { Icon(painterResource(R.drawable.search),null) } },
-//                    leadingIcon = if(!(input.isEmpty() || input.isBlank())) {
+//                    leadingIcon = if(!(input.isEmpty() || input.isEmptyOrBlank())) {
 //                        {
 //                            IconButton(
 //                                onClick = {
 //                                    scope.launch {
-//                                        input = ""
+//                                        input = EMPTY_STRING
 //                                        refreshNetwork()
 //                                    }
 //                                }
@@ -259,7 +254,7 @@ private fun WorkSearchUI(
         var currentPage by remember { mutableIntStateOf(1) }
 //        val refreshNetwork: suspend () -> Unit =  {
 //            vm.workSearchResult.clear()
-//            vm.searchWorks(keyword = input.let { if(it.isBlank() || it.isEmpty()) null else it }, page = currentPage, type = page,campus)
+//            vm.searchWorks(keyword = input.let { if(it.isEmptyOrBlank() || it.isEmpty()) null else it }, page = currentPage, type = page,campus)
 //        }
 
         LaunchedEffect(currentPage,campus) {
@@ -292,7 +287,7 @@ private fun WorkSearchUI(
                             CardListItem(
                                     color = cardNormalColor(),
                                     headlineContent = { Text(title) },
-                                    overlineContent = { Text(time + if(page == 0) " " + enumType.description else "") },
+                                    overlineContent = { Text(time + if(page == 0) " " + enumType.description else EMPTY_STRING) },
                                 
                                     modifier = Modifier.clickable {
                                         scope.launch {

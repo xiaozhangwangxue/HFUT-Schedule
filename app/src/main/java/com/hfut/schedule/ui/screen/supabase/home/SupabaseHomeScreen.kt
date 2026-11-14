@@ -50,7 +50,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.zIndex
 import com.hfut.schedule.R
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.CustomEventDTO
 import com.hfut.schedule.logic.database.entity.CustomEventType
 import com.hfut.schedule.logic.database.util.CustomEventMapper
@@ -76,6 +76,9 @@ import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.EventCa
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.getEventCampus
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.isEmptyOrBlank
+import com.xah.common.logic.util.remove
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
@@ -137,7 +140,7 @@ fun SupabaseHomeScreen(vm: NetWorkViewModel, sortType: SortType, sortReversed : 
 
 @Composable
 private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReversed : Boolean,innerPadding : PaddingValues,refresh : Boolean,onRefresh : (Boolean) -> Unit) {
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
     val scope = rememberCoroutineScope()
 //    var sortType by remember { mutableStateOf(SortType.ID) }
     val filter by DataStoreManager.enableSupabaseFilterEvent.collectAsState(initial = false)
@@ -152,13 +155,13 @@ private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReve
             (
                     it.applicableClasses.toString().contains(getPersonInfo().className!!) ||
                             it.applicableClasses.contains("EMPTY") ||
-                            it.applicableClasses.toString().replace("[","").replace("]","").let { t ->
-                                t.isBlank() || t.isEmpty() || t == "EMPTY"
+                            it.applicableClasses.toString().remove("[").remove("]").let { t ->
+                                t.isEmptyOrBlank() || t == "EMPTY"
                             }
             ) && // 自己校区
                     (it.campus == getEventCampus() || it.campus == EventCampus.DEFAULT)
         } else list
-        var input by remember { mutableStateOf("") }
+        var input by remember { mutableStateOf(EMPTY_STRING) }
 
         val sortList =  when(sortType) {
             SortType.TIME_LINE -> filterList.sortedBy { when(it.type) {
@@ -186,7 +189,7 @@ private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReve
             items(sortList.size, key = { sortList[it].id }) { index ->
                 val item = sortList[index]
 
-                val count by produceState(initialValue = "") {
+                val count by produceState(initialValue = EMPTY_STRING) {
                     vm.eventForkCountCache[item.id]?.let { value = it }
                 }
                 LaunchedEffect(item.id) {
@@ -216,7 +219,8 @@ private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReve
                                                         type = item.type,
                                                         description = item.description,
                                                         remark = item.timeDescription,
-                                                        supabaseId = item.id
+                                                        supabaseId = item.id,
+                                                        groupId = item.groupId
                                                     )
                                                     // 检查是否已经存在 若存在相同id则直接覆盖掉
                                                     DataBaseManager.customEventDao.delBySupabaseId(item.id)
@@ -247,7 +251,8 @@ private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReve
                                                         type = item.type,
                                                         description = item.description,
                                                         remark = item.timeDescription,
-                                                        supabaseId = item.id
+                                                        supabaseId = item.id,
+                                                        groupId = item.groupId
                                                     )
                                                     // 检查是否已经存在 若存在相同id则直接覆盖掉
                                                     // 添加到数据库
@@ -338,8 +343,8 @@ private fun SupabaseScheduleUI(vm: NetWorkViewModel,sortType : SortType,sortReve
                                         EventCampus.HEFEI -> "合肥校区"
                                     }) },
                                     supportingContent = {
-                                        var t = item.applicableClasses.toString().replace("[","").replace("]","")
-                                        if(t.isBlank() || t.isEmpty() || t == "EMPTY") t = "所有人可见"
+                                        var t = item.applicableClasses.toString().remove("[").remove("]")
+                                        if(t.isEmptyOrBlank() || t == "EMPTY") t = "所有人可见"
                                         Text(t)
                                     },
                                     leadingContent = {

@@ -21,6 +21,7 @@ import com.hfut.schedule.ui.screen.home.focus.funiction.initCardNetwork
 import com.hfut.schedule.ui.util.state.GlobalEventHolder
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 
 import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,7 @@ suspend fun getJxglstuCookie() : String? {
         val webVpnCookie = DataStoreManager.webVpnCookies.first{ it.isNotEmpty() }
         cookie = Constant.WEBVPN_COOKIE_HEADER + webVpnCookie
     } else {
-        cookie =  prefs.getString("redirect", "")
+        cookie =  prefs.getString("redirect", EMPTY_STRING)
     }
     return cookie
 }
@@ -53,7 +54,7 @@ suspend fun getStorageJxglstuCookie(isWebVpn : Boolean) : String? {
         val webVpnCookie = DataStoreManager.webVpnCookies.first{ it.isNotEmpty() }
         cookie = Constant.WEBVPN_COOKIE_HEADER + webVpnCookie
     } else {
-        cookie =  prefs.getString("redirect", "")
+        cookie =  prefs.getString("redirect", EMPTY_STRING)
     }
     return cookie
 }
@@ -61,8 +62,8 @@ suspend fun getStorageJxglstuCookie(isWebVpn : Boolean) : String? {
 // 应用冷启动主界面时的网络请求
 suspend fun initNetworkRefresh(vm : NetWorkViewModel, ifSaved : Boolean) = withContext(Dispatchers.IO) {
     try {
-        val communityToken = prefs.getString("TOKEN","")
-        val jxglstuCookie = prefs.getString("redirect", "")
+        val communityToken = prefs.getString("TOKEN",EMPTY_STRING)
+        val jxglstuCookie = prefs.getString("redirect", EMPTY_STRING)
         val showToday = DataStoreManager.enableShowFocusToday.first()
         val showEle = DataStoreManager.enableShowFocusElectric.first()
         val showWeb = DataStoreManager.enableShowFocusSchoolNet.first()
@@ -135,6 +136,7 @@ suspend fun initNetworkRefresh(vm : NetWorkViewModel, ifSaved : Boolean) = withC
             launch {
                 launch { vm.getBizTypeId(finalCookie,studentId) }
                 launch { vm.getExamJXGLSTU(finalCookie) }
+                launch { vm.getAccount(finalCookie) }
             }
             // 登陆成功反馈，可以切屏了
             GlobalUiStateHolder.focusRefreshProgressFlow.tryEmit(null)
@@ -260,7 +262,7 @@ suspend fun updateCourses(vm: NetWorkViewModel) = withContext(Dispatchers.IO) {
     val webVpnCookie = DataStoreManager.webVpnCookies.first { it.isNotEmpty() }
 
     val cookie = if (!GlobalUiStateHolder.webVpn) {
-            prefs.getString("redirect", "") ?: return@withContext
+            prefs.getString("redirect", EMPTY_STRING) ?: return@withContext
         } else {
             if(webVpnCookie.isEmpty()) {
                 return@withContext
@@ -279,7 +281,7 @@ suspend fun updateCourses(vm: NetWorkViewModel) = withContext(Dispatchers.IO) {
     val bizTypeId = (vm.bizTypeIdResponse.state.value as? NetworkUiState.Success)?.data ?: return@withContext
     vm.getLessonIds(cookie, studentId = studentId, bizTypeId = bizTypeId)
     val lessonResponse = (vm.lessonIds.state.value as? NetworkUiState.Success)?.data ?: return@withContext
-    vm.getLessonTimes(cookie,lessonResponse.timeTableLayoutId)
+//    vm.getLessonTimes(cookie,lessonResponse.timeTableLayoutId)
     vm.getDatum(cookie,lessonResponse.lessonIds)
     val datum = (vm.datumData.state.value as? NetworkUiState.Success)?.data ?: return@withContext
     LargeStringDataManager.save(LargeStringDataManager.getJxglstuDatumKey(SemesterParser.getSemester()),datum)

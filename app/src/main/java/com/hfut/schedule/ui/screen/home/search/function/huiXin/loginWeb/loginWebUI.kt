@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,10 +58,12 @@ import com.hfut.schedule.logic.util.network.state.reEmptyLiveDta
 import com.hfut.schedule.logic.util.parse.roundOffString
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.prefs
+import com.hfut.schedule.logic.util.sys.JumpTransitionEffectWallpaper
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.ui.component.button.BottomButton
+import com.hfut.schedule.ui.component.button.LARGE_BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LargeButton
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CustomCard
@@ -77,6 +80,7 @@ import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPerson
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 
 import com.xah.common.ui.component.status.LoadingUI
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
@@ -113,15 +117,15 @@ fun LoginWebScaUI(vm : NetWorkViewModel) {
 @OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
 @Composable
 fun LoginWebUI(vm : NetWorkViewModel) {
-    val auth = remember { prefs.getString("auth", "") }
+    val auth = remember { prefs.getString("auth", EMPTY_STRING) }
     val zjgdUrl = remember { Constant.HUI_XIN_URL + "charge-app/?name=pays&appsourse=ydfwpt&id=${HuiXinFeeType.NET_XUANCHENG.code}&name=pays&paymentUrl=${Constant.HUI_XIN_URL}plat&token=" + auth }
     val maxFlow by DataStoreManager.maxFlow.collectAsState(initial = MyApplication.DEFAULT_MAX_FREE_FLOW)
 
     // 支付用的变量
     var showDialog2 by remember { mutableStateOf(false) }
-    var payNumber by remember { mutableStateOf("") }
+    var payNumber by remember { mutableStateOf(EMPTY_STRING) }
     var showBottomSheet by remember { mutableStateOf(false) }
-    var json by remember { mutableStateOf("") }
+    var json by remember { mutableStateOf(EMPTY_STRING) }
     // 校园网用的变量
     val memoryWeb = prefs.getString("memoryWeb","0")
     var flow by remember { mutableStateOf(GlobalUiStateHolder.webValue.value?.flow ?: memoryWeb) }
@@ -264,7 +268,7 @@ fun LoginWebUI(vm : NetWorkViewModel) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.Center) {
                     FilledTonalIconButton(
-                        onClick = {payNumber = payNumber.replaceFirst(".$".toRegex(), "")},
+                        onClick = {payNumber = payNumber.replaceFirst(".$".toRegex(), EMPTY_STRING)},
                         modifier = Modifier.padding(horizontal = 5.dp)
                     ) {
                         Icon(painter = painterResource(R.drawable.backspace), contentDescription = "description")
@@ -273,7 +277,7 @@ fun LoginWebUI(vm : NetWorkViewModel) {
                     FilledTonalIconButton(
                         onClick = {
                             showDialog2 = false
-                            if(payNumber != "" && payNumber != "0" && payNumber != "00" && payNumber != "000")
+                            if(payNumber != EMPTY_STRING && payNumber != "0" && payNumber != "00" && payNumber != "000")
                                 showBottomSheet = true
                         },
                         modifier = Modifier.padding(horizontal = 5.dp)
@@ -304,8 +308,8 @@ fun LoginWebUI(vm : NetWorkViewModel) {
             Column(
             ) {
                 HazeBottomSheetTopBar("支付订单确认", isPaddingStatusBar = false)
-//                val info by remember { mutableStateOf("") }
-                var int by remember { mutableStateOf(payNumber.toFloat()) }
+//                val info by remember { mutableStateOf(EMPTY_STRING) }
+                var int by remember { mutableFloatStateOf(payNumber.toFloat()) }
                 if(int > 0) {
                     PayFor(vm,int,"学号 ${getPersonInfo().getStudentIdFinally()}",json, HuiXinFeeType.NET_XUANCHENG)
                 } else showToast("输入数值")
@@ -313,6 +317,7 @@ fun LoginWebUI(vm : NetWorkViewModel) {
 
         }
     }
+    val campus = remember { getCampusRegion() }
     val loginUi = @Composable { campus : CampusRegion ->
         DividerTextExpandedWith("登录") {
             if(loadingLogin) {
@@ -334,7 +339,7 @@ fun LoginWebUI(vm : NetWorkViewModel) {
                         text = textLogin,
                         icon = R.drawable.login
                     )
-                    Spacer(Modifier.width(APP_HORIZONTAL_DP/2))
+                    Spacer(Modifier.width(LARGE_BUTTON_PADDING))
                     LargeButton(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -375,111 +380,144 @@ fun LoginWebUI(vm : NetWorkViewModel) {
 //////////////////////////////布局区///////////////////////////////////
     Column() {
         HazeBottomSheetTopBar("校园网", isPaddingStatusBar = false) {
-            if(pagerState.currentPage == XUANCHENG_TAB) {
-                Row {
-                    FilledTonalIconButton(
-                        onClick = {
-                            refreshFlow()
-                        },
-                    ) {
-                        Icon(painterResource(R.drawable.rotate_right),null)
+            when(campus) {
+                CampusRegion.HEFEI -> {
+                    Row {
+                        FilledTonalIconButton(
+                            onClick = {
+                                refreshFlow()
+                            },
+                        ) {
+                            Icon(painterResource(R.drawable.rotate_right),null)
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                scope.launch {
+                                    showToast("暂未开发，出现一些问题需要调研")
+//                                    Starter.startWebUrlInner(context,url = "http://172.31.243.228/")
+                                }
+                            },
+                        ) {
+                            Text("管理平台")
+                        }
                     }
-                    FilledTonalButton(
-                        onClick = {
-                            scope.launch {
-                                Starter.startWebUrlInner(context,url = zjgdUrl, title = "慧新易校")
-                            }
-                        },
-                    ) {
-                        Text("官方充值")
+                }
+                CampusRegion.XUANCHENG -> {
+                    Row {
+                        FilledTonalIconButton(
+                            onClick = {
+                                refreshFlow()
+                            },
+                        ) {
+                            Icon(painterResource(R.drawable.rotate_right),null)
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                scope.launch {
+                                    Starter.startWebUrlInner(context,url = zjgdUrl, title = "慧新易校")
+                                }
+                            },
+                        ) {
+                            Text("官方充值")
+                        }
                     }
                 }
             }
         }
-        CustomTabRow(pagerState,titles)
-        HorizontalPager(state = pagerState,modifier = Modifier.animateContentSize()) { page ->
-            when(page) {
-                HEFEI_TAB -> {
-                    Column {
-                        loginUi(CampusRegion.HEFEI)
-                        SchoolNetHistoryUsage(vm)
-                        DividerTextExpandedWith(text = "使用说明") {
-                            CustomCard(color = cardNormalColor()) {
-                                TransplantListItem(
-                                    headlineContent = { Text(text = "认证初始密码位于 查询中心-个人信息-密码信息") },
-                                    supportingContent = {
-                                        Text("如您修改了一卡通默认密码，请前往 选项-网络-一卡通密码 填入新的密码才可登陆校园网")
-                                    },
-                                    leadingContent = {
-                                        Icon(painter = painterResource(id = R.drawable.key), contentDescription = "")
-                                    }
-                                )
-                            }
+        when(campus) {
+            CampusRegion.HEFEI -> {
+                Column {
+                    loginUi(CampusRegion.HEFEI)
+                    SchoolNetHistoryUsage(vm)
+                    DividerTextExpandedWith(text = "使用说明") {
+                        CustomCard(color = cardNormalColor()) {
+                            TransplantListItem(
+                                headlineContent = { Text(text = "密码查看与修改") },
+                                supportingContent = {
+                                    Text("如您修改了校园网默认密码，请录入新的密码")
+                                },
+                                leadingContent = {
+                                    Icon(painter = painterResource(id = R.drawable.lock), contentDescription = EMPTY_STRING)
+                                },
+                                modifier = Modifier.clickable {
+                                    windowToDestination(
+                                        floatingController,
+                                        navController,
+                                        SettingsHuiXinPasswordDestination,
+                                        effect = JumpTransitionEffectWallpaper()
+                                    )
+                                }
+                            )
                         }
                     }
                 }
-                XUANCHENG_TAB -> {
-                    Column {
-                        LoadingLargeCard(
-                            title = "已用 $str GiB",
-                            loading = loading,
-                            prepare = false,
-                            rightTop =  {
-                                Text(text = "$flow MiB")
-                            }
-                        ) {
-                            Row {
-                                TransplantListItem(
-                                    headlineContent = { Text(text = "余额 ￥${fee}") },
-                                    overlineContent = { Text("1GiB / ￥1") },
-                                    leadingContent = { Icon(painter = painterResource(id = R.drawable.paid), contentDescription = "")},
-                                    modifier = Modifier.weight(.5f)
-                                )
-                                TransplantListItem(
-                                    overlineContent = { Text(text = "月免费 ${maxFlow}GiB") },
-                                    headlineContent = { Text(text = "已用 $percent%", fontWeight = FontWeight.Bold)},
-                                    leadingContent = { Icon(painterResource(R.drawable.percent), contentDescription = "Localized description",) },
-                                    modifier = Modifier.weight(.5f)
-                                )
-                            }
-                            BottomButton(
-                                onClick = {
-                                    showDialog2 = true
-                                },
-                                enable = loading == false,
-                                text = "快速充值"
+            }
+            CampusRegion.XUANCHENG -> {
+                Column {
+                    LoadingLargeCard(
+                        title = "已用 $str GiB",
+                        loading = loading,
+                        prepare = false,
+                        rightTop =  {
+                            Text(text = "$flow MiB")
+                        }
+                    ) {
+                        Row {
+                            TransplantListItem(
+                                headlineContent = { Text(text = "余额 ￥${fee}") },
+                                overlineContent = { Text("1GiB / ￥1") },
+                                leadingContent = { Icon(painter = painterResource(id = R.drawable.paid), contentDescription = EMPTY_STRING)},
+                                modifier = Modifier.weight(.5f)
+                            )
+                            TransplantListItem(
+                                overlineContent = { Text(text = "月免费 ${maxFlow}GiB") },
+                                headlineContent = { Text(text = "已用 $percent%", fontWeight = FontWeight.Bold)},
+                                leadingContent = { Icon(painterResource(R.drawable.percent), contentDescription = "Localized description",) },
+                                modifier = Modifier.weight(.5f)
                             )
                         }
+                        BottomButton(
+                            onClick = {
+                                showDialog2 = true
+                            },
+                            enable = loading == false,
+                            text = "快速充值"
+                        )
+                    }
 
-                        loginUi(CampusRegion.XUANCHENG)
+                    loginUi(CampusRegion.XUANCHENG)
 
-                        SchoolNetHistoryUsage(vm)
+                    SchoolNetHistoryUsage(vm)
 
-                        DividerTextExpandedWith(text = "使用说明") {
-                            CustomCard(color = cardNormalColor()) {
-                                TransplantListItem(
-                                    headlineContent = { Text(text = "认证初始密码") },
-                                    supportingContent = {
-                                        Text("为一卡通默认密码，如您修改了密码，请点击填入新的密码")
-                                    },
-                                    modifier = Modifier.clickable {
-                                        windowToDestination(floatingController,navController,SettingsHuiXinPasswordDestination)
-                                    },
-                                    leadingContent = {
-                                        Icon(painter = painterResource(id = R.drawable.password), contentDescription = "")
-                                    }
-                                )
-                                PaddingHorizontalDivider()
-                                TransplantListItem(
-                                    headlineContent = { Text(text = "免费时期") },
-                                    supportingContent = {
-                                        Text(text = "假期不限额度与时间，其余时间限额月${maxFlow}GiB，且熄灯期间禁用")
-                                    },
-                                    leadingContent = {
-                                        Icon(painter = painterResource(id = R.drawable.paid), contentDescription = "")
-                                    }
-                                )
-                            }
+                    DividerTextExpandedWith(text = "使用说明") {
+                        CustomCard(color = cardNormalColor()) {
+                            TransplantListItem(
+                                headlineContent = { Text(text = "密码查看与修改") },
+                                supportingContent = {
+                                    Text("如您修改了一卡通默认密码，请录入新的密码")
+                                },
+                                leadingContent = {
+                                    Icon(painter = painterResource(id = R.drawable.lock), contentDescription = EMPTY_STRING)
+                                },
+                                modifier = Modifier.clickable {
+                                    windowToDestination(
+                                        floatingController,
+                                        navController,
+                                        SettingsHuiXinPasswordDestination,
+                                        effect = JumpTransitionEffectWallpaper()
+                                    )
+                                }
+                            )
+                            PaddingHorizontalDivider()
+                            TransplantListItem(
+                                headlineContent = { Text(text = "免费时期") },
+                                supportingContent = {
+                                    Text(text = "假期不限额度与时间，其余时间限额月${maxFlow}GiB，且熄灯期间禁用")
+                                },
+                                leadingContent = {
+                                    Icon(painter = painterResource(id = R.drawable.paid), contentDescription = EMPTY_STRING)
+                                }
+                            )
                         }
                     }
                 }

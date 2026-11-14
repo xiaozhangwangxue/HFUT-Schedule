@@ -6,6 +6,7 @@ import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.LanguageHelper
 import com.hfut.schedule.ui.screen.home.calendar.common.numToChinese
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import kotlinx.coroutines.flow.first
 
 object SemesterParser {
@@ -154,7 +155,7 @@ object SemesterParser {
             val semster = ((parseYear - 2018)*4 + 3)*10 + 4
             return when(period) {
                 1 -> semster
-                2 -> semster + 20
+                2 -> semster + GAP
                 else -> null
             }
         } catch (e : Exception) {
@@ -206,8 +207,8 @@ object SemesterParser {
         }
     }
 
-    fun plusSemester(semester: Int) : Int = semester+20
-    fun subSemester(semester: Int) : Int = semester-20
+    fun plusSemester(semester: Int) : Int = semester+GAP
+    fun subSemester(semester: Int) : Int = semester-GAP
 
     @JvmStatic
     fun matchesSemester(termName: String, semester: Int): Boolean {
@@ -215,8 +216,8 @@ object SemesterParser {
         val parsed = parseSemester(termName)
         if (parsed != null) return parsed == semester
         val target = parseSemester(semester) ?: return false
-        fun norm(s: String) = s.replace(" ", "")
-            .replace("学年", "")
+        fun norm(s: String) = s.remove(" ")
+            .remove("学年")
             .replace("一", "1").replace("二", "2")
             .replace("-", "~").replace("～", "~").replace("/", "~")
             .replace("上", "1").replace("下", "2")
@@ -243,4 +244,6 @@ object SemesterParser {
             else -> null
         }
     }
+
+    const val GAP = 20
 }

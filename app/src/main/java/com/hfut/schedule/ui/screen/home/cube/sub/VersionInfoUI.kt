@@ -25,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.room.Update
 import com.hfut.schedule.R
 import com.hfut.schedule.application.MyApplication
 import com.hfut.schedule.logic.util.other.AppVersion
@@ -40,24 +41,23 @@ import com.hfut.schedule.ui.component.container.cardNormalColor
 import com.hfut.schedule.ui.component.divider.PaddingHorizontalDivider
 import com.hfut.schedule.ui.component.network.UrlImage
 import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
-import com.hfut.schedule.ui.nav.destination.AllProgramsDestination
-import com.hfut.schedule.ui.nav.destination.AverageGradeDestination
-import com.hfut.schedule.ui.nav.destination.DepartmentsDestination
-import com.hfut.schedule.ui.nav.destination.FeeDestination
-import com.hfut.schedule.ui.nav.destination.ProgramConfirmationDestination
-import com.hfut.schedule.ui.nav.destination.ProgramDestination
-import com.hfut.schedule.ui.nav.destination.SettingsAboutDeveloperDestination
+import com.hfut.schedule.ui.nav.destination.AddEventDestination
+import com.hfut.schedule.ui.nav.destination.BusDestination
+import com.hfut.schedule.ui.nav.destination.ClassroomDestination
+import com.hfut.schedule.ui.nav.destination.LifeDestination
 import com.hfut.schedule.ui.nav.destination.SettingsAppearanceDestination
 import com.hfut.schedule.ui.nav.destination.SettingsConfigurationDestination
+import com.hfut.schedule.ui.nav.destination.SettingsDeveloperDestination
 import com.hfut.schedule.ui.nav.destination.SettingsFocusCardDestination
-import com.hfut.schedule.ui.nav.destination.SettingsLabDestination
-import com.hfut.schedule.ui.nav.destination.TermReportDestination
+import com.hfut.schedule.ui.nav.destination.SettingsHuiXinPasswordDestination
+import com.hfut.schedule.ui.nav.destination.SettingsJxglstuPasswordDestination
+import com.hfut.schedule.ui.nav.destination.SettingsShortcutEditDestination
 import com.hfut.schedule.ui.nav.destination.TrackDestination
+import com.hfut.schedule.ui.nav.destination.VersionInfoDestination
 import com.hfut.schedule.ui.nav.destination.base.NavDestination
 import com.hfut.schedule.ui.nav.window.base.FloatingWindow
-import com.hfut.schedule.ui.screen.grade.analysis.AverageGradeScreen
-import com.hfut.schedule.ui.screen.report.TermReportScreen
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.container.component.base.SharedContainer
@@ -66,65 +66,51 @@ import com.xah.navigation.util.LocalNavController
 import com.xah.navigation.util.LocalNavControllerSafely
 import kotlinx.coroutines.launch
 
-private const val RELEASE_DATE = "2026-08-29"
+private const val RELEASE_DATE = "2026-11-11"
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
 fun VersionInfo() {
     VersionInfoCard()
     // 适配iOS后版本号跳为5.0
-    // 查询中心，大模型去掉，提案版去掉？
     DividerTextExpandedWith(text = "新特性") {
+        UpdateItems("新增 大模型","位于 查询中心-大模型，目前仅支持DeepSeek")
+        UpdateItems("新增 网页支持使用DeepSeek进行提炼与询问")
+//        UpdateItems("重构 新增日程","支持一次性添加若干时间段、选择日期时支持多选若干天",to = To.Screen(AddEventDestination(origin = VersionInfoDestination.key)))
+//        UpdateItems("新增 语言切换功能","位于 选项-偏好与配置-语言，支持中英文",to = To.Screen(SettingsConfigurationDestination))
+//        UpdateItems("新增 允许在课程表显示日历账户的日程")
+//        UpdateItems("新增 支持接入大模型帮助创建日程","位于右上角彩色图标",to = To.Screen(AddEventDestination()))
         // 重新引入历史记录，然后持久化到本地数据库，统计其次数。在查询中心顶部推荐并允许用户自定义固定
-        UpdateItems("新增 适配一卡通支持自定义密码")
-        UpdateItems("新增 就业系统的入口","位于 查询中心-就业")//
-        UpdateItems("新增 课程表横轴时间线","默认关闭，位于 选项-外观-课程表-时间线", to = To.Screen(SettingsAppearanceDestination))
-        UpdateItems("修复 开学前一周时，课程表顶部日期错位一周的Bug")
-        UpdateItems("修复 当课程汇总出现完全重名的课程时，点击课程表方格有误的Bug")//
-        UpdateItems("优化 消息中心的消息在标记为已读后，自动折叠")
-        UpdateItems("优化 每学期的挂科课程优先展示在头部（补考过的不再展示）","方便能在每次进入成绩页面时就看到补考是否已过")//
-//        UpdateItems("新增 支持；在全校培养方案中分享培养方案", to = To.Screen(AllProgramsDestination(false)))
-//        UpdateItems("反射扫描destination文件夹")
-//        UpdateItems("新增 深度链接支持校园卡、校务行、呱呱物联、共建平台")
-//        UpdateItems("重构 去除冗余登录流程")
+//        UpdateItems("重构 去掉翻页器，改为尾部追加")
+//        UpdateItems("新增 课程表在使用背景时支持自定义深浅色模式","位于 选项-外观-课程表-深浅色",to = To.Screen(SettingsAppearanceDestination))
+//        UpdateItems("新增 个人画像")
+//        UpdateItems("新增 支持在全校培养方案中分享培养方案", to = To.Screen(AllProgramsDestination(false)))
 //        UpdateItems("新增 支持将转专业列表生成长截图并保存")
 //        UpdateItems("新增 适配体测平台、图书馆、指尖工大、智慧社区、学工系统、第二课堂支持以外地访问刷新登录","在刷新登陆状态页面勾选外地访问后即可")
 //        UpdateItems("优化 以Api形式打开课程详情时的性能", type = UpdateType.PERFORMANCE)
 //            UpdateItems("新增 支持楼层导向图的教室可以在课程表或聚焦快速查看目标教室的所在位置")
-//            UpdateItems("修复 在着色器效果关闭时容器共享转场时路径偏移的Bug")
-//            UpdateItems("修复 部分设备使用图片验证码自动识别功能时崩溃的Bug")
 //            UpdateItems("优化 课程表捏合手势的灵敏度")
-//            UpdateItems("新增 课程表交互说明指南","位于 课程表切换菜单内")
 //            UpdateItems("新增 合工大教务课表支持写入到日历日程")
-//            UpdateItems("新增 适配若干二级界面为新的转场动画")
-        // TODO 一卡通搜索，一卡通付款码，一卡通范围支出，一卡通慧新易校 适配新转场动画
         // TODO WebView适配新库 [P2]
-        // TODO WebVpn、课程表界面动效掉帧率较高走查 [P2]
-//            UpdateItems("翻页器底部自动展开、中间隐藏")
+        // TODO 反射扫描destination文件夹
 //            UpdateItems("发生Crash两次后再次进入app进入专属界面")
 //            UpdateItems("新增 启动台与聚焦支持固定项目")
 //            UpdateItems("新增 图书馆我的书架、收藏","位于 查询中心-图书馆")
 //            UpdateItems("新增 图书馆斛兵知搜支持阅读电子书")
-//            UpdateItems("新增 英文语言部分适配")
-//            UpdateItems("新增 大模型","位于 查询中心-大模型,应用场景：通知公告的提炼、新增聚焦日程")
 //            UpdateItems("新增 合工大教务接口的评教","位于 查询中心-评教")
 //            UpdateItems("新增 开课查询数据源：合工大教务")
 //            UpdateItems("新增 合肥校区电费的快速充值")
-
-        // TODO 远期规划
 //            UpdateItems("回归 导入文件形式的课程表")
 //            UpdateItems("新增 云端共建支持对上传的日程更新")
 //            UpdateItems("新增 聚焦卡片小组件(4*2和2*1)")
 //            UpdateItems("新增 校园网小组件(2*2)")
-//            UpdateItems("新增 使用技巧","位于 选项-维护与关于")
+//            UpdateItems("新增 使用技巧","位于 选项-维护与关于") 新增 课程表交互说明指南
 //            UpdateItems("新增 智慧社区的座位预约","位于 查询中心-社区预约")
 //            UpdateItems("新增 自动CAS登录")
-//            UpdateItems("新增 地图和校车支持为游客显示了")
 //            UpdateItems("新增 单独登录教务系统")
 //            UpdateItems("新增 共建平台忘记密码、修改密码、注销")
 //            UpdateItems("新增 教务课程表导出为ics文件", "位于 课程表-多课表-写入日历日程",UpdateType.ADD)
 //            UpdateItems("新增 本地聚焦卡片快速转化为云端卡片", null, UpdateType.ADD)
-//            UpdateItems("重构 部分界面，使其适配平板、折叠屏等大屏设备", null, UpdateType.RENEW)
 //            UpdateItems("新增 智慧后勤的登录")
     }
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = APP_HORIZONTAL_DP, vertical = CARD_NORMAL_DP), horizontalArrangement = Arrangement.Center) {
@@ -161,14 +147,14 @@ private fun VersionInfoCard() {
                     TransplantListItem(
                         // fixme:这里用gradle自动签日期会影响F-Droid构建后校验Smail代码，暂时还是手动标注吧 [issue#50]
                         overlineContent = { ScrollText(text = RELEASE_DATE) },
-                        leadingContent = { Icon(painter = painterResource(id = R.drawable.code), contentDescription = "") },
+                        leadingContent = { Icon(painter = painterResource(id = R.drawable.code), contentDescription = EMPTY_STRING) },
                         headlineContent = { Text(text = "版本号 ${AppVersion.getVersionCode()}") },
                         modifier = Modifier.weight(.5f)
                     )
                     AppVersion.getSplitType().let {
                         TransplantListItem(
                             overlineContent = { Text(text = if(it == AppVersion.SplitType.COMMON) "全量包" else "架构分包") },
-                            leadingContent = { Icon(painter = painterResource(id = R.drawable.package_2), contentDescription = "") },
+                            leadingContent = { Icon(painter = painterResource(id = R.drawable.package_2), contentDescription = EMPTY_STRING) },
                             headlineContent = { Text(text = it.description) },
                             modifier = Modifier.weight(.5f)
                         )
@@ -244,7 +230,7 @@ private fun UpdateItems(
             TransplantListItem(
                 headlineContent = { Text(text = title) },
                 supportingContent = { info?.let { Text(text = it) } },
-                leadingContent = { Icon(painter = painterResource(id = type.res), contentDescription = "") },
+                leadingContent = { Icon(painter = painterResource(id = type.res), contentDescription = EMPTY_STRING) },
             )
             PaddingHorizontalDivider()
             Row(

@@ -69,6 +69,7 @@ import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.ui.component.button.BottomTextButtonGroup
 import com.hfut.schedule.ui.component.button.CardBottomButton
 import com.hfut.schedule.ui.component.button.HazeBottomBar
+import com.hfut.schedule.ui.component.button.HazeBottomBarV2
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
@@ -101,6 +102,8 @@ import com.hfut.schedule.ui.util.navigation.currentRouteWithoutArgs
 import com.hfut.schedule.ui.util.navigation.navigateForBottomBar
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.remove
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
@@ -146,13 +149,13 @@ fun LibraryScreen(
         else -> LibraryBarItems.MINE
     }
 
-    var inputKeyword by remember { mutableStateOf("") }
+    var inputKeyword by remember { mutableStateOf(EMPTY_STRING) }
     val backDrop = rememberLayerBackdrop()
     val scope = rememberCoroutineScope()
     val pageState = rememberPagerState { 2 }
     val titles = remember { listOf("智慧社区","斛兵知搜") }
     val refreshNetworkCommunity : suspend (Int) -> Unit = { page ->
-        prefs.getString("TOKEN","")?.let {
+        prefs.getString("TOKEN",EMPTY_STRING)?.let {
             vm.libraryData.clear()
             vm.searchBooks(it,inputKeyword,page)
         }
@@ -226,8 +229,9 @@ fun LibraryScreen(
             }
         },
         bottomBar = {
-            HazeBottomBar(
+            HazeBottomBarV2(
                 hazeState,
+                backDrop,
                 items,
                 libraryNavController,
                 color = when(targetPage) {
@@ -286,9 +290,10 @@ private fun SearchScreenCommunity(
 ) {
     var startUse by rememberSaveable { mutableStateOf(false) }
     var title by remember { mutableStateOf("地点") }
-    var callNum by remember { mutableStateOf("") }
+    var callNum by remember { mutableStateOf(EMPTY_STRING) }
     var page by remember { mutableIntStateOf(1) }
     val uiState by vm.libraryData.state.collectAsState()
+    val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
 
     LaunchedEffect(page) {
         if(!startUse) {
@@ -357,7 +362,7 @@ private fun SearchScreenCommunity(
                 item { InnerPaddingHeight(innerPadding,false) }
                 item { PaddingForPageControllerButton() }
             }
-            PageController(listState,page,onNextPage = { page = it }, onPreviousPage = { page = it }, modifier = Modifier.padding(innerPadding), paddingBottom = false)
+            PageController(listState,page,onNextPage = { page = it }, onPreviousPage = { page = it }, modifier = Modifier.padding(innerPadding), paddingBottom = false, paddingSafely = enableNewBottomBar)
         }
     }
 }
@@ -698,6 +703,7 @@ private fun SearchScreenLibrary(
     var startUse by remember { mutableStateOf(false) }
     var page by remember { mutableIntStateOf(1) }
     val uiState by vm.librarySearchResp.state.collectAsState()
+    val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
 
     LaunchedEffect(page) {
         if(!startUse) {
@@ -782,7 +788,7 @@ private fun SearchScreenLibrary(
                                     Text(item.author.joinToString(","))
                                 },
                                 supportingContent = {
-                                    Text("${item.year}" + (item.publishers?.let { " $it" } ?: ""))
+                                    Text("${item.year}" + (item.publishers?.let { " $it" } ?: EMPTY_STRING))
                                 },
                                 leadingContent = {
                                     Icon(painterResource(R.drawable.person),null)
@@ -844,10 +850,10 @@ private fun SearchScreenLibrary(
                 item { InnerPaddingHeight(innerPadding,false) }
                 item { PaddingForPageControllerButton() }
             }
-            PageController(listState,page,onNextPage = { page = it }, onPreviousPage = { page = it }, modifier = Modifier.padding(innerPadding), paddingBottom = false)
+            PageController(listState,page,onNextPage = { page = it }, onPreviousPage = { page = it }, modifier = Modifier.padding(innerPadding), paddingBottom = false, paddingSafely = enableNewBottomBar)
         }
     }
 }
 
 
-fun String.removeHtmlTags(): String = this.replace("<[^>]*>".toRegex() , "")
+fun String.removeHtmlTags(): String = this.remove("<[^>]*>".toRegex())

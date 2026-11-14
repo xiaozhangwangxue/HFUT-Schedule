@@ -30,6 +30,8 @@ import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
 import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.remove
 import com.xah.common.ui.component.chart.BarChart
 import com.xah.common.ui.component.chart.LineChart
 import com.xah.common.ui.component.chart.PieChart
@@ -44,7 +46,10 @@ import java.util.Locale
 private fun classifyMeal(resume: String, time: String): String {
     val hour = try {
         time.substringAfter(" ").substringBefore(":").toIntOrNull() ?: -1
-    } catch (_: Exception) { -1 }
+    } catch (e: Exception) {
+        LogUtil.error(e)
+        -1
+    }
     val name = resume.lowercase()
     return when {
         name.contains("充值") || name.contains("补助") || name.contains("转账") -> "其他"
@@ -63,7 +68,7 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
     val predictedState by vm.cardPredictedResponse.state.collectAsState()
 
     LaunchedEffect(Unit) {
-        val auth = prefs.getString("auth", "").orEmpty()
+        val auth = prefs.getString("auth", EMPTY_STRING).orEmpty()
         if (auth.isNotEmpty()) {
             if (billState !is NetworkUiState.Success) {
                 vm.huiXinBillResult.clear()
@@ -121,7 +126,10 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
                         val f = LocalDate.parse(earliest.effectdateStr.substringBefore(" "))
                         val l = LocalDate.parse(latest.effectdateStr.substringBefore(" "))
                         ChronoUnit.DAYS.between(f, l).toInt()
-                    } catch (_: Exception) { 0 }
+                    } catch (e: Exception) {
+                        LogUtil.error(e)
+                        0
+                    }
                 }
 
                 // 单笔最高消费
@@ -136,7 +144,9 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
                             val date = LocalDate.parse(record.effectdateStr.substringBefore(" "))
                             val dayOfWeek = date.dayOfWeek.value // 1=Monday, 7=Sunday
                             dayMap[dayOfWeek] = (dayMap[dayOfWeek] ?: 0.0) + ((record.tranamt ?: 0) / 100.0)
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            LogUtil.error(e)
+                        }
                     }
                     dayMap.toList().sortedByDescending { it.second }
                 }
@@ -150,7 +160,9 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
                             val date = LocalDate.parse(record.effectdateStr.substringBefore(" "))
                             val month = date.monthValue
                             monthMap[month] = (monthMap[month] ?: 0.0) + ((record.tranamt ?: 0) / 100.0)
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            LogUtil.error(e)
+                        }
                     }
                     monthMap.toList().sortedByDescending { it.second }
                 }
@@ -201,7 +213,7 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
 
                 // 最常消费地点
                 val merchants = remember(records) {
-                    records.groupBy { it.resume.substringBefore("-").replace("有限公司", "").trim() }
+                    records.groupBy { it.resume.substringBefore("-").remove("有限公司").trim() }
                         .mapValues { (_, v) -> v.size to v.sumOf { (it.tranamt ?: 0) / 100.0 } }
                         .toList().sortedByDescending { it.second.first }.take(5)
                 }
@@ -234,7 +246,10 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
                             val latest = triples.maxByOrNull { it.third }
                             Pair(earliest, latest)
                         }
-                    } catch (_: Exception) { null to null }
+                    } catch (e: Exception) {
+                        LogUtil.error(e)
+                        null to null
+                    }
                 }
 
                 CustomCard(color = cardNormalColor()) {
@@ -346,7 +361,10 @@ fun ExpenseAnalysisSection(vm: NetWorkViewModel, semester: Int, periodLabel: Str
                             
                             Pair(earliestChart, latestChart)
                         }
-                    } catch (_: Exception) { Pair(emptyMap(), emptyMap()) }
+                    } catch (e: Exception) {
+                        LogUtil.error(e)
+                        Pair(emptyMap(), emptyMap())
+                    }
                 }
 
                 val (earliestTimeData, latestTimeData) = semesterWeekTimeStats

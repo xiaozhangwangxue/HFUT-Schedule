@@ -11,8 +11,10 @@ import com.hfut.schedule.network.api.impl.SchoolNetSelfServiceCreator
 import com.hfut.schedule.network.api.inf.SchoolNetSelfService
 import com.hfut.schedule.network.api.repo.SchoolNetSelfRepositoryInf
 import com.hfut.schedule.network.api.util.CryptoUtil
-import com.hfut.schedule.ui.screen.home.search.function.huiXin.loginWeb.getCardPsk
+import com.hfut.schedule.ui.screen.home.search.function.huiXin.loginWeb.getSchoolNetPsk
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPersonInfo
+import com.xah.common.logic.util.isEmptyOrBlank
+import com.xah.common.logic.util.remove
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -66,7 +68,7 @@ object SchoolNetSelfRepository : SchoolNetSelfRepositoryInf {
     @JvmStatic
     private suspend fun doLoginAndFetch(year: Int): retrofit2.Call<okhttp3.ResponseBody> {
         val account = getPersonInfo().getStudentIdFinally() ?: throw Exception("未获取到学号")
-        val rawPassword = getCardPsk() ?: throw Exception("未获取到校园卡密码")
+        val rawPassword = getSchoolNetPsk() ?: throw Exception("未获取到校园卡密码")
 
         val loginPageHtml = service.getLoginPage()
             .awaitResponse().body()?.string().orEmpty()
@@ -163,7 +165,7 @@ object SchoolNetSelfRepository : SchoolNetSelfRepositoryInf {
 
     @JvmStatic
     private fun parseMonthPay(html: String): SchoolNetMonthPayResult = try {
-        if (html.isBlank()) {
+        if (html.isEmptyOrBlank()) {
             selfServiceLoggedIn = false
             throw Exception("校园网历史用量接口返回空响应，登录态可能已失效，请重新查询")
         }
@@ -187,9 +189,9 @@ object SchoolNetSelfRepository : SchoolNetSelfRepositoryInf {
 
         fun String.cleanText(): String {
             return this
-                .replace("\u3000", "")
-                .replace("\n", "")
-                .replace("\t", "")
+                .remove("\u3000")
+                .remove("\n")
+                .remove("\t")
                 .trim()
         }
 

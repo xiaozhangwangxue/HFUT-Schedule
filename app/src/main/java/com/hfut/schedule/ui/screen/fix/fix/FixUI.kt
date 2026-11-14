@@ -21,6 +21,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.dev.CrashHandler
 import com.hfut.schedule.logic.util.dev.ExceptionHelper.getKeyStackTrace
 import com.hfut.schedule.logic.util.dev.saveErrorLog
+import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.ClipBoardHelper
 import com.hfut.schedule.logic.util.sys.PermissionSet
 import com.hfut.schedule.logic.util.sys.Starter
@@ -49,11 +51,14 @@ import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.divider.PaddingHorizontalDivider
 import com.hfut.schedule.ui.component.icon.LoadingIcon
 import com.hfut.schedule.ui.component.text.HazeBottomSheetTopBar
+import com.hfut.schedule.ui.nav.destination.SettingsBackupDestination
 import com.hfut.schedule.ui.nav.destination.VersionInfoDestination
+import com.hfut.schedule.ui.screen.home.cube.sub.BackupScreen
 import com.hfut.schedule.ui.screen.home.cube.sub.MyAPIItem
 import com.hfut.schedule.ui.screen.home.cube.sub.VersionInfo
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,6 +70,7 @@ fun FixUI(
     vm : NetWorkViewModel,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var showBottomSheet_version by remember { mutableStateOf(false) }
     if (showBottomSheet_version) {
@@ -91,11 +97,38 @@ fun FixUI(
         }
     }
 
+    var showBottomSheetBackup by remember { mutableStateOf(false) }
+    if (showBottomSheetBackup) {
+        HazeBottomSheet (
+            onDismissRequest = { showBottomSheetBackup = false },
+            showBottomSheet = showBottomSheetBackup
+        ) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                topBar = {
+                    HazeBottomSheetTopBar(SettingsBackupDestination.title.asString())
+                },
+            ) { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .fillMaxSize()
+                ) {
+                    BackupScreen(innerPadding,true)
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         launch(Dispatchers.IO) {
             vm.getMyApi()
         }
     }
+
+    val enableDataStore by DataStoreManager.enableDataStore.collectAsState(initial = true)
+
 
     Column(modifier = Modifier
         .verticalScroll(rememberScrollState())
@@ -107,7 +140,7 @@ fun FixUI(
                 headlineContent = { Text(text = VersionInfoDestination.title.asString()) },
                 supportingContent = { Text(text = stringResource(R.string.about_settings_version_info_description))},
                 modifier = Modifier.clickable { showBottomSheet_version = true },
-                leadingContent = { Icon(painter = painterResource(id = R.drawable.sdk), contentDescription = "")}
+                leadingContent = { Icon(painter = painterResource(id = R.drawable.sdk), contentDescription = EMPTY_STRING)}
             )
             PaddingHorizontalDivider()
             BugShare()
@@ -130,6 +163,47 @@ fun FixUI(
                 headlineContent = { Text(text = "联系开发者") },
                 leadingContent = { Icon(painterResource(R.drawable.mail), contentDescription = "Localized description",) },
                 modifier = Modifier.clickable{ emailMe(context) }
+            )
+            PaddingHorizontalDivider()
+            TransplantListItem(
+                headlineContent = { Text(text = "Github主页") },
+                leadingContent = { Icon(painterResource(R.drawable.github), contentDescription = "Localized description",) },
+                modifier = Modifier.clickable{
+                    scope.launch {
+                        Starter.startWebUrlOuter(context,"${Constant.GITHUB_URL}${Constant.GITHUB_DEVELOPER_NAME}/${Constant.GITHUB_REPO_NAME}")
+                    }
+                }
+            )
+            PaddingHorizontalDivider()
+            TransplantListItem(
+                headlineContent = { Text(text = "备份与恢复") },
+                leadingContent = { Icon(painterResource(R.drawable.mail), contentDescription = "Localized description",) },
+                modifier = Modifier.clickable{
+                    showBottomSheetBackup = true
+                }
+            )
+            PaddingHorizontalDivider()
+            TransplantListItem(
+                headlineContent = { Text(text = "数据库兼容模式") },
+                supportingContent = {
+                    Text("打开后，将禁用数据库，防止版本升级造成崩溃影响整个应用")
+                },
+                trailingContent = {
+                    Switch(
+                        !enableDataStore,
+                        onCheckedChange = {
+                            scope.launch {
+                                DataStoreManager.saveEnableDataStore(!enableDataStore)
+                            }
+                        }
+                    )
+                },
+                leadingContent = { Icon(painterResource(R.drawable.database), contentDescription = "Localized description",) },
+                modifier = Modifier.clickable {
+                    scope.launch {
+                        DataStoreManager.saveEnableDataStore(!enableDataStore)
+                    }
+                }
             )
         }
         MyAPIItem(color = MaterialTheme.colorScheme.surface)
@@ -236,34 +310,26 @@ fun BugShare() {
     TransplantListItem(
         headlineContent = { Text(text = "崩溃日志抓取") },
         leadingContent = {
-            if(CrashHandler.isLoggingEnabled) {
+            if(CrashHandler.enableSaveLogToFile) {
                 LoadingIcon()
             } else{
                 Icon(
-                    painter = painterResource(id = R.drawable.slow_motion_video), contentDescription = ""
+                    painter = painterResource(id = R.drawable.slow_motion_video), contentDescription = EMPTY_STRING
                 )
             }
         },
         modifier = Modifier.clickable {
             activity?.let { PermissionSet.checkAndRequestStoragePermission(it) }
-            if(!CrashHandler.isLoggingEnabled) {
-                CrashHandler.enableLogging()
-            } else {
-                CrashHandler.disableLogging()
-            }
+            CrashHandler.enableSaveLogToFile = !CrashHandler.enableSaveLogToFile
         },
         trailingContent = {
-            Switch(checked = CrashHandler.isLoggingEnabled, onCheckedChange = {
+            Switch(checked = CrashHandler.enableSaveLogToFile, onCheckedChange = {
                 activity?.let { PermissionSet.checkAndRequestStoragePermission(it) }
-                if(!CrashHandler.isLoggingEnabled) {
-                    CrashHandler.enableLogging()
-                } else {
-                    CrashHandler.disableLogging()
-                }
+                CrashHandler.enableSaveLogToFile = !CrashHandler.enableSaveLogToFile
             })
         },
         supportingContent = {
-            if(CrashHandler.isLoggingEnabled) {
+            if(CrashHandler.enableSaveLogToFile) {
                 Text("正在记录日志，请复现崩溃闪退的操作，崩溃后，在Download文件夹寻找崩溃日志")
             } else {
                 Text("点击开始抓取，崩溃后，日志将保存于Download文件夹")

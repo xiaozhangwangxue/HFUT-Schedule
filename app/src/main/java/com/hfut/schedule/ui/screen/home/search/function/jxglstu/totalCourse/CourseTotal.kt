@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
@@ -42,6 +43,7 @@ import com.hfut.schedule.ui.style.special.topBarBlur
 
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.ui.component.text.ScrollText
@@ -86,7 +88,7 @@ fun TotalCourseScreen(
 
     val hazeState = rememberHazeBlur()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var input by rememberSaveable() { mutableStateOf("") }
+    var input by rememberSaveable() { mutableStateOf(EMPTY_STRING) }
     val backdrop = rememberLayerBackdrop()
 
     Scaffold (
@@ -109,7 +111,7 @@ fun TotalCourseScreen(
                             },
                             backdrop = backdrop,
                             isCircle = false,
-                            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING)
                         ) {
                             Text(text = if(sortType) "开课时间" else "学分高低")
                         }

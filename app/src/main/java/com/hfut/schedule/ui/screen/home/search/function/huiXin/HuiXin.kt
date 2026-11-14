@@ -10,13 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavHostController
 import com.hfut.schedule.R
-import com.hfut.schedule.application.MyApplication
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
 import com.hfut.schedule.ui.component.container.TransplantListItem
+import com.hfut.schedule.ui.screen.home.search.function.huiXin.card.HuiXinPayQuickButton
 
 
 import com.xah.common.ui.component.text.ScrollText
@@ -34,6 +33,9 @@ fun HuiXin() {
         headlineContent = { ScrollText(text = title) },
         leadingContent = {
             Icon(painterResource(icon), contentDescription = null)
+        },
+        trailingContent = {
+            HuiXinPayQuickButton()
         },
         modifier = Modifier.clickable {
             scope.launch {

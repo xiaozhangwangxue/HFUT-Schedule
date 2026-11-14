@@ -46,6 +46,7 @@ import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.parseJxglstuInt
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.exam.isValidDateTime
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPersonInfo
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import retrofit2.awaitResponse
 
 object UniAppRepository : UniAppRepositoryInf {
@@ -65,19 +66,19 @@ object UniAppRepository : UniAppRepositoryInf {
                 studentId = sId,
                 password = CryptoUtil.rsaEncrypt(pwd)
             ).awaitResponse()
-            val json = request.body()?.string()
+            val json = request.errorBody()?.string() ?: request.body()?.string()
             if(json == null) {
                 showToast(FAILED_TEXT)
                 return false
             }
             if(!request.isSuccessful) {
                 val msg = parseLogin(json,false)
-                showToast("$FAILED_TEXT$msg")
+                showToast("$FAILED_TEXT($msg)")
                 return false
             }
             val token = parseLogin(json,true)
             if(token == null) {
-                showToast("${FAILED_TEXT}2")
+                showToast("${FAILED_TEXT}(无法解析token)")
                 return false
             }
             DataStoreManager.saveUniAppJwt(token)
@@ -271,8 +272,8 @@ object UniAppRepository : UniAppRepositoryInf {
         result.map { item ->
             item.copy(
                 nameZh = item.nameZh
-                    .replace("（宣城）","")
-                    .replace("(宣)",""),
+                    .remove("（宣城）")
+                    .remove("(宣)"),
             )
         }
     } catch (e : Exception) { throw e }

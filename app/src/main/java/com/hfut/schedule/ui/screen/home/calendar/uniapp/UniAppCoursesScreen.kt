@@ -35,7 +35,6 @@ import com.hfut.schedule.ui.nav.destination.CourseDetailApiDestination
 import com.hfut.schedule.ui.nav.destination.ExamDestination
 import com.hfut.schedule.ui.nav.window.TimeTablePreviewWindow
 import com.hfut.schedule.ui.nav.window.TimeTableSquareWindow
-
 import com.hfut.schedule.ui.screen.home.calendar.common.DraggableWeekButton
 import com.hfut.schedule.ui.screen.home.calendar.common.TimeTableWeekSwap
 import com.hfut.schedule.ui.screen.home.calendar.jxglstu.CourseDetailOrigin
@@ -44,17 +43,15 @@ import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.TimeTableType
 import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.allToTimeTableDataUniApp
 import com.hfut.schedule.ui.screen.home.calendar.timetable.ui.TimeTable
 import com.hfut.schedule.ui.screen.home.calendar.timetable.ui.TimeTableDetail
-import com.hfut.schedule.ui.screen.home.focus.funiction.AddEventOrigin
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.totalCourse.safelySetDate
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
-import com.xah.shader.state.ShaderState
-
-
-import com.xah.navigation.util.LocalNavController
+import com.hfut.schedule.ui.util.state.GlobalEventHolder
+import com.kyant.backdrop.Backdrop
+import com.xah.common.logic.util.LogUtil
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import com.xah.floating.util.LocalFloatingController
-import com.xah.common.logic.util.LogUtil
+import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.HazeState
 import java.time.LocalDate
 
@@ -69,7 +66,7 @@ fun UniAppCoursesScreen(
     today: LocalDate,
     hazeState: HazeState,
 //    navController: NavHostController,
-    backGroundHaze : ShaderState?,
+    backGroundHaze : Backdrop?,
     onSwapShowAll : (Boolean) -> Unit,
     onRestoreHeight : () -> Unit
 ) {
@@ -96,9 +93,9 @@ fun UniAppCoursesScreen(
     // 记录上一次的学期开始时间
     var lastTermStartDate by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val weekSwap = remember(currentWeek) { object : TimeTableWeekSwap {
+    val weekSwap = remember(currentWeek,today) { object : TimeTableWeekSwap {
         override fun backToCurrentWeek() {
-            if(DateTimeManager.currentWeek < 1 || DateTimeManager.currentWeek > 20) {
+            if(DateTimeManager.currentWeek !in 1..MyApplication.MAX_WEEK) {
                 if(termStartDate == null) {
                     return
                 }
@@ -123,6 +120,7 @@ fun UniAppCoursesScreen(
         }
 
         override fun nextWeek() {
+            LogUtil.debug("today=$today")
             if (currentWeek < MyApplication.MAX_WEEK) {
                 onDateChange(today.plusDays(7))
                 currentWeek++
@@ -195,6 +193,7 @@ fun UniAppCoursesScreen(
             )
         }
     ) {
+        TimeTablePreviewWindow.Listener(weekSwap)
         TimeTable(
             items,
             currentWeek.toInt(),
@@ -212,18 +211,10 @@ fun UniAppCoursesScreen(
                 }
             },
             onLongTapBlankRegion = {
-                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                    weekSwap.goToWeek(it.toLong())
-                    floatingController.pop()
-                })
+                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
             },
             onDoubleTapBlankRegion = {
-                navController.push(
-                    AddEventDestination(
-                        null,
-                        AddEventOrigin.FOCUS_EDITED.name
-                    )
-                )
+                navController.push(AddEventDestination())
             }
         ) { list ->
             // 只有一节课
@@ -263,10 +254,7 @@ fun UniAppCoursesScreen(
             onNext = { weekSwap.nextWeek() },
             onPrevious = { weekSwap.previousWeek() },
             onLongClick = {
-                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                    weekSwap.goToWeek(it.toLong())
-                    floatingController.pop()
-                })
+                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
             }
         )
     }

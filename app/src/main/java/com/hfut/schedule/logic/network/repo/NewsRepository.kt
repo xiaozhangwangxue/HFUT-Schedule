@@ -19,6 +19,9 @@ import com.hfut.schedule.network.api.repo.NewsRepositoryInf
 import com.hfut.schedule.network.api.util.CryptoUtil
 import com.hfut.schedule.ui.screen.home.search.function.my.webLab.isValidWebUrl
 import com.hfut.schedule.ui.screen.news.home.transferToPostData
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.isEmptyOrBlank
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -42,14 +45,16 @@ object NewsRepository : NewsRepositoryInf {
 //                newsXuanChengResult.value = response.body()?.string()
             }
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) { t.printStackTrace() }
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                LogUtil.error(t)
+            }
         })
     }
     override suspend fun getXuanChengNews(page: Int, newsXuanChengResult : UiStateHolder<List<News>>) =
         launchRequestState(
             holder = newsXuanChengResult,
             request = {
-                xuanCheng.getNotications(page = page.let { if (it <= 1) "" else it.toString() })
+                xuanCheng.getNotications(page = page.let { if (it <= 1) EMPTY_STRING else it.toString() })
 
             },
             transformSuccess = { _, html -> parseNewsXuanCheng(html) }
@@ -140,8 +145,8 @@ object NewsRepository : NewsRepositoryInf {
 
         for (element in newsElements) {
             val link = element.attr("href")  // 相对链接，可拼接 baseUrl
-            val title = element.selectFirst("div.l3-news--title")?.text() ?: ""
-            val date = element.selectFirst("div.l3-news--month")?.text() ?: ""
+            val title = element.selectFirst("div.l3-news--title")?.text() ?: EMPTY_STRING
+            val date = element.selectFirst("div.l3-news--month")?.text() ?: EMPTY_STRING
 
             newsList.add(News(title = title, date = date, link = link))
         }
@@ -170,7 +175,7 @@ object NewsRepository : NewsRepositoryInf {
             val date = item.select("i.timefontstyle252631").text()
             val title = item.select("p.titlefontstyle252631").text()
             val link = item.select("a").attr("href")
-            if(title.isEmpty() || title.isBlank()) {
+            if(title.isEmptyOrBlank()) {
                 break
             }
             val links = if(isValidWebUrl(link)) {

@@ -44,10 +44,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.hfut.schedule.R
+import com.hfut.schedule.logic.util.parse.SemesterParser
 import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.parse.SemesterParser.getSemester
 import com.hfut.schedule.logic.util.parse.SemesterParser.parseSemester
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
@@ -74,6 +76,7 @@ import com.xah.common.ui.style.align.CenterScreen
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.container.component.base.SharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
@@ -88,9 +91,9 @@ fun CourseSearchScreen(
     val hazeState = rememberHazeBlur()
 
     var showSearch by rememberSaveable() { mutableStateOf(true) }
-    var className by rememberSaveable { mutableStateOf( getPersonInfo().className ?: "") }
-    var courseName by rememberSaveable { mutableStateOf("") }
-    var courseId by rememberSaveable { mutableStateOf("") }
+    var className by rememberSaveable { mutableStateOf( getPersonInfo().className ?: EMPTY_STRING) }
+    var courseName by rememberSaveable { mutableStateOf(EMPTY_STRING) }
+    var courseId by rememberSaveable { mutableStateOf(EMPTY_STRING) }
 
     val uiState by vm.courseSearchResponse.state.collectAsState()
     var semester by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -152,7 +155,7 @@ fun CourseSearchScreen(
                     },
                     actions = {
                         Row(modifier = Modifier
-                            .padding(horizontal = APP_HORIZONTAL_DP)
+                            .padding(end = BUTTON_END_PADDING)
                             .animateContentSize()) {
                             val enabled = uiState is NetworkUiState.Success
 
@@ -287,7 +290,7 @@ fun CourseSearchScreen(
                                     } else {
                                         IconButton(
                                             onClick = {
-                                                className = ""
+                                                className = EMPTY_STRING
                                             },
                                         ) {
                                             Icon(painterResource(R.drawable.close), null)
@@ -370,7 +373,7 @@ fun CourseSearchScreen(
                         semester = it
                         scope.launch { refreshNetwork(false) }
                     },
-                    gap = 20,
+                    gap = SemesterParser.GAP,
                     text = parseSemester(page)  ?: "未知学期",
                     range = Pair(null,null),
                     paddingSafely = false,
@@ -447,7 +450,7 @@ fun ApiForCourseSearch(
                     semester = it
                     scope.launch { refreshNetwork() }
                 },
-                gap = 20,
+                gap = SemesterParser.GAP,
                 text = parseSemester(page) ?: "未知学期",
                 range = Pair(null,null),
                 paddingSafely = false,

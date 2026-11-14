@@ -37,9 +37,11 @@ import androidx.navigation.NavHostController
 import com.hfut.schedule.R
 import com.hfut.schedule.logic.model.enumeration.HazeBlurLevel
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.network.CommonNetworkScreen
 
@@ -55,6 +57,7 @@ import com.hfut.schedule.ui.style.special.topBarBlur
 
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
@@ -86,8 +89,8 @@ fun TeacherSearchScreen(
 ) {
     val hazeState = rememberHazeBlur()
 
-    var name by remember { mutableStateOf("") }
-    var direction by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(EMPTY_STRING) }
+    var direction by remember { mutableStateOf(EMPTY_STRING) }
 
     val uiState by vm.teacherSearchData.state.collectAsState()
 
@@ -120,9 +123,9 @@ fun TeacherSearchScreen(
                             backdrop = backDrop,
                             isCircle = true,
                             onClick = { scope.launch { refreshNetwork() } },
-                            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING)
                         ) {
-                            Icon(painterResource(R.drawable.search), contentDescription = "")
+                            Icon(painterResource(R.drawable.search), contentDescription = EMPTY_STRING)
                         }
                     }
                 )

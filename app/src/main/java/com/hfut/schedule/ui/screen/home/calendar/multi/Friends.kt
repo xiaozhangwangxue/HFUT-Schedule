@@ -49,6 +49,8 @@ import com.hfut.schedule.network.core.GsonInstance
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.style.color.textFiledTransplant
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.LogUtil
 import kotlinx.coroutines.launch
 
 fun getFriendsList() : List<CommunityFriend?> {
@@ -61,7 +63,8 @@ fun getFriendsList() : List<CommunityFriend?> {
         } else {
             emptyList()
         }
-    } catch(_ : Exception) {
+    } catch(e : Exception) {
+        LogUtil.error(e)
         emptyList()
     }
 }
@@ -101,7 +104,7 @@ fun AddCourseUI(vm: NetWorkViewModel) {
 //                Text(text = "通过本应用分享课表会生成文本文件，他人接收文件并以本应用打开方式即可导入")
 //            },
 //            leadingContent = {
-//                Icon(painterResource(id = R.drawable.attach_file), contentDescription = "")
+//                Icon(painterResource(id = R.drawable.attach_file), contentDescription = EMPTY_STRING)
 //            },
 //            modifier = Modifier.clickable {
 //                showToast("请在外部应用选择文件以本应用打开")
@@ -116,7 +119,7 @@ fun AddCourseUI(vm: NetWorkViewModel) {
                 Text(text = "输入学号,发送申请,对方同意后即可查看对方课表")
             },
             leadingContent = {
-                Icon(painterResource(id = R.drawable.group), contentDescription = "")
+                Icon(painterResource(id = R.drawable.group), contentDescription = EMPTY_STRING)
             },
             modifier = Modifier.clickable {
                 showBottomSheet = true
@@ -146,7 +149,7 @@ fun FriendsSetting(vm : NetWorkViewModel) {
     val uiState by vm.applyFriendsResponse.state.collectAsState()
     val uiStateAdd by vm.addFriendApplyResponse.state.collectAsState()
     val friendList = remember { getFriendsList() }
-    var input by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf(EMPTY_STRING) }
     DividerTextExpandedWith(text = "申请新的好友") {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -189,13 +192,13 @@ fun FriendsSetting(vm : NetWorkViewModel) {
             for(i in friendList.indices) {
                 CardListItem(
                     headlineContent = { friendList[i]?.let { Text(text = it.name) } },
-                    leadingContent = { Icon(painterResource(id = R.drawable.person), contentDescription = "")},
+                    leadingContent = { Icon(painterResource(id = R.drawable.person), contentDescription = EMPTY_STRING)},
                     overlineContent = { friendList[i]?.let { Text(text = it.studentId) }},
                     trailingContent = {
                         FilledTonalIconButton(onClick = {
                             showToast("正在开发")
                         }) {
-                            Icon(painterResource(id = R.drawable.delete), contentDescription = "")
+                            Icon(painterResource(id = R.drawable.delete), contentDescription = EMPTY_STRING)
                         }
                     }
                 )
@@ -210,7 +213,7 @@ fun FriendsSetting(vm : NetWorkViewModel) {
                 for(i in applyList.indices) {
                     CardListItem(
                         headlineContent = { applyList[i]?.let { ScrollText(text = it.name) } },
-                        leadingContent = { Icon(painterResource(id = R.drawable.person_add), contentDescription = "")},
+                        leadingContent = { Icon(painterResource(id = R.drawable.person_add), contentDescription = EMPTY_STRING)},
                         overlineContent = { applyList[i]?.let { Text(text = it.studentId) } },
                         trailingContent = {
                             Row(modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)) {

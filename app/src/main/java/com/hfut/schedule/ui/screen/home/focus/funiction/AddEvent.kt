@@ -41,14 +41,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -77,7 +78,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,25 +96,25 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.zIndex
 import com.hfut.schedule.R
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.CustomEventDTO
 import com.hfut.schedule.logic.database.entity.CustomEventType
 import com.hfut.schedule.logic.database.util.CustomEventMapper
-import com.xah.common.logic.model.Campus
 import com.hfut.schedule.logic.model.enumeration.LocalEvent
-import com.hfut.schedule.logic.util.helper.getCampus
 import com.hfut.schedule.logic.model.supabase.SupabaseEventOutput
-import com.hfut.schedule.network.api.util.getUinAppCampusId
 import com.hfut.schedule.logic.network.repo.UniAppRepository
-import com.xah.common.logic.state.NetworkUiState
+import com.hfut.schedule.logic.util.helper.getCampus
 import com.hfut.schedule.logic.util.network.state.reEmptyLiveDta
 import com.hfut.schedule.logic.util.other.AppVersion
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.JumpTransitionEffectWallpaper
 import com.hfut.schedule.logic.util.sys.Starter
+import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
 import com.hfut.schedule.logic.util.sys.parseToDateTime
 import com.hfut.schedule.logic.util.sys.showDevelopingToast
 import com.hfut.schedule.logic.util.sys.showToast
+import com.hfut.schedule.network.api.util.getUinAppCampusId
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BUTTON_PADDING
 import com.hfut.schedule.ui.component.button.BottomTextButtonGroup
 import com.hfut.schedule.ui.component.button.CardBottomButton
@@ -125,15 +125,19 @@ import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
-import com.hfut.schedule.ui.component.dialog.DateRangePickerModal
+import com.hfut.schedule.ui.component.dialog.DatePickerDialog
+import com.hfut.schedule.ui.component.dialog.DateRangePickerDialog
 import com.hfut.schedule.ui.component.dialog.LittleDialog
 import com.hfut.schedule.ui.component.dialog.TimeRangePickerDialog
 import com.hfut.schedule.ui.component.divider.PaddingHorizontalDivider
 import com.hfut.schedule.ui.component.divider.defaultDividerColor
+import com.hfut.schedule.ui.component.icon.BrushIcon
 import com.hfut.schedule.ui.component.icon.LoadingIcon
 import com.hfut.schedule.ui.component.input.CustomTextField
 import com.hfut.schedule.ui.component.input.WheelPicker
 import com.hfut.schedule.ui.component.status.StatusIcon
+import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
+import com.hfut.schedule.ui.nav.destination.AddEventDestination
 import com.hfut.schedule.ui.nav.destination.SupabaseDestination
 import com.hfut.schedule.ui.nav.destination.SupabaseLoginDestination
 import com.hfut.schedule.ui.screen.home.calendar.common.dateToWeek
@@ -143,15 +147,20 @@ import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.EventCa
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.transfer.getEventCampus
 import com.hfut.schedule.ui.screen.supabase.home.getInsertedEventId
 import com.hfut.schedule.ui.screen.supabase.login.loginSupabaseWithCheck
+import com.hfut.schedule.ui.style.appNavigationBarPadding
 import com.hfut.schedule.ui.style.color.textFiledTransplant
-import com.hfut.schedule.ui.util.navigation.AppAnimationManager
+import com.hfut.schedule.ui.style.special.backDropSource
+import com.hfut.schedule.ui.style.special.rememberHazeBlur
+import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.ui.util.layout.measureDpSize
+import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
-
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.model.Campus
+import com.xah.common.logic.state.NetworkUiState
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.status.CustomSingleChoiceRow
-import com.xah.navigation.util.LocalNavController
 import com.xah.common.ui.component.status.LoadingUI
 import com.xah.common.ui.component.text.BottomTip
 import com.xah.common.ui.component.text.ScrollText
@@ -160,19 +169,21 @@ import com.xah.common.ui.style.align.CenterScreen
 import com.xah.common.ui.style.align.ColumnVertical
 import com.xah.common.ui.style.align.RowHorizontal
 import com.xah.common.ui.style.color.topBarTransplantColor
+import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import com.xah.common.ui.util.text
+import com.xah.navigation.model.action.LaunchMode
+import com.xah.navigation.util.LocalNavController
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.ZoneId
+import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
-
-private enum class ShareRoutes {
-    BUTTON,SURFACE
-}
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -216,7 +227,7 @@ fun AddEventFloatButton(
             transitionSpec = {
                 fadeIn(animationSpec = tween(durationMillis = AppAnimationManager.ANIMATION_SPEED)) togetherWith fadeOut(animationSpec = tween(durationMillis = AppAnimationManager.ANIMATION_SPEED*2))
             },
-            label = ""
+            label = EMPTY_STRING
         ) { targetShowAddUI ->
             // 这里是 AnimatedContentScope 的作用域
             if (targetShowAddUI) {
@@ -240,27 +251,25 @@ fun AddEventFloatButton(
         }
     }
 }
-enum class AddEventOrigin {
-    FOCUS_EDITED,FOCUS_ADD,CALENDAR
-}
+
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AddEventScreen(
     vm : NetWorkViewModel,
     eventId : Int = -1,
-    origin : String
+    enableCopy : Boolean = false,
+    isSupabase : Boolean = false
 ) {
     val navController = LocalNavController.current
-    val isSupabase = false
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
-    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
+    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = EMPTY_STRING)
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var showDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val backDrop = rememberLayerBackdrop()
-
+    val hazeState = rememberHazeBlur()
 
     if(showDialog) {
         LittleDialog(
@@ -286,9 +295,23 @@ fun AddEventScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MediumTopAppBar(
+                modifier = Modifier.topBarBlur(hazeState),
                 scrollBehavior = scrollBehavior,
                 colors = topBarTransplantColor(),
-                title = { Text(if(eventId <= 0) "添加" else "修改") },
+                title = {
+                    val platformText = remember(isSupabase) {
+                        if(isSupabase) {
+                            "云端"
+                        } else {
+                            EMPTY_STRING
+                        }
+                    }
+                    Text(
+                        if(eventId <= 0) "添加${platformText}日程"
+                        else if(enableCopy) "复制${platformText}日程"
+                        else "修改${platformText}日程"
+                    )
+                },
                 navigationIcon = {
                     TopBarNavigationIcon()
                 },
@@ -301,7 +324,7 @@ fun AddEventScreen(
                             isCircle = true,
                             backdrop = backDrop
                         ) {
-                            Icon(painterResource(R.drawable.wand_stars),null)
+                            BrushIcon(icon = R.drawable.wand_stars)
                         }
                         if(!isSupabase) {
                             LiquidButton(
@@ -318,16 +341,29 @@ fun AddEventScreen(
                                 Icon(painterResource(R.drawable.cloud),null)
                             }
                         }
-                    } else {
+                    } else if(!enableCopy) {
+                        LiquidButton(
+                            onClick = {
+                                navController.push(
+                                    AddEventDestination(eventId, enableCopy = true),
+                                    launchMode = LaunchMode.Replace(),
+                                )
+                            },
+                            isCircle = true,
+                            backdrop = backDrop
+                        ) {
+                            Icon(painterResource(R.drawable.copy_all),null)
+                        }
+                        Spacer(Modifier.width(BUTTON_PADDING))
                         LiquidButton(
                             onClick = {
                                 showDialog = true
                             },
-                            modifier = Modifier.padding(end = APP_HORIZONTAL_DP),
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING),
                             isCircle = true,
-                            backdrop = backDrop
+                            backdrop = backDrop,
                         ) {
-                            Icon(painterResource(R.drawable.delete),null)
+                            Icon(painterResource(R.drawable.delete),null, tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -337,7 +373,11 @@ fun AddEventScreen(
         val canUse by produceState<Boolean?>(initialValue = null) {
             value = if(isSupabase) loginSupabaseWithCheck(jwt,refreshToken,vm,context) else true
         }
-        Column(modifier = Modifier.padding(innerPadding)) {
+        Column(
+            modifier = Modifier
+                .hazeSource(hazeState)
+                .backDropSource(backDrop)
+        ) {
             when(canUse) {
                 null -> {
                     CenterScreen {
@@ -345,7 +385,7 @@ fun AddEventScreen(
                     }
                 }
                 true -> {
-                    AddEventUI(vm,isSupabase,eventId) {
+                    AddEventUI(vm,isSupabase,eventId,enableCopy,innerPadding) {
                         navController.pop()
                     }
                 }
@@ -407,8 +447,8 @@ private fun SharedTransitionScope.SurfaceUI(
     boundsTransform: BoundsTransform,
     vm: NetWorkViewModel
 ) {
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
-    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
+    val refreshToken by DataStoreManager.supabaseRefreshToken.collectAsState(initial = EMPTY_STRING)
 
 //    var loading by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -512,7 +552,14 @@ private fun SharedTransitionScope.SurfaceUI(
                         }
                     }
                     true -> {
-                        AddEventUI(vm,isSupabase,showChange = showChange)
+                        CenterScreen {
+                            StatusIcon(
+                                R.drawable.build,
+                                text("上传日程功能正改造升级，敬请期待")
+                            )
+                        }
+                        return@Column
+                        AddEventUI(vm,isSupabase,showChange = showChange, innerPadding = innerPadding)
                     }
                     false -> {
                         CenterScreen {
@@ -533,13 +580,17 @@ private fun SharedTransitionScope.SurfaceUI(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AddEventUI(
     vm: NetWorkViewModel,
     isSupabase : Boolean,
     eventId: Int = -1,
+    enableCopy : Boolean = false,
+    innerPadding : PaddingValues,
     showChange: (Boolean) -> Unit
 ) {
+    val groupId = remember { UUID.randomUUID().toString() }
     var enabled by remember { mutableStateOf(false) }
     val editedData by produceState<CustomEventDTO?>(initialValue = null) {
         if(eventId <= 0) {
@@ -550,17 +601,19 @@ fun AddEventUI(
         }
     }
     var isScheduleType by remember { mutableStateOf(true) }
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var remark by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(EMPTY_STRING) }
+    var description by remember { mutableStateOf(EMPTY_STRING) }
+    var remark by remember { mutableStateOf(EMPTY_STRING) }
 
-    var time by remember { mutableStateOf(Pair("","")) }
-    var date by remember { mutableStateOf(Pair("","")) }
+    var time by remember { mutableStateOf(Pair(EMPTY_STRING,EMPTY_STRING)) }
+    var date by remember { mutableStateOf(Pair(EMPTY_STRING,EMPTY_STRING)) }
+    val timeParts = remember { mutableStateListOf(TimePart()) }
+
     LaunchedEffect(editedData) {
         editedData?.let {
             isScheduleType = it.type == CustomEventType.SCHEDULE
             title = it.title
-            description = it.description ?: ""
+            description = it.description ?: EMPTY_STRING
             remark = it.remark
 
             val preDateTime = it.dateTime
@@ -608,7 +661,7 @@ fun AddEventUI(
         enabled = title.isNotBlank() && title.isNotEmpty() && time.first.isNotEmpty() && time.second.isNotEmpty() && date.first.isNotEmpty() && date.second.isNotEmpty() && remark.isNotBlank() && remark.isNotEmpty()
     }
 
-    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = "")
+    val jwt by DataStoreManager.supabaseJwt.collectAsState(initial = EMPTY_STRING)
     var isClone by remember { mutableStateOf(true) }
     val classList = remember { mutableStateListOf<String>() }
     var updateLoading by remember { mutableStateOf(false) }
@@ -617,7 +670,24 @@ fun AddEventUI(
     }
 
     if(showSelectDateDialog)
-        DateRangePickerModal(isScheduleType,onSelected = { date = it }) { showSelectDateDialog = false }
+        EventDatePickerDialog(
+            isScheduleType,
+            onSelected = {
+                when(it) {
+                    is EventDatePickerSelectedResult.Date -> {
+                        date = Pair(it.date,it.date)
+                        // fixme 临时写法，可以改成hashset
+//                        dates.clear()
+//                        dates.addAll(it.dates)
+                    }
+                    is EventDatePickerSelectedResult.Range -> {
+                        date = it.range
+                    }
+                }
+            }
+        ) {
+            showSelectDateDialog = false
+        }
     if(showSelectTimeDialog)
         TimeRangePickerDialog(isScheduleType,onSelected = { time = it }, defaultValue = time) { showSelectTimeDialog = false }
 
@@ -659,7 +729,8 @@ fun AddEventUI(
                                                 type = if(isScheduleType) CustomEventType.SCHEDULE else CustomEventType.NET_COURSE,
                                                 description = description.let { desp -> if(desp.isNotEmpty() && desp.isNotBlank()) desp else null },
                                                 remark = remark,
-                                                supabaseId = getInsertedEventId(vm)
+                                                supabaseId = getInsertedEventId(vm),
+                                                groupId = null
                                             )
                                         }
                                         if(enabled && entity != null) {
@@ -693,6 +764,7 @@ fun AddEventUI(
     }
     var bottomHeight by remember { mutableStateOf(0.dp) }
     val color = MaterialTheme.colorScheme.surface
+    val useCreate = editedData == null || enableCopy
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -712,7 +784,7 @@ fun AddEventUI(
                         )
                     )
                 )
-                .navigationBarsPadding()
+                .appNavigationBarPadding()
         ){
 
             OutlinedCard(
@@ -737,14 +809,16 @@ fun AddEventUI(
                                         dateTime = it,
                                         type = if(isScheduleType) CustomEventType.SCHEDULE else CustomEventType.NET_COURSE,
                                         description = description.let { desp -> if(desp.isNotEmpty() && desp.isNotBlank()) desp else null },
-                                        remark = remark
+                                        remark = remark,
+                                        supabaseId = null,
+                                        groupId = null
                                     )
                                 }
                                 if(enabled && entity != null) {
                                     // 添加到数据库
                                     val targetEntity = CustomEventMapper.dtoToEntity(entity)
                                     val result = async {
-                                        if (editedData == null) {
+                                        if (useCreate) {
                                             DataBaseManager.customEventDao.insert(targetEntity).toInt()
                                         } else {
                                             val sId = editedData!!.supabaseId
@@ -774,14 +848,24 @@ fun AddEventUI(
 
             ) {
                 if(!updateLoading)
-                    Text(if(editedData == null)"添加" else "更新")
+                    Text(
+                        if(useCreate) "添加" else "更新"
+                    )
                 else
                     LoadingIcon()
             }
 
         }
 
+        val weekInfoStart by produceState<Pair<Int, Int>?>(initialValue = null,key1 = date) {
+            value = dateToWeek(date.first)
+        }
+        val weekInfoEnd by produceState<Pair<Int, Int>?>(initialValue = null,key1 = date) {
+            value = dateToWeek(date.second)
+        }
+
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            InnerPaddingHeight(innerPadding,true)
             CustomSingleChoiceRow(
                 options = LocalEvent.entries,
                 selected = if(isScheduleType) LocalEvent.SCHEDULE else LocalEvent.DEADLINE,
@@ -790,8 +874,8 @@ fun AddEventUI(
                     LocalEvent.DEADLINE -> false
                     LocalEvent.SCHEDULE -> true
                 }
-                date = Pair("","")
-                time = Pair("","")
+                date = Pair(EMPTY_STRING,EMPTY_STRING)
+                time = Pair(EMPTY_STRING,EMPTY_STRING)
             }
             CardListItem(
                 cardModifier = Modifier.padding(bottom = CARD_NORMAL_DP),
@@ -806,318 +890,406 @@ fun AddEventUI(
                 },
                 modifier = Modifier.clickable {
                     isScheduleType = !isScheduleType
-                    date = Pair("","")
-                    time = Pair("","")
+                    date = Pair(EMPTY_STRING,EMPTY_STRING)
+                    time = Pair(EMPTY_STRING,EMPTY_STRING)
                 },
                 leadingContent = {
                     FilledTonalIconButton(
                         onClick = {
                             isScheduleType = !isScheduleType
-                            date = Pair("","")
-                            time = Pair("","")
+                            date = Pair(EMPTY_STRING,EMPTY_STRING)
+                            time = Pair(EMPTY_STRING,EMPTY_STRING)
                         },
                         content = typeIcon
                     )
                 }
             )
-            PaddingHorizontalDivider(isDashed = true)
-
-            Spacer(Modifier.height(CARD_NORMAL_DP*2))
+            Spacer(Modifier.height(CARD_NORMAL_DP))
             CustomTextField(input = title, label = { Text("标题") },singleLine = false) { title = it }
-            Spacer(Modifier.height(CARD_NORMAL_DP*2))
-            CustomCard(color = cardNormalColor()) {
-                var displaySelector by rememberSaveable() { mutableStateOf(false) }
-                CustomTextField(
-                    input = description,
-                    label = { Text("备注(可为空)") },
-                    singleLine = false,
-                    shape = NoneRoundShape,
-                    colors = TextFieldDefaults.colors().copy(
-                        focusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
-                        unfocusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent
-                    ),
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                displaySelector = !displaySelector
+            if(isScheduleType) {
+                DividerTextExpandedWith("时间段") {
+                    timeParts.forEachIndexed { index, item ->
+                        CustomCard(color = cardNormalColor()) {
+                            Column {
+                                var displaySelector by remember { mutableStateOf(false) }
+                                CustomTextField(
+                                    input = description,
+                                    label = { Text("备注(可为空)") },
+                                    singleLine = false,
+                                    shape = NoneRoundShape,
+                                    colors = TextFieldDefaults.colors().copy(
+                                        focusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
+                                        unfocusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent
+                                    ),
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = {
+                                                displaySelector = !displaySelector
+                                            }
+                                        ) {
+                                            val animatedImageVector = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_expand)
+                                            val painter = rememberAnimatedVectorPainter(animatedImageVector, displaySelector)
+                                            Icon(painter, null)
+                                        }
+                                    },
+                                    modifier = Modifier,
+                                ) {
+                                    description = it
+                                }
+                                AnimatedVisibility(
+                                    visible = displaySelector,
+                                    enter = slideInVertically(
+                                        initialOffsetY = { -40 }
+                                    ) + expandVertically(
+                                        expandFrom = Alignment.Top
+                                    ) + scaleIn(
+                                        transformOrigin = TransformOrigin(0.5f, 0f)
+                                    ) + fadeIn(initialAlpha = 0.3f),
+                                    exit = slideOutVertically() + shrinkVertically() + fadeOut() + scaleOut(targetScale = 1.2f)
+                                ) {
+                                    BuildingsSelector(vm) {
+                                        description = it
+                                    }
+                                }
                             }
-                        ) {
-                            val animatedImageVector = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_expand)
-                            val painter = rememberAnimatedVectorPainter(animatedImageVector, displaySelector)
-                            Icon(painter, null)
+                            PaddingHorizontalDivider(isDashed = true)
+                            TransplantListItem(
+                                headlineContent = {
+                                    val timeStr = if(time.first.isEmpty() || time.second.isEmpty()) {
+                                        "----"
+                                    } else if(time.first == time.second) {
+                                        time.first
+                                    } else {
+                                        time.first + "~" + time.second
+                                    }
+                                    Text(
+                                        date.second.ifEmpty { "----" } +  (weekInfoStart?.let { " (第${it.first}周 周${numToChinese(it.second)})" } ?: EMPTY_STRING) +" " + timeStr
+                                    )
+                                },
+                                leadingContent = { Icon(painterResource(R.drawable.schedule),null) }
+                            )
+                            BottomTextButtonGroup(
+                                listOf(
+//                            CardBottomButton("清空",isScheduleType && dates.isNotEmpty(), errorColor = true) {
+//                                dates.clear()
+//                            },
+                                    CardBottomButton("选择日期") {
+                                        showSelectDateDialog = true
+                                    },
+                                    CardBottomButton("选择时间") {
+                                        showSelectTimeDialog = true
+                                    },
+//                                CardBottomButton("复制", show = false) {
+//                                    showDevelopingToast()
+//                                },
+                                    CardBottomButton("删除", errorColor = true, show = timeParts.size != 1) {
+                                        timeParts.removeAt(index)
+                                    }
+                                )
+                            )
                         }
-                    },
-                    modifier = Modifier,
-                ) {
-                    description = it
-                }
-                AnimatedVisibility(
-                    visible = displaySelector,
-                    enter = slideInVertically(
-                        initialOffsetY = { -40 }
-                    ) + expandVertically(
-                        expandFrom = Alignment.Top
-                    ) + scaleIn(
-                        transformOrigin = TransformOrigin(0.5f, 0f)
-                    ) + fadeIn(initialAlpha = 0.3f),
-                    exit = slideOutVertically() + shrinkVertically() + fadeOut() + scaleOut(targetScale = 1.2f)
-                ) {
-                    BuildingsSelector(vm) {
-                        description = it
+                    }
+                    FilledTonalButton (
+                        onClick = {
+                            showDevelopingToast()
+//                            timeParts.add(TimePart())
+                        },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = APP_HORIZONTAL_DP),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.filledTonalButtonColors(containerColor = cardNormalColor())
+                    ) {
+                        Text("添加")
                     }
                 }
-            }
-            Spacer(Modifier.height(CARD_NORMAL_DP))
-            val weekInfoStart by produceState<Pair<Int, Int>?>(initialValue = null,key1 = date) {
-                value = dateToWeek(date.first)
-            }
-            val weekInfoEnd by produceState<Pair<Int, Int>?>(initialValue = null,key1 = date) {
-                value = dateToWeek(date.second)
-            }
-
-            CustomCard(color = cardNormalColor()) {
+            } else {
+                Spacer(Modifier.height(CARD_NORMAL_DP*2))
+                CustomCard(color = cardNormalColor()) {
+                    var displaySelector by remember { mutableStateOf(false) }
+                    CustomTextField(
+                        input = description,
+                        label = { Text("备注(可为空)") },
+                        singleLine = false,
+                        shape = NoneRoundShape,
+                        colors = TextFieldDefaults.colors().copy(
+                            focusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
+                            unfocusedIndicatorColor = if(!displaySelector) Color.Transparent else defaultDividerColor(),
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    displaySelector = !displaySelector
+                                }
+                            ) {
+                                val animatedImageVector = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_expand)
+                                val painter = rememberAnimatedVectorPainter(animatedImageVector, displaySelector)
+                                Icon(painter, null)
+                            }
+                        },
+                        modifier = Modifier,
+                    ) {
+                        description = it
+                    }
+                    AnimatedVisibility(
+                        visible = displaySelector,
+                        enter = slideInVertically(
+                            initialOffsetY = { -40 }
+                        ) + expandVertically(
+                            expandFrom = Alignment.Top
+                        ) + scaleIn(
+                            transformOrigin = TransformOrigin(0.5f, 0f)
+                        ) + fadeIn(initialAlpha = 0.3f),
+                        exit = slideOutVertically() + shrinkVertically() + fadeOut() + scaleOut(targetScale = 1.2f)
+                    ) {
+                        BuildingsSelector(vm) {
+                            description = it
+                        }
+                    }
+                }
+                Spacer(Modifier.height(CARD_NORMAL_DP))
+                CustomCard(color = cardNormalColor()) {
                     TransplantListItem(
-                        headlineContent = { Text(
-                            (if(isScheduleType)"开始 ${date.first + (weekInfoStart?.let { " (第${it.first}周 周${numToChinese(it.second)})" } ?: "") + " " + time.first}\n" else "")
-                                    + "结束 ${date.second +  (weekInfoEnd?.let { " (第${it.first}周 周${numToChinese(it.second)})" } ?: "") +" " + time.second}"
-                        ) },
+                        headlineContent = {
+                            Text(
+                                "结束 ${date.second +  (weekInfoEnd?.let { " (第${it.first}周 周${numToChinese(it.second)})" } ?: EMPTY_STRING) +" " + time.second}"
+                            )
+                        },
                         leadingContent = { Icon(painterResource(R.drawable.schedule),null) }
                     )
                     BottomTextButtonGroup(
                         listOf(
-                            CardBottomButton(if(isScheduleType)"选择日期范围" else "选择截止日期") {
+                            CardBottomButton("选择截止日期") {
                                 showSelectDateDialog = true
                             },
-                            CardBottomButton(if(isScheduleType)"选择时间范围" else "选择截止时间") {
+                            CardBottomButton("选择截止时间") {
                                 showSelectTimeDialog = true
                             },
                         )
                     )
                 }
-                Spacer(Modifier.height(CARD_NORMAL_DP*2))
-                CustomTextField(input = remark, label = { Text("时间显示文案") }, singleLine = false) { remark = it }
-                Spacer(Modifier.height(CARD_NORMAL_DP*2))
+            }
 
+            Spacer(Modifier.height(CARD_NORMAL_DP*2))
+//                CustomTextField(input = remark, label = { Text("时间显示文案") }, singleLine = false) { remark = it }
+//                Spacer(Modifier.height(CARD_NORMAL_DP*2))
 
-                if(isSupabase) {
-                    var isEditMode by remember { mutableStateOf(false) }
-                    var input by remember { mutableStateOf("") }
-                    var id by remember { mutableIntStateOf(-1) }
-                    var showDelDialog by remember { mutableStateOf(false) }
-                    var showAddDialog by remember { mutableStateOf(false) }
+            if(isSupabase) {
+                var isEditMode by remember { mutableStateOf(false) }
+                var input by remember { mutableStateOf(EMPTY_STRING) }
+                var id by remember { mutableIntStateOf(-1) }
+                var showDelDialog by remember { mutableStateOf(false) }
+                var showAddDialog by remember { mutableStateOf(false) }
 
-                    if(showDelDialog) {
-                        LittleDialog(
-                            onConfirmation = {
-                                if(id >= 0) {
-                                    classList.removeAt(id)
+                if(showDelDialog) {
+                    LittleDialog(
+                        onConfirmation = {
+                            if(id >= 0) {
+                                classList.removeAt(id)
+                            }
+                            showDelDialog = false
+                        },
+                        onDismissRequest = { showDelDialog = false },
+                        dialogText = "要删除此项吗"
+                    )
+                }
+                if(showAddDialog) {
+                    Dialog(
+                        onDismissRequest = { showAddDialog = false }
+                    ) {
+                        Column(modifier = Modifier
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surface)) {
+                            Column(modifier = Modifier.padding(APP_HORIZONTAL_DP)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    TextField(
+                                        modifier = Modifier
+                                            .weight(1f),
+                                        value = input,
+                                        onValueChange = { input = it },
+                                        singleLine = true,
+                                        shape = MaterialTheme.shapes.medium,
+                                        colors = textFiledTransplant(isColorCopy = false),
+                                    )
                                 }
-                                showDelDialog = false
-                            },
-                            onDismissRequest = { showDelDialog = false },
-                            dialogText = "要删除此项吗"
-                        )
-                    }
-                    if(showAddDialog) {
-                        Dialog(
-                            onDismissRequest = { showAddDialog = false }
-                        ) {
-                            Column(modifier = Modifier
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.surface)) {
-                                Column(modifier = Modifier.padding(APP_HORIZONTAL_DP)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.Center
-                                    ) {
-                                        TextField(
-                                            modifier = Modifier
-                                                .weight(1f),
-                                            value = input,
-                                            onValueChange = { input = it },
-                                            singleLine = true,
-                                            shape = MaterialTheme.shapes.medium,
-                                            colors = textFiledTransplant(isColorCopy = false),
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(APP_HORIZONTAL_DP))
+                                Spacer(modifier = Modifier.height(APP_HORIZONTAL_DP))
 
-                                    Row(modifier = Modifier
-                                        .fillMaxWidth(),horizontalArrangement = Arrangement.Center) {
-                                        FilledTonalButton(onClick = {
-                                            showAddDialog = false
-                                        },modifier = Modifier
-                                            .weight(.5f)
-                                        ) {
-                                            Text(text = "取消")
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Button(onClick = {
-                                            classList.add(input)
-                                            showAddDialog = false
-                                        },modifier = Modifier
-                                            .weight(.5f)
-                                        ) {
-                                            Text(text = "保存")
-                                        }
+                                Row(modifier = Modifier
+                                    .fillMaxWidth(),horizontalArrangement = Arrangement.Center) {
+                                    FilledTonalButton(onClick = {
+                                        showAddDialog = false
+                                    },modifier = Modifier
+                                        .weight(.5f)
+                                    ) {
+                                        Text(text = "取消")
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Button(onClick = {
+                                        classList.add(input)
+                                        showAddDialog = false
+                                    },modifier = Modifier
+                                        .weight(.5f)
+                                    ) {
+                                        Text(text = "保存")
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    LaunchedEffect(Unit) { getPersonInfo().className?.let { classList.add(it) } }
-                    LaunchedEffect(showAddDialog) {
-                        if(!showAddDialog)
-                            input = ""
+                LaunchedEffect(Unit) { getPersonInfo().className?.let { classList.add(it) } }
+                LaunchedEffect(showAddDialog) {
+                    if(!showAddDialog) {
+                        input = EMPTY_STRING
                     }
+                }
 
-                    Spacer(Modifier.height(5.dp - CARD_NORMAL_DP*2f))
-                    CustomCard(color = cardNormalColor()) {
-                        TransplantListItem(
-                            headlineContent = { Text("适用范围" ) },
-                            supportingContent = {
-                                Text("为保证统一规范，必须按 查询中心-个人信息-班级 输入班级名，例如'计算机29-9班’而不是‘计科29-9班’，不添加/清空班级则表示对所有人可见" )
-                            },
-                            leadingContent = {
-                                Icon(painterResource(R.drawable.target),null)
-                            } ,
-                            modifier = Modifier.clickable {
-                            }
-                        )
-                        PaddingHorizontalDivider()
-                        TransplantListItem(
-                            headlineContent = { Text("适用校区") },
-                            supportingContent = {
-                                Column {
-                                    Row {
-                                        FilterChip(onClick = { campus = EventCampus.HEFEI }, label = { Text("合肥") }, selected = campus == EventCampus.HEFEI)
-                                        Spacer(Modifier.width(10.dp))
-                                        FilterChip(onClick = { campus = EventCampus.XUANCHENG }, label = { Text("宣城") }, selected = campus == EventCampus.XUANCHENG)
-                                        Spacer(Modifier.width(10.dp))
-                                        FilterChip(onClick = { campus = EventCampus.DEFAULT }, label = { Text("所有人可见") }, selected = campus == EventCampus.DEFAULT)
-                                    }
+                Spacer(Modifier.height(5.dp - CARD_NORMAL_DP*2f))
+                CustomCard(color = cardNormalColor()) {
+                    TransplantListItem(
+                        headlineContent = { Text("适用范围" ) },
+                        supportingContent = {
+                            Text("为保证统一规范，必须按 查询中心-个人信息-班级 输入班级名，例如'计算机29-9班’而不是‘计科29-9班’，不添加/清空班级则表示对所有人可见" )
+                        },
+                        leadingContent = {
+                            Icon(painterResource(R.drawable.target),null)
+                        } ,
+                        modifier = Modifier.clickable {
+                        }
+                    )
+                    PaddingHorizontalDivider()
+                    TransplantListItem(
+                        headlineContent = { Text("适用校区") },
+                        supportingContent = {
+                            Column {
+                                Row {
+                                    FilterChip(onClick = { campus = EventCampus.HEFEI }, label = { Text("合肥") }, selected = campus == EventCampus.HEFEI)
+                                    Spacer(Modifier.width(10.dp))
+                                    FilterChip(onClick = { campus = EventCampus.XUANCHENG }, label = { Text("宣城") }, selected = campus == EventCampus.XUANCHENG)
+                                    Spacer(Modifier.width(10.dp))
+                                    FilterChip(onClick = { campus = EventCampus.DEFAULT }, label = { Text("所有人可见") }, selected = campus == EventCampus.DEFAULT)
                                 }
-
                             }
-                        )
-                        PaddingHorizontalDivider()
-                        TransplantListItem(
-                            headlineContent = { Text("适用班级") },
-                            supportingContent = {
-                                if(classList.isEmpty()) {
-                                    RowHorizontal {
-                                        Text("所有人可见")
-                                    }
-                                } else {
-                                    Column {
-                                        for(index in classList.indices step 2) {
-                                            Row {
+
+                        }
+                    )
+                    PaddingHorizontalDivider()
+                    TransplantListItem(
+                        headlineContent = { Text("适用班级") },
+                        supportingContent = {
+                            if(classList.isEmpty()) {
+                                RowHorizontal {
+                                    Text("所有人可见")
+                                }
+                            } else {
+                                Column {
+                                    for(index in classList.indices step 2) {
+                                        Row {
+                                            AssistChip(
+                                                onClick = {
+                                                    id = index
+                                                    showDelDialog = true
+                                                },
+                                                label = { Text(classList[index]) },
+                                                leadingIcon = if(isEditMode) { { Icon(painterResource(R.drawable.close), null) } } else null
+                                            )
+
+                                            if(index+1 != classList.size) {
+                                                Spacer(Modifier.width(APP_HORIZONTAL_DP))
                                                 AssistChip(
                                                     onClick = {
-                                                        id = index
+                                                        id = index+1
                                                         showDelDialog = true
                                                     },
-                                                    label = { Text(classList[index]) },
+                                                    label = { Text(classList[index+1]) },
                                                     leadingIcon = if(isEditMode) { { Icon(painterResource(R.drawable.close), null) } } else null
                                                 )
-
-                                                if(index+1 != classList.size) {
-                                                    Spacer(Modifier.width(APP_HORIZONTAL_DP))
-                                                    AssistChip(
-                                                        onClick = {
-                                                            id = index+1
-                                                            showDelDialog = true
-                                                        },
-                                                        label = { Text(classList[index+1]) },
-                                                        leadingIcon = if(isEditMode) { { Icon(painterResource(R.drawable.close), null) } } else null
-                                                    )
-                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                        )
-                        Row(modifier = Modifier.align(Alignment.End)) {
-                            Text(
-                                text = "添加",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .align(Alignment.Bottom)
-                                    .padding(
-                                        horizontal = APP_HORIZONTAL_DP,
-                                        vertical = APP_HORIZONTAL_DP - 5.dp
-                                    )
-                                    .clickable {
-                                        showAddDialog = true
-                                    }
-                            )
-                            Text(
-                                text = if(!isEditMode) "编辑" else "完成",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .align(Alignment.Top)
-                                    .padding(
-                                        horizontal = APP_HORIZONTAL_DP,
-                                        vertical = APP_HORIZONTAL_DP - 5.dp
-                                    )
-                                    .clickable {
-                                        isEditMode = !isEditMode
-                                    }
-                            )
-                            Text(
-                                text = "清空",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .align(Alignment.Bottom)
-                                    .padding(
-                                        horizontal = APP_HORIZONTAL_DP,
-                                        vertical = APP_HORIZONTAL_DP - 5.dp
-                                    )
-                                    .clickable {
-                                        classList.clear()
-                                    }
-                            )
-                            Text(
-                                text = "排序(自动)",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 14.sp,
-                                modifier = Modifier
-                                    .align(Alignment.Bottom)
-                                    .padding(
-                                        horizontal = APP_HORIZONTAL_DP,
-                                        vertical = APP_HORIZONTAL_DP - 5.dp
-                                    )
-                                    .clickable {
-                                        val sorted = classList.sorted() // 生成排序后的副本
-                                        classList.clear()               // 清空原列表
-                                        classList.addAll(sorted)        // 添加排序后的元素
-                                    }
-                            )
                         }
-                    }
-                    Spacer(Modifier.height(5.dp - CARD_NORMAL_DP))
-                    CardListItem(
-                        headlineContent = { Text("同时克隆卡片至本地")},
-                        supportingContent = { Text(if(isClone)"上传卡片时，同时添加入本地聚焦当中" else "仅共享卡片 自己无需使用")},
-                        trailingContent = { Switch(checked = isClone, onCheckedChange = { ch -> isClone = ch }) },
-                        modifier = Modifier.clickable { isClone = !isClone }
                     )
-                    Spacer(Modifier.height(5.dp))
-                    BottomTip("结果将上传至云端,仅持有校园邮箱用户可访问")
-                } else {
-                    BottomTip("结果将保存在本地，若需共享请进入云端共建")
+                    Row(modifier = Modifier.align(Alignment.End)) {
+                        Text(
+                            text = "添加",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .padding(
+                                    horizontal = APP_HORIZONTAL_DP,
+                                    vertical = APP_HORIZONTAL_DP - 5.dp
+                                )
+                                .clickable {
+                                    showAddDialog = true
+                                }
+                        )
+                        Text(
+                            text = if(!isEditMode) "编辑" else "完成",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.Top)
+                                .padding(
+                                    horizontal = APP_HORIZONTAL_DP,
+                                    vertical = APP_HORIZONTAL_DP - 5.dp
+                                )
+                                .clickable {
+                                    isEditMode = !isEditMode
+                                }
+                        )
+                        Text(
+                            text = "清空",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .padding(
+                                    horizontal = APP_HORIZONTAL_DP,
+                                    vertical = APP_HORIZONTAL_DP - 5.dp
+                                )
+                                .clickable {
+                                    classList.clear()
+                                }
+                        )
+                        Text(
+                            text = "排序(自动)",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 14.sp,
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .padding(
+                                    horizontal = APP_HORIZONTAL_DP,
+                                    vertical = APP_HORIZONTAL_DP - 5.dp
+                                )
+                                .clickable {
+                                    val sorted = classList.sorted() // 生成排序后的副本
+                                    classList.clear()               // 清空原列表
+                                    classList.addAll(sorted)        // 添加排序后的元素
+                                }
+                        )
+                    }
                 }
-//            }
-            Spacer(Modifier
-                .height(bottomHeight + APP_HORIZONTAL_DP)
-                .navigationBarsPadding())
+                Spacer(Modifier.height(5.dp - CARD_NORMAL_DP))
+                CardListItem(
+                    headlineContent = { Text("同时克隆卡片至本地")},
+                    supportingContent = { Text(if(isClone)"上传卡片时，同时添加入本地聚焦当中" else "仅共享卡片 自己无需使用")},
+                    trailingContent = { Switch(checked = isClone, onCheckedChange = { ch -> isClone = ch }) },
+                    modifier = Modifier.clickable { isClone = !isClone }
+                )
+                Spacer(Modifier.height(5.dp))
+                BottomTip("结果将上传至云端,仅持有校园邮箱用户可访问")
+            }
+            InnerPaddingHeight(innerPadding,false)
+            Spacer(Modifier.height(bottomHeight + APP_HORIZONTAL_DP).appNavigationBarPadding())
         }
     }
 }
@@ -1190,7 +1362,7 @@ private fun BuildingsSelector(
                 selectedColor = MaterialTheme.colorScheme.surface,
                 selectedShape = FilterChipDefaults.shape,
                 onSelect = { _,content ->
-                    selectedBuildings = ""
+                    selectedBuildings = EMPTY_STRING
                     campus = content
                 }
             ) { content ->
@@ -1254,3 +1426,111 @@ private fun BuildingsSelector(
         }
     }
 }
+
+
+private sealed class EventDatePickerSelectedResult {
+    data class Range(
+        val range : Pair<String, String>
+    ) : EventDatePickerSelectedResult()
+/*
+    data class Dates(
+        val dates : List<String>
+    ) : EventDatePickerSelectedResult()
+ */
+    data class Date(
+        val date : String
+    ) : EventDatePickerSelectedResult()
+}
+
+@Deprecated("即将抛弃范围选取的交互，此函数将会被删除")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TemporaryEventDatePickerDialog(
+    isRangeOrSingle : Boolean = false,
+    onSelected: (Pair<String, String>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    if(isRangeOrSingle) {
+        DateRangePickerDialog(onSelected,onDismiss)
+    } else {
+        var startDate by remember { mutableStateOf<Long?>(null) }
+        var startDateString by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(Unit) {
+            val todayStartMillis = DateTimeManager.getToday()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            startDate = todayStartMillis
+            startDateString = DateTimeManager.simpleFormatter_YYYY_MM_DD.format(startDate)
+        }
+
+        DatePickerDialog(
+            "截止",
+            onConfirm = {
+                startDateString?.let { s ->
+                    onSelected(Pair(s, it))
+                }
+            },
+            onDismiss = onDismiss
+        )
+    }
+}
+
+/**
+ * @param isRangeOrSingle 为true选择日期范围，返回Pair<String, String>起止日期；为false选择单日期，返回Pair<String, String>的second为其值
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EventDatePickerDialog(
+    isRangeOrSingle : Boolean = false,
+    onSelected: (EventDatePickerSelectedResult) -> Unit,
+    onDismiss: () -> Unit
+) {
+    if(isRangeOrSingle) {
+        DatePickerDialog(
+            onDismiss = onDismiss,
+            onConfirm = {
+                onSelected(EventDatePickerSelectedResult.Date(it))
+            }
+        )
+        /*
+        DatesPickerDialog(
+            initialDates = emptyList(),
+            onDismiss = onDismiss,
+            onConfirm = {
+                onSelected(EventDatePickerSelectedResult.Dates(it))
+            }
+        )
+         */
+    } else {
+        var startDate by remember { mutableStateOf<Long?>(null) }
+        var startDateString by remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(Unit) {
+            val todayStartMillis = DateTimeManager.getToday()
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            startDate = todayStartMillis
+            startDateString = DateTimeManager.simpleFormatter_YYYY_MM_DD.format(startDate)
+        }
+
+        DatePickerDialog(
+            "截止",
+            onConfirm = {
+                startDateString?.let { s ->
+                    onSelected(EventDatePickerSelectedResult.Range(Pair(s, it)))
+                }
+            },
+            onDismiss = onDismiss
+        )
+    }
+}
+
+private data class TimePart(
+    val remark : String? = null,
+    val date : List<String> = emptyList(),
+    val time : Pair<String,String> = Pair(EMPTY_STRING,EMPTY_STRING),
+    val id : String = UUID.randomUUID().toString()
+)

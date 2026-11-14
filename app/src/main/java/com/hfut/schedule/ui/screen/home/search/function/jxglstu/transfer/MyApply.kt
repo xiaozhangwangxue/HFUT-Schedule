@@ -52,6 +52,8 @@ import com.hfut.schedule.ui.screen.home.getJxglstuCookie
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPersonInfo
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.remove
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.align.CenterScreen
@@ -251,12 +253,12 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
                             TransplantListItem(
                                 headlineContent = { ScrollText(text = data!!.major.nameZh) },
                                 overlineContent = { ScrollText(text = data!!.department.nameZh) },
-                                leadingContent = { Icon(painterResource(R.drawable.arrow_forward), contentDescription = "") },
+                                leadingContent = { Icon(painterResource(R.drawable.arrow_forward), contentDescription = EMPTY_STRING) },
                                 modifier = Modifier.weight(.6f)
                             )
                         }
                         TransplantListItem(
-                            leadingContent = { Icon(painter = painterResource(id = R.drawable.group), contentDescription = "") },
+                            leadingContent = { Icon(painter = painterResource(id = R.drawable.group), contentDescription = EMPTY_STRING) },
                             overlineContent = { ScrollText(text = "已申请/计划录取") },
                             headlineContent = { Text(text = "${data!!.applyStdCount} / ${data!!.preparedStdCount}", fontWeight = FontWeight.Bold ) },
                         )
@@ -282,7 +284,7 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
 
                         if(examSchedule != null) {
                             TransplantListItem(
-                                headlineContent = { Text(examSchedule.place.replace("；","\n").replace("："," ").replace("。","")) },
+                                headlineContent = { Text(examSchedule.place.replace("；","\n").replace("："," ").remove("。")) },
                                 supportingContent = { Text(examSchedule.time) },
                                 overlineContent = { Text("笔试安排") }
                             )
@@ -298,7 +300,7 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
                     if(data != null) {
                         Row {
                             TransplantListItem(
-//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.award_star), contentDescription = "") },
+//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.award_star), contentDescription = EMPTY_STRING) },
                                 overlineContent = { ScrollText(text = "绩点") },
                                 headlineContent = { Text(text = "${grade.gpa.score}" ) },
                                 supportingContent = {
@@ -307,7 +309,7 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
                                 modifier = Modifier.weight(.5f)
                             )
                             TransplantListItem(
-//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.filter_vintage), contentDescription = "") },
+//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.filter_vintage), contentDescription = EMPTY_STRING) },
                                 overlineContent = { ScrollText(text = "加权均分") },
                                 headlineContent = { Text(text = "${grade.weightAvg.score}" ) },
                                 supportingContent = {
@@ -318,7 +320,7 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
                         }
                         Row {
                             TransplantListItem(
-//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.award_star), contentDescription = "") },
+//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.award_star), contentDescription = EMPTY_STRING) },
                                 overlineContent = { ScrollText(text = "转专业考核") },
                                 headlineContent = { Text(text = "${grade.transferAvg.score}", fontWeight = FontWeight.Bold ) },
                                 supportingContent = {
@@ -332,7 +334,7 @@ fun MyApply(vm: NetWorkViewModel, batchId : String, indexs : Int) {
                                 modifier = Modifier.weight(.5f)
                             )
                             TransplantListItem(
-//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.filter_vintage), contentDescription = "") },
+//                                leadingContent = { Icon(painter = painterResource(id = R.drawable.filter_vintage), contentDescription = EMPTY_STRING) },
                                 overlineContent = { ScrollText(text = "算术均分") },
                                 headlineContent = { Text(text = "${grade.operateAvg.score}") },
                                 supportingContent = {

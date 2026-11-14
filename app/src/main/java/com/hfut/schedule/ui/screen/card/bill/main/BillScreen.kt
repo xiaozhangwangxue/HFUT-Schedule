@@ -30,8 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.hfut.schedule.R
+import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.prefs
 import com.hfut.schedule.logic.util.sys.ClipBoardHelper
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
@@ -50,6 +52,8 @@ import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.xah.common.logic.model.HuiXinBillRecord
 import com.xah.common.logic.state.NetworkUiState
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.remove
 import com.xah.common.ui.component.text.BottomTip
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.padding.InnerPaddingHeight
@@ -61,7 +65,7 @@ import java.math.BigDecimal
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun BillScreen(vm : NetWorkViewModel, innerPaddings : PaddingValues, hazeState : HazeState,sorted : Boolean) {
-    val auth = prefs.getString("auth","")
+    val auth = prefs.getString("auth",EMPTY_STRING)
     var page by remember { mutableIntStateOf(1) }
     val uiState by vm.huiXinBillResult.state.collectAsState()
     val refreshNetwork : suspend () -> Unit = refreshNetwork@ {
@@ -115,7 +119,7 @@ fun BillScreen(vm : NetWorkViewModel, innerPaddings : PaddingValues, hazeState :
                     item { CardRow(vm, hazeState) }
                 items(list.size, key = { list[it].orderId }) { item ->
                     val bills = list[item]
-                    var name = bills.resume.replace("有限公司","")
+                    val name = bills.resume.remove("有限公司")
 
                     val paidTime =bills.jndatetimeStr
                     val finalTime = bills.effectdateStr
@@ -126,7 +130,7 @@ fun BillScreen(vm : NetWorkViewModel, innerPaddings : PaddingValues, hazeState :
                         CardListItem(
                             headlineContent = { Text(text = name) },
                             supportingContent = { Text(text = processTranamt(bills)) },
-                            overlineContent = { Text(text = (if(sorted) paidTime else finalTime )  + (if(delay) " (延迟入账)" else "")) },
+                            overlineContent = { Text(text = (if(sorted) paidTime else finalTime )  + (if(delay) " (延迟入账)" else EMPTY_STRING)) },
                             leadingContent = { BillsIcons(name) },
                             color =
                                 if(DateTimeManager.Date_yyyy_MM_dd == paidDate || DateTimeManager.Date_yyyy_MM_dd == finalDate)
@@ -145,13 +149,15 @@ fun BillScreen(vm : NetWorkViewModel, innerPaddings : PaddingValues, hazeState :
                 item { InnerPaddingHeight(innerPaddings,false) }
                 item { PaddingForPageControllerButton() }
             }
+            val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
             PageController(
                 listState,
                 page,
                 onNextPage = { page = it },
                 onPreviousPage = { page = it },
-                modifier = Modifier.padding(bottom = innerPaddings.calculateBottomPadding()-navigationBarHeightPadding),
-                paddingBottom = false
+                modifier = Modifier.padding(bottom = innerPaddings.calculateBottomPadding()-if(enableNewBottomBar) 0.dp else navigationBarHeightPadding),
+                paddingBottom = false,
+                paddingSafely = enableNewBottomBar
             )
         }
 

@@ -21,8 +21,10 @@ import com.hfut.schedule.ui.component.icon.LoadingIcon
 import com.hfut.schedule.ui.component.icon.RotatingIcon
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.icon.LoadingIconNew
+import com.hfut.schedule.ui.screen.home.search.QuickButtonForSearchScreen
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.HazeState
@@ -52,16 +54,14 @@ fun Shower(vm: NetWorkViewModel, hazeState: HazeState) {
             if(loading) {
                 LoadingIcon()
             } else {
-                Icon(painterResource(id = R.drawable.bathtub), contentDescription = "")
+                Icon(painterResource(id = R.drawable.bathtub), contentDescription = EMPTY_STRING)
             }
         },
         trailingContent = {
-            FilledTonalIconButton(
-                modifier = Modifier
-                    .size(30.dp),
+            QuickButtonForSearchScreen(
                 onClick = {
                     getInGuaGua(vm, navController) { loading = it }
-                },
+                }
             ) { Icon( painterResource(R.drawable.shower), contentDescription = "Localized description",) }
         },
         modifier = Modifier.clickable {

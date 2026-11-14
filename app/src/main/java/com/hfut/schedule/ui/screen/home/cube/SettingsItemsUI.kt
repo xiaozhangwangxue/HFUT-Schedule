@@ -8,6 +8,7 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,12 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,19 +37,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.hfut.schedule.R
 import com.hfut.schedule.application.MyApplication.Companion.context
-import com.hfut.schedule.network.api.model.response.json.gitee.GiteeReleaseResponse
-import com.xah.common.logic.state.NetworkUiState
 import com.hfut.schedule.logic.util.other.AppVersion
 import com.hfut.schedule.logic.util.sys.PermissionSet
 import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.logic.util.sys.Starter.refreshLogin
 import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.network.api.model.response.json.gitee.GiteeReleaseResponse
+import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.SmallCard
@@ -56,6 +62,7 @@ import com.hfut.schedule.ui.nav.destination.SettingsAboutDestination
 import com.hfut.schedule.ui.nav.destination.SettingsAppearanceDestination
 import com.hfut.schedule.ui.nav.destination.SettingsConfigurationDestination
 import com.hfut.schedule.ui.nav.destination.SettingsNetworkDestination
+import com.hfut.schedule.ui.nav.destination.UpdateHistoryDestination
 import com.hfut.schedule.ui.nav.destination.VersionInfoDestination
 import com.hfut.schedule.ui.screen.home.cube.sub.MyAPIItem
 import com.hfut.schedule.ui.screen.home.cube.sub.PersonPart
@@ -63,15 +70,21 @@ import com.hfut.schedule.ui.screen.home.cube.sub.update.PatchUpdateUI
 import com.hfut.schedule.ui.screen.home.cube.sub.update.UpdateUI
 import com.hfut.schedule.ui.screen.home.cube.sub.update.getPatchVersions
 import com.hfut.schedule.ui.screen.home.cube.sub.update.getUpdates
+import com.hfut.schedule.ui.style.special.rememberHazeBlur
+import com.hfut.schedule.ui.style.special.topBarBlur
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.sharednav.common.helper.NoneRoundShape
 import com.xah.bsdiffs.model.Patch
 import com.xah.bsdiffs.util.BsdiffUpdate
-import com.xah.common.ui.component.text.BottomTip
+import com.xah.common.logic.state.NetworkUiState
+import com.xah.common.logic.util.EMPTY_STRING
+import com.xah.common.logic.util.remove
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
+import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.SharedContainer
-import com.sharednav.common.helper.NoneRoundShape
 import com.xah.navigation.util.LocalNavController
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 
 /* 本kt文件已完成多语言文案适配 */
@@ -80,6 +93,26 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsItemsUI() {
     val navTopController = LocalNavController.current
+    /*
+    CardListItem(
+        cardModifier = Modifier
+            .padding(bottom = CARD_NORMAL_DP)
+            .sharedContainer(
+                key = SettingsSearchDestination.key,
+                shape = MaterialTheme.shapes.medium,
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+        shape = NoneRoundShape,
+        color = MaterialTheme.colorScheme.surface,
+        headlineContent = { Text(text = "搜索设置项") },
+        leadingContent = {
+            Icon(painter = painterResource(id = R.drawable.search),contentDescription = null )
+        },
+        modifier = Modifier.clickable {
+            navTopController.push(SettingsSearchDestination)
+        }
+    )
+     */
     CustomCard (
         color = MaterialTheme.colorScheme.surface
     ){
@@ -96,7 +129,7 @@ fun SettingsItemsUI() {
                 headlineContent = { Text(text = stringResource(R.string.appearance_settings_title)) },
                 supportingContent = { Text(text = stringResource(R.string.appearance_settings_description))},
                 leadingContent = {
-                    Icon(painter = painterResource(id = R.drawable.format_paint), contentDescription ="" )
+                    Icon(painter = painterResource(id = R.drawable.format_paint), contentDescription =EMPTY_STRING )
                 },
                 modifier = Modifier.clickable { navTopController.push(SettingsAppearanceDestination)  }
             )
@@ -112,7 +145,7 @@ fun SettingsItemsUI() {
                 headlineContent = { Text(text = stringResource(R.string.app_settings_title)) },
                 supportingContent = { Text(text = stringResource(R.string.app_settings_description))},
                 leadingContent = {
-                    Icon(painter = painterResource(id = R.drawable.joystick), contentDescription ="",  )
+                    Icon(painter = painterResource(id = R.drawable.joystick), contentDescription = EMPTY_STRING )
                 },
                 modifier = Modifier.clickable {
                     navTopController.push(SettingsConfigurationDestination)
@@ -130,7 +163,7 @@ fun SettingsItemsUI() {
                 headlineContent = { Text(text = stringResource(R.string.network_settings_title)) },
                 supportingContent = { Text(text = stringResource(R.string.network_settings_description))},
                 leadingContent = {
-                    Icon(painter = painterResource(id = R.drawable.net), contentDescription ="" )
+                    Icon(painter = painterResource(id = R.drawable.net), contentDescription =EMPTY_STRING )
                 },
                 modifier = Modifier.clickable {
                     navTopController.push(SettingsNetworkDestination)
@@ -151,7 +184,7 @@ fun SettingsItemsUI() {
                 headlineContent = { Text(text = stringResource(R.string.about_settings_title)) },
                 supportingContent = { Text(text = stringResource(R.string.about_settings_description))},
                 leadingContent = {
-                    Icon(painter = painterResource(id = R.drawable.partner_exchange), contentDescription ="",modifier = Modifier
+                    Icon(painter = painterResource(id = R.drawable.partner_exchange), contentDescription = EMPTY_STRING,modifier = Modifier
                         .size(22.dp)
                         .padding(start = 1.dp) )
                 },
@@ -161,7 +194,6 @@ fun SettingsItemsUI() {
             )
         }
     }
-    // TODO 搜索框
 }
 
 
@@ -193,7 +225,9 @@ fun HomeSettingScreen(innerPaddings : PaddingValues, vm : NetWorkViewModel, ) {
 
     val showUpdate = update != null
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.surfaceContainer)) {
         LazyColumn {
             item { InnerPaddingHeight(innerPaddings,true) }
             item {
@@ -225,7 +259,7 @@ fun HomeSettingScreen(innerPaddings : PaddingValues, vm : NetWorkViewModel, ) {
                                 PaddingHorizontalDivider(isDashed = true)
                                 PatchUpdateUI(patchItem!!,vm,update)
                             } else if(!AppVersion.isDev) {
-                                BottomTip(stringResource(R.string.settings_update_tips_none_patch))
+//                                BottomTip(stringResource(R.string.settings_update_tips_none_patch))
                                 // 清理
                                 if(!hasCleaned) {
                                     hasCleaned = BsdiffUpdate.deleteCache(context)
@@ -233,7 +267,14 @@ fun HomeSettingScreen(innerPaddings : PaddingValues, vm : NetWorkViewModel, ) {
                             }
                         }
                         if(!canUseUpdate) {
-                            BottomTip(stringResource(R.string.settings_update_tips_different_architectures))
+                            Spacer(Modifier.height(CARD_NORMAL_DP))
+                            PaddingHorizontalDivider(isDashed = true)
+                            Spacer(Modifier.height(CARD_NORMAL_DP))
+                            CustomCard(
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                GithubDownloadUI(stringResource(R.string.settings_update_tips_different_architectures))
+                            }
                         }
                     }
                 }
@@ -255,7 +296,9 @@ fun HomeSettingScreen(innerPaddings : PaddingValues, vm : NetWorkViewModel, ) {
 
 
 @Composable
-fun GithubDownloadUI() {
+fun GithubDownloadUI(
+    text : String? = null
+) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     TransplantListItem(
@@ -263,7 +306,7 @@ fun GithubDownloadUI() {
             Text(stringResource(R.string.settings_about_update_by_github_title))
         },
         supportingContent = {
-            Text(stringResource(R.string.settings_about_update_by_github_description))
+            Text(text ?: stringResource(R.string.settings_about_update_by_github_description))
         },
         leadingContent = { Icon(painterResource(R.drawable.cloud_download),null)},
         modifier = Modifier.clickable {
@@ -274,8 +317,11 @@ fun GithubDownloadUI() {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateContents(vm : NetWorkViewModel) {
+    val hazeState = rememberHazeBlur()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val context = LocalContext.current
     val uiState by vm.githubFolderResp.state.collectAsState()
     val refreshNetwork = suspend {
@@ -289,33 +335,60 @@ fun UpdateContents(vm : NetWorkViewModel) {
         refreshNetwork()
     }
     val scope = rememberCoroutineScope()
-    CommonNetworkScreen(uiState, onReload = refreshNetwork) {
-        val list = (uiState as NetworkUiState.Success).data.sortedBy {
-            val tinyList = it.name.split(".")
-            val v1 = tinyList[0].toInt()
-            val v2 = tinyList[1].toInt()
-            v1 * 1000 + v2
-        }.reversed()
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP-CARD_NORMAL_DP*2),
+
+    Scaffold (
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            MediumTopAppBar(
+                scrollBehavior = scrollBehavior,
+                modifier = Modifier.topBarBlur(hazeState, ),
+                colors = topBarTransplantColor(),
+                title = { Text(UpdateHistoryDestination.title.asString()) },
+                navigationIcon = {
+                    TopBarNavigationIcon()
+                },
+            )
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier.hazeSource(hazeState)
         ) {
-            items(list.size, key = { it }) { index ->
-                val item = list[index]
-                with(item) {
-                    val versionName = name.replace(".md","")
-                    SmallCard (
-//                        color = cardNormalColor(),
-                        modifier = Modifier.padding(CARD_NORMAL_DP)
-                    ) {
-                        TransplantListItem(
-                            headlineContent = { Text("v$versionName") },
-                            modifier = Modifier.clickable {
-                                scope.launch {
-                                    Starter.startWebUrlInner(context,"${Constant.GITHUB_REPO_URL}/blob/main/docs/update/${name}",versionName,null,R.drawable.github)
-                                }
+            CommonNetworkScreen(uiState, onReload = refreshNetwork) {
+                val list = remember(uiState) {
+                    (uiState as NetworkUiState.Success).data.sortedBy {
+                        val tinyList = it.name.split(".")
+                        val v1 = tinyList[0].toInt()
+                        val v2 = tinyList[1].toInt()
+                        v1 * 1000 + v2
+                    }.reversed()
+                }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP-CARD_NORMAL_DP*2),
+                ) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        InnerPaddingHeight(innerPadding,true)
+                    }
+                    items(list.size, key = { it }) { index ->
+                        val item = list[index]
+                        with(item) {
+                            val versionName = name.remove(".md")
+                            SmallCard (
+                                modifier = Modifier.padding(CARD_NORMAL_DP)
+                            ) {
+                                TransplantListItem(
+                                    headlineContent = { Text("v$versionName") },
+                                    modifier = Modifier.clickable {
+                                        scope.launch {
+                                            Starter.startWebUrlInner(context,"${Constant.GITHUB_REPO_URL}/blob/dev/docs/update/${name}",versionName,null,R.drawable.github)
+                                        }
+                                    }
+                                )
                             }
-                        )
+                        }
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        InnerPaddingHeight(innerPadding,false)
                     }
                 }
             }

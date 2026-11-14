@@ -56,13 +56,14 @@ import com.hfut.schedule.ui.component.media.checkOrDownloadVideo
 import com.hfut.schedule.ui.component.text.DividerTextExpandedWith
 import com.hfut.schedule.ui.nav.destination.SettingsAboutDeveloperDestination
 import com.hfut.schedule.ui.nav.destination.SettingsDeveloperDestination
-import com.hfut.schedule.ui.nav.destination.SettingsTipsDestination
+import com.hfut.schedule.ui.nav.destination.TipsDestination
 import com.hfut.schedule.ui.nav.destination.VersionInfoDestination
 import com.hfut.schedule.ui.screen.fix.about.Egg
 import com.hfut.schedule.ui.screen.fix.fix.BugShare
 import com.hfut.schedule.ui.screen.home.cube.GithubDownloadUI
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.padding.InnerPaddingHeight
@@ -99,7 +100,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                         .fillMaxWidth()
                         .padding(horizontal = APP_HORIZONTAL_DP, vertical = 5.dp), horizontalArrangement = Arrangement.Center) {
                         val qrPainter = rememberCreateQrCode(Constant.GITEE_UPDATE_URL + "releases/tag/Android")
-                        qrPainter?.let { Image(it.asImageBitmap(), contentDescription = "") }
+                        qrPainter?.let { Image(it.asImageBitmap(), contentDescription = EMPTY_STRING) }
                     }
                     Spacer(modifier = Modifier.height(APP_HORIZONTAL_DP))
                 }
@@ -158,7 +159,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                         modifier = Modifier.clickable {
                             navTopController.push(VersionInfoDestination)
                         },
-                        leadingContent = { Icon(painter = painterResource(id = R.drawable.sdk), contentDescription = "")}
+                        leadingContent = { Icon(painter = painterResource(id = R.drawable.sdk), contentDescription = EMPTY_STRING)}
                     )
                 }
 
@@ -180,7 +181,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                                 //长按彩蛋
                                 showBottomSheet_icon = true
                             }),
-                        leadingContent = { Icon(painter = painterResource(id = R.drawable.info), contentDescription = "")}
+                        leadingContent = { Icon(painter = painterResource(id = R.drawable.info), contentDescription = EMPTY_STRING)}
                     )
                 }
 
@@ -197,7 +198,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                 )
                 PaddingHorizontalDivider()
                 SharedContainer(
-                    key = SettingsTipsDestination.key,
+                    key = TipsDestination.key,
                     shape = NoneRoundShape,
                     containerColor = MaterialTheme.colorScheme.surface
                 ) {
@@ -215,7 +216,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                             )
                         },
                         modifier = Modifier.clickable {
-                            navTopController.push(SettingsTipsDestination)
+                            navTopController.push(TipsDestination)
                         }
                     )
                 }
@@ -259,7 +260,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                         modifier = Modifier.clickable {
                             navTopController.push(SettingsAvailableDestination)
                         },
-                        leadingContent = { Icon(painter = painterResource(id = R.drawable.support), contentDescription = "")}
+                        leadingContent = { Icon(painter = painterResource(id = R.drawable.support), contentDescription = EMPTY_STRING)}
                     )
                 }
                  */
@@ -297,7 +298,7 @@ fun AboutSettingsScreen(innerPadding : PaddingValues,) {
                         modifier = Modifier.clickable {
                             navTopController.push(SettingsDeveloperDestination)
                         },
-                        leadingContent = { Icon(painter = painterResource(id = R.drawable.code), contentDescription = "")}
+                        leadingContent = { Icon(painter = painterResource(id = R.drawable.code), contentDescription = EMPTY_STRING)}
                     )
                 }
             }

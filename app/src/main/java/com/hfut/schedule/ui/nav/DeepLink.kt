@@ -5,12 +5,13 @@ import com.hfut.schedule.logic.model.enumeration.BottomBarItems
 import com.hfut.schedule.ui.nav.destination.AddEventDestination
 import com.hfut.schedule.ui.nav.destination.AdmissionDestination
 import com.hfut.schedule.ui.nav.destination.AgreementDestination
+import com.hfut.schedule.ui.nav.destination.AiDestination
 import com.hfut.schedule.ui.nav.destination.AllExamDestination
 import com.hfut.schedule.ui.nav.destination.AllProgramsDestination
 import com.hfut.schedule.ui.nav.destination.AverageGradeDestination
 import com.hfut.schedule.ui.nav.destination.BusDestination
 import com.hfut.schedule.ui.nav.destination.ClassroomDestination
-import com.hfut.schedule.ui.nav.destination.CourseClassmatesScreen
+import com.hfut.schedule.ui.nav.destination.CourseClassmatesDestination
 import com.hfut.schedule.ui.nav.destination.DepartmentsDestination
 import com.hfut.schedule.ui.nav.destination.DormitoryDestination
 import com.hfut.schedule.ui.nav.destination.ExamDestination
@@ -19,7 +20,6 @@ import com.hfut.schedule.ui.nav.destination.FailRateApiDestination
 import com.hfut.schedule.ui.nav.destination.FailRateDestination
 import com.hfut.schedule.ui.nav.destination.FeeDestination
 import com.hfut.schedule.ui.nav.destination.GradeDestination
-import com.hfut.schedule.ui.nav.destination.GuaGuaCheckLoginDestination
 import com.hfut.schedule.ui.nav.destination.HaiLeWashingDestination
 import com.hfut.schedule.ui.nav.destination.HolidayDestination
 import com.hfut.schedule.ui.nav.destination.HomeDestination
@@ -43,7 +43,6 @@ import com.hfut.schedule.ui.nav.destination.SettingsBackupDestination
 import com.hfut.schedule.ui.nav.destination.SettingsConfigurationDestination
 import com.hfut.schedule.ui.nav.destination.SettingsDeepLinkDestination
 import com.hfut.schedule.ui.nav.destination.SettingsNetworkDestination
-import com.hfut.schedule.ui.nav.destination.SettingsTipsDestination
 import com.hfut.schedule.ui.nav.destination.SupabaseDestination
 import com.hfut.schedule.ui.nav.destination.TeacherSearchApiDestination
 import com.hfut.schedule.ui.nav.destination.TeacherSearchDestination
@@ -57,8 +56,10 @@ import com.hfut.schedule.ui.nav.destination.WebVpnDestination
 import com.hfut.schedule.ui.nav.destination.WorkAndRestDestination
 import com.hfut.schedule.ui.nav.destination.WorkDestination
 import com.hfut.schedule.ui.nav.destination.base.NavDestination
-import com.hfut.schedule.ui.screen.home.search.function.my.supabase.Supabase
 import com.xah.navigation.model.dest.DeepLink
+
+
+const val DEEPLINK_SCHEME = "hfut_schedule://"
 
 private fun createDeepLinkByKey(destination : NavDestination) = with(destination) {
     DeepLink(this.key) { this }
@@ -152,7 +153,7 @@ val deepLinks = listOf(
     DeepLink(ProgramDestination.KEY) { ProgramDestination(true) },
     DeepLink(TermCoursesDestination.KEY) { TermCoursesDestination(true,"deeplink") },
     DeepLink(WorkAndRestDestination.KEY) { WorkAndRestDestination(null) },
-    DeepLink(AddEventDestination.KEY) { AddEventDestination(null,"deeplink") },
+    DeepLink(AddEventDestination.KEY) { AddEventDestination() },
     /* TODO:等合工大教务版评教上线后
     DeepLink(SurveyDestination.KEY) { SurveyDestination(true) },
      */
@@ -187,11 +188,11 @@ val deepLinks = listOf(
         val filteredLessonCode = uri.getQueryParameter("lesson_code")
         FailRateApiDestination(courseName,filteredLessonCode)
     },
-    DeepLink(CourseClassmatesScreen.KEY) { uri ->
+    DeepLink(CourseClassmatesDestination.KEY) { uri ->
         val lessonId = uri.getQueryParameter("lesson_id")?.toIntOrNull() ?: return@DeepLink ExceptionDestination(
             Exception("lesson_id 字段解析失败，要求Int值")
         )
-        CourseClassmatesScreen(lessonId,null,false)
+        CourseClassmatesDestination(lessonId,null,false)
     },
     DeepLink(HomeDestination.KEY) { uri ->
         val subPage = uri.getQueryParameter("page") ?: return@DeepLink HomeDestination()
@@ -201,6 +202,10 @@ val deepLinks = listOf(
         } catch (e : Exception) {
             ExceptionDestination(e)
         }
+    },
+    DeepLink(AiDestination.KEY) { uri ->
+        val keyword = uri.getQueryParameter("keyword")
+        AiDestination(keyword)
     },
 )
 

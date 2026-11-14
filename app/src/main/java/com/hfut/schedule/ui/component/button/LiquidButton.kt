@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -25,6 +24,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +48,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.lerp
+import com.hfut.schedule.application.MyApplication
+import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
+import com.hfut.schedule.ui.style.shader.largeStyle
 import com.hfut.schedule.ui.style.special.layerGlass
+import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -56,12 +61,11 @@ import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
-import com.xah.navigation.util.LocalNavControllerSafely
 import com.xah.common.logic.util.safeDiv
-import com.xah.shader.state.ShaderState
-import com.hfut.schedule.ui.style.shader.largeStyle
-import com.sharednav.common.helper.ScreenCornerHelper
+import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.container.util.LocalSharedRegistrySafely
+import com.xah.navigation.util.LocalNavControllerSafely
+import com.xah.shader.state.ShaderState
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -84,6 +88,9 @@ half4 main(float2 coord) {
 
 val BUTTON_PADDING = 6.25.dp
 
+val BUTTON_END_PADDING = APP_HORIZONTAL_DP- CARD_NORMAL_DP-1.dp
+
+val BUTTON_HEIGHT = 42.dp
 
 @Composable
 fun LiquidButton(
@@ -128,7 +135,7 @@ fun LiquidButton(
                 shape = { CircleShape },
                 effects =  {
                     vibrancy()
-                    blur(2f.dp.toPx())
+                    blur(1.5f.dp.toPx())
                     lens(12f.dp.toPx(), 24f.dp.toPx())
                 },
                 shadow = null,
@@ -258,7 +265,7 @@ fun LiquidButton(
                     Modifier
                 }
             )
-            .height(42f.dp)
+            .height(BUTTON_HEIGHT)
             .padding(horizontal = innerPadding),
         horizontalArrangement = Arrangement.spacedBy(8f.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
@@ -277,13 +284,12 @@ fun LiquidButton(
     }
 }
 
-
 @Composable
 fun Modifier.containerBackDrop(
     backdrop: Backdrop,
     shape: Shape,
     enabled : Boolean = true,
-    surfaceColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(if(enabled).3f else .7f),
+    surfaceColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(if(enabled).3f else .7f),
 ) : Modifier {
     val progressAnimation = remember { Animatable(0f) }
     val offsetAnimation = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
@@ -306,7 +312,7 @@ fun Modifier.containerBackDrop(
         shape = { shape },
         effects = {
             vibrancy()
-            blur(5f.dp.toPx())
+            blur(4.5f.dp.toPx())
             lens(15f.dp.toPx(), 25f.dp.toPx())
         },
         shadow = null,
@@ -446,7 +452,7 @@ fun Modifier.bottomBarBackDrop(
     backdrop: Backdrop,
     shape : RoundedCornerShape = CircleShape,
 ) : Modifier {
-//    val color = MaterialTheme.colorScheme.surfaceVariant.copy(.25f)
+    val color = MaterialTheme.colorScheme.surfaceVariant.copy(.25f)
     val isTransiting = LocalNavControllerSafely.current?.isTransitioning ?: false
 
     return this.drawBackdrop(
@@ -462,8 +468,58 @@ fun Modifier.bottomBarBackDrop(
             lens(value.dp.toPx(), value.dp.toPx())
         },
         shadow = null,
-//        onDrawSurface = {
-//            drawRect(color)
-//        }
+        onDrawSurface = {
+            drawRect(color)
+        }
+    )
+}
+
+
+enum class CalendarSquareBackDropSource {
+    BUTTON,BOTTOM,SQUARE,CONTAINER
+}
+
+@Composable
+fun Modifier.calendarSquareBackDrop(
+    backdrop: Backdrop,
+    source : CalendarSquareBackDropSource,
+    shape: Shape = CircleShape,
+    overlayColor : Color = MaterialTheme.colorScheme.surface,
+) : Modifier {
+    val customBackgroundAlpha by DataStoreManager.customCalendarSquareAlpha.collectAsState(initial = MyApplication.CALENDAR_SQUARE_ALPHA)
+    val customBackgroundBlur by DataStoreManager.customCalendarSquareBlur.collectAsState(initial = MyApplication.CALENDAR_SQUARE_BLUR)
+    val color = overlayColor.copy(customBackgroundAlpha)
+    val isTransiting = LocalNavControllerSafely.current?.isTransitioning ?: false
+
+    return this.drawBackdrop(
+        highlight = {
+            Highlight.Default.copy(width = 0.25.dp)
+        },
+        backdrop = if (!isTransiting) backdrop else rememberLayerBackdrop(),
+        shape = { shape },
+        effects = {
+            vibrancy()
+            // 统一调配
+            blur(20f * customBackgroundBlur)
+            when(source) {
+                CalendarSquareBackDropSource.CONTAINER -> {
+                    lens(15.dp.toPx(), 25.dp.toPx())
+                }
+                CalendarSquareBackDropSource.BOTTOM -> {
+                    lens(22.5.dp.toPx(), 22.5.dp.toPx())
+                }
+                CalendarSquareBackDropSource.BUTTON -> {
+                    lens(12.dp.toPx(), 24.dp.toPx())
+                }
+                CalendarSquareBackDropSource.SQUARE -> {
+                    // 圆角太小了，特殊处理
+                    lens(5.5.dp.toPx(), 25.dp.toPx(),true)
+                }
+            }
+        },
+        shadow = null,
+        onDrawSurface = {
+            drawRect(color)
+        }
     )
 }

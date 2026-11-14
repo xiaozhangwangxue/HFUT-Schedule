@@ -30,6 +30,8 @@ import com.xah.common.logic.model.CampusRegion
 import com.xah.common.logic.model.CampusRegion.HEFEI
 import com.xah.common.logic.model.CampusRegion.XUANCHENG
 import com.xah.common.logic.state.UiStateHolder
+import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.remove
 import okhttp3.Headers
 import okhttp3.ResponseBody
 import org.jsoup.Jsoup
@@ -51,7 +53,9 @@ object GithubRepository : GithubRepositoryInf {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 saveString("my", response.body()?.string())
             }
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) { t.printStackTrace() }
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                LogUtil.error(t)
+            }
         })
     }
 
@@ -125,7 +129,7 @@ object GithubRepository : GithubRepositoryInf {
                 saveString("HOLIDAY", response.body()?.string())
             }
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                t.printStackTrace()
+                LogUtil.error(t)
             }
         })
     }
@@ -157,7 +161,7 @@ object GithubRepository : GithubRepositoryInf {
         val list = data.assets.filter {
             it.name.endsWith(".apk") || it.name.endsWith(".patch")
         }
-        val versionName = data.name.replace("HFUT-Schedule ","")
+        val versionName = data.name.remove("HFUT-Schedule ")
         GiteeReleaseResponse(versionName,data.body,list)
     } catch (e : Exception) { throw e }
 

@@ -1,5 +1,6 @@
 package com.hfut.schedule.ui.screen.home.search.function.school.classroom
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,11 +56,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -82,8 +85,10 @@ import com.hfut.schedule.logic.util.parse.SemesterParser
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
 import com.hfut.schedule.logic.util.sys.showToast
-import com.hfut.schedule.ui.component.button.AnimatedIconButton
-import com.hfut.schedule.ui.component.button.HazeBottomBar
+import com.hfut.schedule.ui.component.button.AnimatedExpandLiquidIconButton
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
+import com.hfut.schedule.ui.component.button.BUTTON_PADDING
+import com.hfut.schedule.ui.component.button.HazeBottomBarV2
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.containerBackDrop
@@ -92,8 +97,8 @@ import com.hfut.schedule.ui.component.container.CardListItem
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
 import com.hfut.schedule.ui.component.container.cardNormalColor
-import com.hfut.schedule.ui.component.dialog.DateRangePickerModal
-import com.hfut.schedule.ui.component.icon.LoadingIcon
+import com.hfut.schedule.ui.component.dialog.DatePickerDialog
+import com.hfut.schedule.ui.component.icon.CircleProgressIcon
 import com.hfut.schedule.ui.component.input.CustomTextField
 import com.hfut.schedule.ui.component.network.CommonNetworkScreen
 import com.hfut.schedule.ui.component.screen.RefreshIndicator
@@ -118,8 +123,12 @@ import com.hfut.schedule.ui.style.color.textFiledAllTransplant
 import com.hfut.schedule.ui.style.special.backDropSource
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
+import com.hfut.schedule.ui.theme.greenColor
+import com.hfut.schedule.ui.theme.warnColor
 import com.hfut.schedule.ui.util.nav2Composable
+import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.hfut.schedule.ui.util.navigation.currentRouteWithoutArgs
+import com.hfut.schedule.ui.util.state.GlobalEventHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
@@ -127,17 +136,20 @@ import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.xah.container.component.base.sharedContainer
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.floating.util.LocalFloatingController
 import com.xah.navigation.util.LocalNavController
 import com.xah.common.logic.util.LogUtil
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.util.Calendar
+import kotlin.math.min
 
 private enum class ClassroomBarItems(val page : Int) {
     EMPTY_CLASSROOM(0),CLASSROOM_LESSONS(1)
@@ -174,7 +186,7 @@ fun ClassroomScreen(
     var campus by remember { mutableStateOf(getCampus()) }
     val selectedBuildings = remember { mutableStateListOf<UniAppBuilding>() }
     val selectedFloors = remember { mutableStateListOf<Int>() }
-    var input by rememberSaveable { mutableStateOf("") }
+    var input by rememberSaveable { mutableStateOf(EMPTY_STRING) }
 
     val refreshNetworkSearch = suspend m@ {
         var jwt = DataStoreManager.uniAppJwt.first()
@@ -189,9 +201,10 @@ fun ClassroomScreen(
         vm.searchClassrooms(input,jwt,1)
     }
 
+    var showFilterBox by rememberSaveable() { mutableStateOf(true) }
     var showSelectDateDialog by remember { mutableStateOf(false) }
     if(showSelectDateDialog)
-        DateRangePickerModal(text = "",onSelected = { date = it.second },allowSelectPrevious = true) { showSelectDateDialog = false }
+        DatePickerDialog(onConfirm = { date = it }) { showSelectDateDialog = false }
 
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -208,100 +221,125 @@ fun ClassroomScreen(
                     },
                     actions = {
                         if(targetPage == ClassroomBarItems.EMPTY_CLASSROOM) {
-                            LiquidButton(
-                                onClick = {
-                                    showSelectDateDialog = true
-                                },
-                                modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP),
-                                backdrop = backDrop
+                            Row(
+                                modifier = Modifier.padding(end = BUTTON_END_PADDING),
                             ) {
-                                Text(date)
+                                LiquidButton(
+                                    onClick = {
+                                        showFilterBox = !showFilterBox
+                                    },
+                                    isCircle = true,
+                                    backdrop = backDrop
+                                ) {
+                                    Icon(
+                                        painterResource(
+                                            if(showFilterBox) R.drawable.filter_alt_filled else R.drawable.filter_alt
+                                        ),
+                                        null,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(BUTTON_PADDING))
+                                LiquidButton(
+                                    onClick = {
+                                        showSelectDateDialog = true
+                                    },
+                                    isCircle = false,
+                                    backdrop = backDrop
+                                ) {
+                                    Text(date)
+                                }
                             }
                         }
                     }
                 )
 
                 if(targetPage == ClassroomBarItems.EMPTY_CLASSROOM) {
-                    CustomCard(
-                        color = Color.Transparent,
-                        modifier = Modifier.containerBackDrop(backDrop, MaterialTheme.shapes.medium, surfaceColor = MaterialTheme.colorScheme.primaryContainer.copy(.35f))
+                    AnimatedVisibility(
+                        visible = showFilterBox,
+                        enter = AppAnimationManager.downUpAnimation.enter,
+                        exit = AppAnimationManager.downUpAnimation.exit
                     ) {
-                        // 校区选择 多个Chip
-                        val campusList = Campus.entries
-                        LazyRow(modifier = Modifier.padding(top = CARD_NORMAL_DP*3)) {
-                            item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
-                            items(campusList.size) { index ->
-                                val item = campusList[index]
-                                val selected = item == campus
-                                FilterChip (
-                                    border = null,
-                                    colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
-                                    selected = selected,
-                                    onClick = {
-                                        campus = if(selected) {
-                                            null
-                                        } else {
-                                            item
-                                        }
-                                    },
-                                    label = { Text(item.description) },
-                                    modifier = Modifier.padding(end = if(index == campusList.size-1) 0.dp else CARD_NORMAL_DP*2)
-                                )
-                            }
-                            item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
-                        }
-                        // 建筑选择（可多选） 多个Chip
-                        if(chipsUiState is NetworkUiState.Success) {
-                            val buildingList = (chipsUiState as NetworkUiState.Success).data.filter {
-                                campus?.let { it1 ->
-                                    getUinAppCampusId(it1) == it.campusAssoc
-                                } ?: true
-                            }
-                            LazyRow() {
+                        CustomCard(
+                            color = Color.Transparent,
+                            modifier = Modifier.containerBackDrop(backDrop, MaterialTheme.shapes.medium, surfaceColor = MaterialTheme.colorScheme.primaryContainer.copy(.35f))
+                        ) {
+                            // 校区选择 多个Chip
+                            val campusList = Campus.entries
+                            LazyRow(modifier = Modifier.padding(top = CARD_NORMAL_DP*3)) {
                                 item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
-                                items(buildingList.size) { index ->
-                                    val item = buildingList[index]
-                                    val selected = item in selectedBuildings
+                                items(campusList.size) { index ->
+                                    val item = campusList[index]
+                                    val selected = item == campus
+                                    FilterChip (
+                                        border = null,
+                                        colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
+                                        selected = selected,
+                                        onClick = {
+                                            campus = if(selected) {
+                                                null
+                                            } else {
+                                                item
+                                            }
+                                        },
+                                        label = { Text(item.description) },
+                                        modifier = Modifier.padding(end = if(index == campusList.size-1) 0.dp else CARD_NORMAL_DP*2)
+                                    )
+                                }
+                                item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
+                            }
+                            // 建筑选择（可多选） 多个Chip
+                            if(chipsUiState is NetworkUiState.Success) {
+                                val buildingList = (chipsUiState as NetworkUiState.Success).data.filter {
+                                    campus?.let { it1 ->
+                                        getUinAppCampusId(it1) == it.campusAssoc
+                                    } ?: true
+                                }
+                                LazyRow() {
+                                    item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
+                                    items(buildingList.size) { index ->
+                                        val item = buildingList[index]
+                                        val selected = item in selectedBuildings
+                                        FilterChip (
+                                            border = null,
+                                            colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
+                                            selected = selected,
+                                            onClick = {
+                                                if(selected) {
+                                                    selectedBuildings.remove(item)
+                                                } else {
+                                                    selectedBuildings.add(item)
+                                                }
+                                            },
+                                            label = { Text(item.nameZh) },
+                                            modifier = Modifier.padding(end = if(index == buildingList.size-1) 0.dp else CARD_NORMAL_DP*2)
+                                        )
+                                    }
+                                    item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
+                                }
+                            }
+                            // 楼层选择（可多选） 多个Chip
+                            LazyRow(modifier = Modifier.padding(bottom = CARD_NORMAL_DP*3)) {
+                                item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
+                                items(20) { index ->
+                                    val item = index + 1
+                                    val selected = item in selectedFloors
                                     FilterChip (
                                         border = null,
                                         colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
                                         selected = selected,
                                         onClick = {
                                             if(selected) {
-                                                selectedBuildings.remove(item)
+                                                selectedFloors.remove(item)
                                             } else {
-                                                selectedBuildings.add(item)
+                                                selectedFloors.add(item)
                                             }
                                         },
-                                        label = { Text(item.nameZh) },
-                                        modifier = Modifier.padding(end = if(index == buildingList.size-1) 0.dp else CARD_NORMAL_DP*2)
+                                        label = { Text("${item}F") },
+                                        modifier = Modifier.padding(end = if(index == 20-1) 0.dp else CARD_NORMAL_DP*2)
                                     )
                                 }
                                 item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
                             }
-                        }
-                        // 楼层选择（可多选） 多个Chip
-                        LazyRow(modifier = Modifier.padding(bottom = CARD_NORMAL_DP*3)) {
-                            item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
-                            items(20) { index ->
-                                val item = index + 1
-                                val selected = item in selectedFloors
-                                FilterChip (
-                                    border = null,
-                                    colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
-                                    selected = selected,
-                                    onClick = {
-                                        if(selected) {
-                                            selectedFloors.remove(item)
-                                        } else {
-                                            selectedFloors.add(item)
-                                        }
-                                    },
-                                    label = { Text("${item}F") },
-                                    modifier = Modifier.padding(end = if(index == 20-1) 0.dp else CARD_NORMAL_DP*2)
-                                )
-                            }
-                            item { Spacer(Modifier.width(APP_HORIZONTAL_DP)) }
                         }
                     }
                 } else {
@@ -329,7 +367,7 @@ fun ClassroomScreen(
             }
         },
         bottomBar = {
-            HazeBottomBar(hazeState, items,navController)
+            HazeBottomBarV2(hazeState, backDrop,items,navController)
         }
     ) { innerPadding ->
         NavHost(
@@ -414,20 +452,20 @@ private fun EmptyClassroomScreen(
         refreshNetworkItems()
     }
     val isToday = DateTimeManager.Date_yyyy_MM_dd == date
-
-//    val occupyList = remember { ClassroomOccupiedCause.entries }
     val floatingController = LocalFloatingController.current
-//    var showDialog by remember { mutableStateOf(false) }
-//    var info by remember { mutableStateOf<UniAppEmptyClassroomLesson?>(null) }
-//    var title by remember { mutableStateOf("占用详情") }
-//    if(showDialog && info != null) {
-//        HazeBottomSheet (
-//            showBottomSheet = showDialog,
-//            onDismissRequest = { showDialog = false },
-//        ) {
-//
-//        }
-//    }
+    var currentTime by remember { mutableFloatStateOf(currentTimeInMinutes()) }
+
+    // 整分钟对齐刷新
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = Calendar.getInstance()
+            val second = now.get(Calendar.SECOND)
+            val millis = now.get(Calendar.MILLISECOND)
+            delay((60 - second) * 1000L - millis)
+            currentTime = currentTimeInMinutes()
+        }
+    }
+    val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
 
     val listState = rememberLazyListState()
     val scheduleModifier =  Modifier
@@ -449,7 +487,11 @@ private fun EmptyClassroomScreen(
                         )
                         val activities = item.roomOccupationInfoVms ?: emptyList()
                         val isAllDayFree = activities.isEmpty()
-                        val isOccupied = activities.find { DateTimeManager.getTimeState(it.startTimeString,it.endTimeString) == DateTimeManager.TimeState.ONGOING } != null
+                        val square = remember(activities,currentTime) {
+                            activities.find { DateTimeManager.getTimeStateReal(it.startTimeString,it.endTimeString).first == DateTimeManager.TimeState.ONGOING }
+                        }
+                        val isOccupied = square != null
+                        val isForeverFree = remember(activities,currentTime) { isForeverFreeToday(activities, currentTime) }
                         CustomCard(
 //                            shape = NoneRoundShape,
                             color = cardNormalColor(),
@@ -467,7 +509,8 @@ private fun EmptyClassroomScreen(
                                     if(isToday) {
                                         // 是否正在占用
                                         if(isOccupied) {
-                                            LoadingIcon()
+                                            val timeState = remember(square,currentTime) { DateTimeManager.getTimeStateReal(square.startTimeString,square.endTimeString) }
+                                            CircleProgressIcon(timeState.second, animate = false)
                                         } else {
                                             Icon(painterResource(R.drawable.lasso_select),null)
                                         }
@@ -484,10 +527,24 @@ private fun EmptyClassroomScreen(
                                                 // 是否正在占用
                                                 if(isOccupied) {
                                                     "占用中"
-                                                } else {
+                                                } else if(isForeverFree) {
                                                     "空闲中"
+                                                } else {
+                                                    "暂时空闲"
                                                 }
-                                            }
+                                            },
+                                            color = if(isAllDayFree) {
+                                                greenColor()
+                                            } else {
+                                                // 是否正在占用
+                                                if(isOccupied) {
+                                                    MaterialTheme.colorScheme.error
+                                                } else if(isForeverFree) {
+                                                    greenColor()
+                                                } else {
+                                                    warnColor()
+                                                }
+                                            },
                                         )
                                     } else {
                                         if(isAllDayFree) {
@@ -498,11 +555,8 @@ private fun EmptyClassroomScreen(
                             )
                             // 横向时间轴
                             if(!isAllDayFree) {
-                                ClassroomSchedule(activities, item.nameZh, modifier = scheduleModifier) {
+                                ClassroomSchedule(activities, item.nameZh, modifier = scheduleModifier,currentTime,isForeverFree) {
                                     floatingController.push(ClassroomSquareWindow(it,item.nameZh))
-//                                    info = it
-//                                    title = item.nameZh
-//                                    showDialog = true
                                 }
                             }
                         }
@@ -516,8 +570,8 @@ private fun EmptyClassroomScreen(
                     onNextPage = { page = it },
                     onPreviousPage = { page = it },
                     paddingBottom = false,
-                    paddingSafely = false,
-                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
+                    paddingSafely = enableNewBottomBar,
+                    modifier = Modifier.padding(innerPadding)
                 )
             }
         }
@@ -529,6 +583,8 @@ private fun ClassroomSchedule(
     lessons: List<UniAppEmptyClassroomLesson>,
     room : String,
     modifier: Modifier = Modifier,
+    currentTime : Float,
+    foreverFree : Boolean,
     rangeMinutes :  Pair<Int,Int> = Pair(8 * 60,22 * 60),
     onClick : (UniAppEmptyClassroomLesson) -> Unit
 ) {
@@ -536,7 +592,14 @@ private fun ClassroomSchedule(
     val startTimeInMinutes = rangeMinutes.first
     val endTimeInMinutes = rangeMinutes.second
 
-    BoxWithConstraints(modifier = modifier) {
+    BoxWithConstraints(
+        modifier = modifier.drawTimeLine(
+            startTimeInMinutes.toFloat(),
+            endTimeInMinutes.toFloat(),
+            currentTime,
+            foreverFree
+        )
+    ) {
         val timelineWidth = maxWidth
         val dpPerMinute = timelineWidth / (endTimeInMinutes - startTimeInMinutes)
 
@@ -552,21 +615,16 @@ private fun ClassroomSchedule(
 
             val offsetX = (safeStart - startTimeInMinutes) * dpPerMinute.value
             val width = (safeEnd - safeStart) * dpPerMinute.value
-
-            var parentHeight by remember { mutableStateOf(0.dp) }
+            val height = maxHeight.value
 
             Box(
                 modifier = Modifier
                     .offset(x = offsetX.dp)
                     .width(width.dp)
                     .fillMaxHeight()
-//                    .clip(MaterialTheme.shapes.extraSmall)
                     .align(Alignment.TopStart)
-                    .onGloballyPositioned { coordinates ->
-                        parentHeight = coordinates.size.height.dp
-                    }
                     .sharedContainer(
-                        ClassroomSquareWindow(lesson,room).key,
+                        ClassroomSquareWindow(lesson, room).key,
                         shape = MaterialTheme.shapes.extraSmall,
                         containerColor = containerColor
                     )
@@ -576,26 +634,41 @@ private fun ClassroomSchedule(
                     }
                 ,
             ) {
-                // 计算动态字体大小，根据父布局高度来调整
-                val fontSize = with(LocalDensity.current) { (parentHeight.value * 0.125f).sp }
+                val timeFontSize = with(LocalDensity.current) {
+                    val byHeight = height / 2f * 0.7f
+                    val byWidth = width / 3f
+                    min(byHeight, byWidth).coerceIn(9f, 24f).sp
+                }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.5f)
+                        .align(Alignment.TopCenter),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        maxLines = 1,
                         text = lesson.startTimeString,
                         color = contentColor,
-                        fontSize = fontSize,
-                        lineHeight = fontSize,
-                        modifier = Modifier.align(Alignment.TopCenter)
-                    )
-
-                    Text(
+                        fontSize = timeFontSize,
+                        lineHeight = timeFontSize,
                         maxLines = 1,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.5f)
+                        .align(Alignment.BottomCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
                         text = lesson.endTimeString,
                         color = contentColor,
-                        lineHeight = fontSize,
-                        fontSize = fontSize,
-                        modifier = Modifier.align(Alignment.BottomCenter)
+                        fontSize = timeFontSize,
+                        lineHeight = timeFontSize,
+                        maxLines = 1,
                     )
                 }
             }
@@ -629,6 +702,102 @@ private fun convertTimeToMinutes(time: String): Int {
     return hour * 60 + minute
 }
 
+
+@Composable
+private fun Modifier.drawTimeLine(
+    startMinutes: Float,
+    endMinutes: Float,
+    currentTime : Float,
+    foreverFree : Boolean,
+): Modifier {
+    val color = remember { Color.Red }
+    val lineWidth = remember { 1.5.dp }
+    val dotRadius = lineWidth * 2
+
+    return if (currentTime !in startMinutes..endMinutes || foreverFree) {
+        this
+    } else {
+        this.drawWithContent {
+            // 先画内容，再画线 → 线在内容上面
+            drawContent()
+
+            // 横向时间轴：分钟 → x 坐标（与 dpPerMinute 同比例线性换算）
+            val x = (currentTime - startMinutes) / (endMinutes - startMinutes) * size.width
+            drawLine(
+                color = color,
+                strokeWidth = lineWidth.toPx(),
+                start = Offset(x, 0f),
+                end = Offset(x, size.height)
+            )
+            // 圆点画在线顶端（对应参考里 dot 画在线起点）
+            drawCircle(
+                color = color,
+                radius = dotRadius.toPx(),
+                center = Offset(x, 0f)
+            )
+        }
+    }
+}
+
+private fun currentTimeInMinutes(): Float {
+    val now = Calendar.getInstance()
+    return now.get(Calendar.HOUR_OF_DAY) * 60f + now.get(Calendar.MINUTE) + now.get(Calendar.SECOND) / 60f
+}
+
+// 判断今天在 currentTimeMinutes 之后是否永远空闲
+private fun isForeverFreeToday(
+    lessons: List<UniAppEmptyClassroomLesson>,
+    currentTimeMinutes: Float,
+): Boolean {
+    return lessons.none { lesson ->
+        convertTimeToMinutes(lesson.endTimeString) > currentTimeMinutes
+    }
+}
+
+// 返回距下一次“进入占用”（课程开始）的分钟数：
+// null = 今天后续永远空闲（当天已无任何课程）
+// 0f   = 当前正在上课（已在占用中）
+// >0   = 当前空闲，还有这么多分钟下一节课开始
+private fun minutesUntilBusy(
+    lessons: List<UniAppEmptyClassroomLesson>,
+    currentTimeMinutes: Float,
+): Float? {
+    val nextStart = lessons
+        .map { convertTimeToMinutes(it.startTimeString).toFloat() }
+        .filter { it > currentTimeMinutes }
+        .minOrNull()
+    if (nextStart != null) {
+        return nextStart - currentTimeMinutes
+    }
+    // 没有未开始的课；若还有进行中的课则已在占用中，否则永远空闲
+    val hasOngoingLesson = lessons.any { lesson ->
+        convertTimeToMinutes(lesson.endTimeString) > currentTimeMinutes
+    }
+    return if (hasOngoingLesson) 0f else null
+}
+
+// 返回下一次进入占用的时间
+private fun nextBusyStartTime(
+    lessons: List<UniAppEmptyClassroomLesson>,
+    currentTimeMinutes: Float,
+): String? {
+    // 下一节未开始的课（最早开始）
+    val nextStart = lessons
+        .filter { convertTimeToMinutes(it.startTimeString) > currentTimeMinutes }
+        .minByOrNull { convertTimeToMinutes(it.startTimeString) }
+    if (nextStart != null) return nextStart.startTimeString
+
+    // 没有未开始的课：若还在上课则处于最后一次占用中，否则永远空闲
+    val hasOngoing = lessons.any { lesson ->
+        convertTimeToMinutes(lesson.endTimeString) > currentTimeMinutes
+    }
+    if (!hasOngoing) return null
+
+    return lessons
+        .filter { convertTimeToMinutes(it.endTimeString) > currentTimeMinutes }
+        .minByOrNull { convertTimeToMinutes(it.startTimeString) }
+        ?.startTimeString
+}
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 private fun SearchClassroomScreen(
@@ -647,7 +816,9 @@ private fun SearchClassroomScreen(
     val refreshing = uiState is NetworkUiState.Loading
     val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = refreshNetwork)
     val listState = rememberLazyListState()
-    Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .pullRefresh(pullRefreshState)) {
         RefreshIndicator(
             refreshing,
             pullRefreshState,
@@ -700,6 +871,7 @@ fun ClassroomLessonsScreen(
     roomId : Int,
     name: String
 ) {
+    val backdrop = rememberLayerBackdrop()
     var showAll by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeBlur()
     val semester by produceState<Int?>(initialValue = null) {
@@ -742,9 +914,11 @@ fun ClassroomLessonsScreen(
                         TopBarNavigationIcon()
                     },
                     actions = {
-                        AnimatedIconButton(
+                        AnimatedExpandLiquidIconButton(
                             valueState = showAll,
-                            onClick = { showAll = !showAll }
+                            onClick = { showAll = !showAll },
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING),
+                            backdrop = backdrop
                         )
                     }
                 )
@@ -754,6 +928,7 @@ fun ClassroomLessonsScreen(
     ) { innerPadding ->
         Column(modifier = Modifier
             .hazeSource(hazeState)
+            .backDropSource(backdrop)
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
@@ -771,9 +946,9 @@ fun ClassroomLessonsScreen(
                 var lastTermStartDate by rememberSaveable { mutableStateOf<String?>(null) }
 
 
-                val weekSwap = remember(currentWeek) { object : TimeTableWeekSwap {
+                val weekSwap = remember(currentWeek,today) { object : TimeTableWeekSwap {
                     override fun backToCurrentWeek() {
-                        if(DateTimeManager.currentWeek < 1 || DateTimeManager.currentWeek > 20) {
+                        if(DateTimeManager.currentWeek !in 1..MyApplication.MAX_WEEK) {
                             currentWeek = 1
                             today = LocalDate.parse(
                                 termStartDate, DateTimeManager.formatter_YYYY_MM_DD
@@ -871,12 +1046,13 @@ fun ClassroomLessonsScreen(
                         )
                     }
                 ) {
+                    TimeTablePreviewWindow.Listener(weekSwap)
                     TimeTable(
                         items,
                         currentWeek.toInt(),
                         showAll,
                         modifier = Modifier
-                            .padding(horizontal = APP_HORIZONTAL_DP-(if (showAll) 1.75.dp else 2.5.dp)-1.dp)
+                            .padding(horizontal = APP_HORIZONTAL_DP - (if (showAll) 1.75.dp else 2.5.dp) - 1.dp)
                             .verticalScroll(scrollState)
                         ,
                         innerPadding = innerPadding,
@@ -887,10 +1063,7 @@ fun ClassroomLessonsScreen(
                         },
                         scaleFactor = scaleFactor.floatValue,
                         onLongTapBlankRegion = {
-                            floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                                weekSwap.goToWeek(it.toLong())
-                                floatingController.pop()
-                            })
+                            floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
                         },
                         onSquareClick = null
                     )
@@ -911,10 +1084,7 @@ fun ClassroomLessonsScreen(
                         onNext = { weekSwap.nextWeek() },
                         onPrevious = { weekSwap.previousWeek() },
                         onLongClick = {
-                            floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                                weekSwap.goToWeek(it.toLong())
-                                floatingController.pop()
-                            })
+                            floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
                         }
                     )
                 }

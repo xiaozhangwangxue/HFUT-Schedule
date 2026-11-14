@@ -13,7 +13,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +34,6 @@ import com.hfut.schedule.ui.nav.destination.CourseDetailApiDestination
 import com.hfut.schedule.ui.nav.destination.ExamDestination
 import com.hfut.schedule.ui.nav.window.TimeTablePreviewWindow
 import com.hfut.schedule.ui.nav.window.TimeTableSquareWindow
-
 import com.hfut.schedule.ui.screen.home.calendar.common.DraggableWeekButton
 import com.hfut.schedule.ui.screen.home.calendar.common.TimeTableWeekSwap
 import com.hfut.schedule.ui.screen.home.calendar.jxglstu.CourseDetailOrigin
@@ -44,17 +42,15 @@ import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.TimeTableType
 import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.allToTimeTableData
 import com.hfut.schedule.ui.screen.home.calendar.timetable.ui.TimeTable
 import com.hfut.schedule.ui.screen.home.calendar.timetable.ui.TimeTableDetail
-import com.hfut.schedule.ui.screen.home.focus.funiction.AddEventOrigin
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.totalCourse.safelySetDate
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
-import com.xah.shader.state.ShaderState
-
-
-import com.xah.navigation.util.LocalNavController
+import com.hfut.schedule.ui.util.state.GlobalEventHolder
+import com.kyant.backdrop.Backdrop
+import com.xah.common.logic.util.LogUtil
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import com.xah.floating.util.LocalFloatingController
-import com.xah.common.logic.util.LogUtil
+import com.xah.navigation.util.LocalNavController
 import dev.chrisbanes.haze.HazeState
 import java.time.LocalDate
 
@@ -67,7 +63,7 @@ fun CommunityCourseTableUI(
     onDateChange : (LocalDate) ->Unit,
     today: LocalDate,
     hazeState: HazeState,
-    backGroundHaze : ShaderState?,
+    backGroundHaze : Backdrop?,
 //    navController : NavHostController,
     onSwapShowAll : (Boolean) -> Unit,
     onRestoreHeight : () -> Unit
@@ -78,7 +74,7 @@ fun CommunityCourseTableUI(
     // 记录上一次的学期开始时间
     var lastTermStartDate by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val weekSwap = remember(currentWeek) { object : TimeTableWeekSwap {
+    val weekSwap = remember(currentWeek,today) { object : TimeTableWeekSwap {
         override fun nextWeek() {
             if (currentWeek < MyApplication.MAX_WEEK) {
                 onDateChange(today.plusDays(7))
@@ -103,7 +99,7 @@ fun CommunityCourseTableUI(
             showToast("第${currentWeek}周")
         }
         override fun backToCurrentWeek() {
-            if(DateTimeManager.currentWeek < 1 || DateTimeManager.currentWeek > 20) {
+            if(DateTimeManager.currentWeek !in 1..MyApplication.MAX_WEEK) {
                 if(termStartDate == null) {
                     return
                 }
@@ -196,6 +192,7 @@ fun CommunityCourseTableUI(
             )
         }
     ) {
+        TimeTablePreviewWindow.Listener(weekSwap)
         TimeTable(
             items,
             currentWeek.toInt(),
@@ -213,19 +210,11 @@ fun CommunityCourseTableUI(
                 }
             },
             onLongTapBlankRegion = {
-                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                    weekSwap.goToWeek(it.toLong())
-                    floatingController.pop()
-                })
+                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
             },
             onDoubleTapBlankRegion = {
                 if(!isFriend) {
-                    navController.push(
-                        AddEventDestination(
-                            null,
-                            AddEventOrigin.FOCUS_EDITED.name
-                        )
-                    )
+                    navController.push(AddEventDestination())
                 }
             }
         ) { list ->
@@ -272,10 +261,7 @@ fun CommunityCourseTableUI(
             onNext = { weekSwap.nextWeek() },
             onPrevious = { weekSwap.previousWeek() },
             onLongClick = {
-                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()) {
-                    weekSwap.goToWeek(it.toLong())
-                    floatingController.pop()
-                })
+                floatingController.push(TimeTablePreviewWindow(items,currentWeek.toInt()))
             }
         )
     }

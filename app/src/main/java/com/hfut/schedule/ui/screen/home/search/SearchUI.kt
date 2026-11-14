@@ -14,13 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -35,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +45,7 @@ import com.hfut.schedule.R
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager.SEARCH_DEFAULT_STR
 import com.hfut.schedule.network.api.model.Constant
+import com.hfut.schedule.ui.component.button.NoPadding
 import com.hfut.schedule.ui.component.button.containerBackDrop
 import com.hfut.schedule.ui.component.container.SEARCH_FUC_CARD_HEIGHT
 import com.hfut.schedule.ui.component.container.SmallCard
@@ -137,7 +141,7 @@ import com.hfut.schedule.ui.screen.home.search.function.school.student.ToadyCamp
 import com.hfut.schedule.ui.screen.home.search.function.school.teacherSearch.TeacherSearch
 import com.hfut.schedule.ui.screen.home.search.function.school.webvpn.WebVpn
 import com.hfut.schedule.ui.screen.home.search.function.school.work.Work
-import com.hfut.schedule.ui.style.color.textFiledTransplant
+import com.hfut.schedule.ui.style.color.textFiledAllTransplant
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.Backdrop
@@ -256,7 +260,7 @@ fun SearchScreen(
                 SearchAppBean(44,"${context.getString(R.string.navigation_label_hui_xin)} ${context.getString(R.string.navigation_label_hui_xin)} 校园卡 账单 充值 缴费 合肥" , { HuiXin() }, WebViewDestination.getKey(getHuiXinURL())),
                 SearchAppBean(45,"${SecondClassDestination.title.asString(context)}", { SecondClass() }, SecondClassDestination.key),
                 SearchAppBean(46,"${CommunityAppointmentDestination.title.asString(context)} 场地预约 座位预约 宿舍自习室预约 智慧社区平台", { Appointment() }, CommunityAppointmentDestination.key),
-                SearchAppBean(47,"AI 人工智能 ${context.getString(R.string.navigation_label_ai)}", { AI() }, AiDestination.key),
+                SearchAppBean(47,"AI 人工智能 ${context.getString(R.string.navigation_label_ai)}", { AI() }, AiDestination().key),
                 SearchAppBean(48,"事务跟踪 事务追踪 issue 反馈 开发 ${context.getString(R.string.navigation_label_track)}", { Track() }, TrackDestination.key),
                 SearchAppBean(49,"拼多多 淘宝 快递 取件码 包裹 ${context.getString(R.string.navigation_label_express)}", { Express() },ExpressWindow.key),
                 SearchAppBean(50,"${context.getString(R.string.navigation_label_feedback)} 反馈 建议", { Feedback() }, FeedbackWindow.key),
@@ -354,7 +358,7 @@ fun SearchFuncs(
             label = { Text("搜索功能" ) },
             singleLine = true,
             shape = MaterialTheme.shapes.small,
-            colors = textFiledTransplant(),
+            colors = textFiledAllTransplant(),
             leadingIcon = {
                 IconButton(onClick = {
                     onShow(false)
@@ -362,6 +366,24 @@ fun SearchFuncs(
                     Icon(painterResource(R.drawable.search),null)
                 }
             },
+        )
+    }
+}
+
+
+@Composable
+fun QuickButtonForSearchScreen(
+    onClick : () -> Unit,
+    modifier : Modifier = Modifier,
+    shape : Shape = IconButtonDefaults.filledShape,
+    content : @Composable () -> Unit,
+) {
+    NoPadding {
+        FilledTonalIconButton(
+            modifier = modifier.size(30.dp),
+            shape = shape,
+            onClick = onClick,
+            content = content
         )
     }
 }

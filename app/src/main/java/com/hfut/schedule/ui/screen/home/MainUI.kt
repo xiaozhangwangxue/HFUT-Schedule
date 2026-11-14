@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -45,7 +46,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -89,8 +89,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -103,7 +106,7 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.hfut.schedule.R
 import com.hfut.schedule.application.MyApplication
-import com.hfut.schedule.logic.database.DataBaseManager
+import com.hfut.schedule.logic.database.core.DataBaseManager
 import com.hfut.schedule.logic.database.entity.FriendEntity
 import com.hfut.schedule.logic.model.enumeration.BottomBarItems
 import com.hfut.schedule.logic.model.enumeration.BottomBarItems.CALENDAR
@@ -119,12 +122,16 @@ import com.hfut.schedule.logic.util.sys.Starter.refreshLogin
 import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
 import com.hfut.schedule.logic.util.sys.showToast
 import com.hfut.schedule.network.api.model.response.json.gitee.GiteeReleaseResponse
-import com.hfut.schedule.ui.component.button.AnimatedIconButton
+import com.hfut.schedule.ui.component.button.AnimatedExpandLiquidIconButton
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.BUTTON_PADDING
+import com.hfut.schedule.ui.component.button.CalendarSquareBackDropSource
 import com.hfut.schedule.ui.component.button.HazeBottomBarDynamic
+import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.SpecialBottomBar
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.button.bottomBarBackDrop
+import com.hfut.schedule.ui.component.button.calendarSquareBackDrop
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
 import com.hfut.schedule.ui.component.container.CustomCard
 import com.hfut.schedule.ui.component.container.TransplantListItem
@@ -145,10 +152,13 @@ import com.hfut.schedule.ui.model.NewNavigationBarItemData
 import com.hfut.schedule.ui.nav.destination.AddEventDestination
 import com.hfut.schedule.ui.nav.destination.ControlCenterDestination
 import com.hfut.schedule.ui.nav.destination.FunctionsSortDestination
+import com.hfut.schedule.ui.nav.destination.HomeDestination
 import com.hfut.schedule.ui.nav.destination.NotificationBoxDestination
+import com.hfut.schedule.ui.nav.destination.SettingsSearchDestination
 import com.hfut.schedule.ui.nav.destination.TermCoursesDestination
 import com.hfut.schedule.ui.nav.destination.WorkAndRestDestination
 import com.hfut.schedule.ui.nav.effect.ControlCenterTransitionEffect
+import com.hfut.schedule.ui.nav.window.AppEnvWarningWindow
 import com.hfut.schedule.ui.screen.home.calendar.common.ScheduleTopDate
 import com.hfut.schedule.ui.screen.home.calendar.common.numToChinese
 import com.hfut.schedule.ui.screen.home.calendar.communtiy.CommunityCourseTableUI
@@ -162,23 +172,21 @@ import com.hfut.schedule.ui.screen.home.cube.HomeSettingScreen
 import com.hfut.schedule.ui.screen.home.cube.screen.CalendarUISettings
 import com.hfut.schedule.ui.screen.home.cube.sub.update.getUpdates
 import com.hfut.schedule.ui.screen.home.focus.TodayScreen
-import com.hfut.schedule.ui.screen.home.focus.funiction.AddEventOrigin
 import com.hfut.schedule.ui.screen.home.search.SearchAppBeanLite
 import com.hfut.schedule.ui.screen.home.search.SearchFuncs
 import com.hfut.schedule.ui.screen.home.search.SearchScreen
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.person.getPersonInfo
 import com.hfut.schedule.ui.screen.home.search.function.jxglstu.totalCourse.TotalCourseDataSource
 import com.hfut.schedule.ui.screen.home.search.function.my.notification.calculatedReadNotificationCount
-import com.hfut.schedule.ui.screen.supabase.login.ApiToSupabase
 import com.hfut.schedule.ui.style.color.textFiledTransplant
-import com.hfut.schedule.ui.style.shader.largeStyle
-import com.hfut.schedule.ui.style.shader.smallStyle
+import com.hfut.schedule.ui.style.navigationBarSupplementPadding
 import com.hfut.schedule.ui.style.special.HazeBottomSheet
 import com.hfut.schedule.ui.style.special.backDropSource
-import com.hfut.schedule.ui.style.special.layerGlass
 import com.hfut.schedule.ui.style.special.newBottomBarBlur
 import com.hfut.schedule.ui.style.special.rememberHazeBlur
 import com.hfut.schedule.ui.style.special.topBarBlur
+import com.hfut.schedule.ui.theme.warnColor
+import com.hfut.schedule.ui.util.isThemeDark
 import com.hfut.schedule.ui.util.loadBitmap
 import com.hfut.schedule.ui.util.nav2Composable
 import com.hfut.schedule.ui.util.navigation.AppAnimationManager
@@ -188,11 +196,12 @@ import com.hfut.schedule.ui.util.navigation.navigateForBottomBar
 import com.hfut.schedule.ui.util.pickColorFromTop
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
-import com.hjq.device.compat.DeviceOs
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.sharednav.common.helper.NoneRoundShape
-import com.sharednav.common.helper.ScreenCornerHelper
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.logic.util.LogUtil
+import com.xah.common.logic.util.isEmptyOrBlank
 import com.xah.common.ui.component.text.BottomTip
 import com.xah.common.ui.component.text.ScrollText
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
@@ -202,13 +211,14 @@ import com.xah.common.ui.style.color.TransparentSystemBars
 import com.xah.common.ui.style.color.shimmerEffect
 import com.xah.common.ui.style.color.topBarTransplantColor
 import com.xah.common.ui.style.mask
+import com.xah.common.ui.style.padding.getNavigationBarHeight
 import com.xah.container.component.base.SharedContainer
+import com.xah.floating.util.LocalFloatingController
 import com.xah.navigation.anim.effect.Direction
+import com.xah.navigation.anim.effect.RollTransitionEffect
 import com.xah.navigation.anim.effect.SlideTransitionEffect
 import com.xah.navigation.model.action.LaunchMode
 import com.xah.navigation.util.LocalNavController
-import com.xah.shader.state.ShaderState
-import com.xah.shader.state.rememberShaderState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import kotlinx.coroutines.Dispatchers
@@ -258,7 +268,7 @@ fun MainScreen(
     val update by produceState<GiteeReleaseResponse?>(initialValue = null) {
         value = getUpdates(vm)
     }
-    val showBadge = update != null
+    val showBadge = update?.assets?.isNotEmpty() ?: false
 
     //判定是否以聚焦作为第一页
     val first  by rememberSaveable { mutableStateOf(
@@ -326,9 +336,10 @@ fun MainScreen(
 
     var today by rememberSaveable() { mutableStateOf(DateTimeManager.getToday()) }
     val pagerState = rememberPagerState(pageCount = { titles.size })
-    var searchText by rememberSaveable() { mutableStateOf("") }
+    var searchText by rememberSaveable() { mutableStateOf(EMPTY_STRING) }
     var showSearch by rememberSaveable() { mutableStateOf(false) }
 
+    val floatingController = LocalFloatingController.current
 
     LaunchedEffect(Unit) {
         if(!isLogin) {
@@ -353,12 +364,12 @@ fun MainScreen(
         }
     }
 
-    val backGroundSource = rememberShaderState()
+    val backGroundSource = rememberLayerBackdrop()
 
-    val customBackground by DataStoreManager.customBackground.collectAsState(initial = "")
-    val useCustomBackground = customBackground != ""
+    val customBackground by DataStoreManager.customBackground.collectAsState(initial = EMPTY_STRING)
+    val useCustomBackground = customBackground != EMPTY_STRING
     val context = LocalContext.current
-    var zhiJianStudentId by rememberSaveable { mutableStateOf(getPersonInfo().getStudentIdFinally() ?: "") }
+    var zhiJianStudentId by rememberSaveable { mutableStateOf(getPersonInfo().getStudentIdFinally() ?: EMPTY_STRING) }
     // 捏合手势
     val scaleFactor = rememberSaveable { mutableFloatStateOf(1f) } // 捏合手势缩放因子
 
@@ -401,10 +412,7 @@ fun MainScreen(
             }
         },
         floatingActionButton = {
-            val dest = AddEventDestination(
-                null,
-                AddEventOrigin.FOCUS_ADD.name
-            )
+            val dest = AddEventDestination(origin = HomeDestination(FOCUS).key)
             AnimatedVisibility(
                 enter = scaleIn(),
                 exit = scaleOut(),
@@ -458,7 +466,7 @@ fun MainScreen(
                             }
                         },
                         title = {
-                            Text(
+                            ScrollText(
                                 topBarText(targetPage,context),
                                 modifier = Modifier.controlCenterDrag()
                             )
@@ -466,40 +474,48 @@ fun MainScreen(
                         actions = {
                             when (targetPage) {
                                 FUNCTIONS -> {
-//                                    SharedContainer(
-//                                        key = FunctionsSortDestination.key,
-//                                        shape = CircleShape,
-//                                        containerFilledStrategy = ContainerFilledStrategy.Color(Color.Transparent)
-//                                    ) {
-                                        IconButton(onClick = {
-                                            navHostTopController.push(FunctionsSortDestination,effect = SlideTransitionEffect())
-                                        }) {
+                                    Row(modifier = Modifier.padding(horizontal = BUTTON_END_PADDING)){
+                                        LiquidButton(
+                                            onClick = {
+                                                navHostTopController.push(
+                                                    FunctionsSortDestination,
+                                                    effect = SlideTransitionEffect()
+                                                )
+                                            },
+                                            backdrop = backdrop,
+                                            isCircle = true,
+                                        ) {
                                             Icon(
                                                 painterResource(id = R.drawable.edit),
-                                                contentDescription = "",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                contentDescription = EMPTY_STRING,
                                             )
                                         }
-//                                    }
-                                    IconButton(onClick = { showSearch = !showSearch }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.search),
-                                            contentDescription = "",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                        Spacer(Modifier.width(BUTTON_PADDING))
+                                        LiquidButton(
+                                            onClick = {
+                                                showSearch = !showSearch
+                                            },
+                                            backdrop = backdrop,
+                                            isCircle = true,
+                                        ) {
+                                            Icon(
+                                                painterResource(id = R.drawable.search),
+                                                contentDescription = EMPTY_STRING,
+                                            )
+                                        }
                                     }
                                 }
 
                                 FOCUS -> {
-                                    ApiToSupabase(vm)
-//                                    SharedContainer(
-//                                        containerFilledStrategy = ContainerFilledStrategy.Color(Color.Transparent),
-//                                        key = NotificationBoxDestination.key,
-//                                        shape = CircleShape
-//                                    ) {
-                                        IconButton(onClick = {
-                                            navHostTopController.push(NotificationBoxDestination, effect = SlideTransitionEffect(Direction.BOTTOM))
-                                        }) {
+                                    Row(modifier = Modifier.padding(end = APP_HORIZONTAL_DP-CARD_NORMAL_DP)) {
+                                        // ApiToSupabase(vm)
+                                        LiquidButton(
+                                            onClick = {
+                                                navHostTopController.push(NotificationBoxDestination, effect = SlideTransitionEffect(Direction.BOTTOM))
+                                            },
+                                            backdrop = backdrop,
+                                            isCircle = count == 0
+                                        ) {
                                             BadgedBox(badge = {
                                                 if (count != 0) {
                                                     Badge {
@@ -507,104 +523,70 @@ fun MainScreen(
                                                     }
                                                 }
                                             }) {
-                                                Icon(painterResource(id = NotificationBoxDestination.icon), contentDescription = "", tint = MaterialTheme.colorScheme.primary)
+                                                Icon(
+                                                    painterResource(NotificationBoxDestination.icon),
+                                                    contentDescription = EMPTY_STRING
+                                                )
                                             }
                                         }
-//                                    }
-                                    if (ifSaved) {
-                                        IconButton(onClick = { refreshLogin(context) }) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.login),
-                                                contentDescription = "",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
+                                        Spacer(Modifier.width(BUTTON_PADDING))
+                                        if (ifSaved) {
+                                            LiquidButton(
+                                                onClick = {
+                                                    refreshLogin(context)
+                                                },
+                                                backdrop = backdrop,
+                                                isCircle = true,
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = R.drawable.login),
+                                                    contentDescription = EMPTY_STRING,
+                                                )
+                                            }
+                                        } else {
+                                            LiquidButton(
+                                                onClick = {},
+                                                backdrop = backdrop,
+                                                isCircle = false,
+                                            ) {
+                                                Text(
+                                                    text = if (GlobalUiStateHolder.webVpn) "WebVpn" else "已登录",
+                                                )
+                                            }
                                         }
-                                    } else {
-                                        Spacer(modifier = Modifier.width(7.5.dp))
-                                        Text(
-                                            text = if (GlobalUiStateHolder.webVpn) "WebVpn" else "已登录",
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(modifier = Modifier.width(APP_HORIZONTAL_DP))
                                     }
                                 }
                                 SETTINGS -> {
-                                   Row {
-                                       if(AppVersion.isDebug) {
-                                           IconButton(
+                                   Row(modifier = Modifier.padding(end = APP_HORIZONTAL_DP-CARD_NORMAL_DP)) {
+                                       val enableDataStore by DataStoreManager.enableDataStore.collectAsState(initial = true)
+
+                                       if(!AppVersion.isNormalEnv || !enableDataStore) {
+                                           LiquidButton(
                                                onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_debug))
-                                               }
+                                                   floatingController.push(AppEnvWarningWindow)
+                                               },
+                                               isCircle = true,
+                                               backdrop = backdrop
                                            ) {
                                                Icon(
-                                                   painterResource(R.drawable.construction),
+                                                   painterResource(R.drawable.planner_review),
                                                    null,
-                                                   tint = MaterialTheme.colorScheme.primary
+                                                   tint = warnColor()
                                                )
                                            }
-                                       } else if(!AppVersion.isSignatureValid) {
-                                           IconButton(
-                                               onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_sign))
-                                               }
-                                           ) {
-                                               Icon(
-                                                   painterResource(R.drawable.signature),
-                                                   null,
-                                                   tint = MaterialTheme.colorScheme.primary
-                                               )
-                                           }
+                                           Spacer(Modifier.width(BUTTON_PADDING))
                                        }
-                                       if(AppVersion.isDev) {
-                                           IconButton(
-                                               onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_preview))
-                                               }
-                                           ) {
-                                               Icon(
-                                                   painterResource(R.drawable.logo_dev),
-                                                   null,
-                                                   tint = MaterialTheme.colorScheme.primary
-                                               )
-                                           }
-                                       }
-                                       if(AppVersion.isRunningOnAvd) {
-                                           IconButton(
-                                               onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_avd))
-                                               }
-                                           ) {
-                                               Icon(
-                                                   painterResource(R.drawable.adb),
-                                                   null,
-                                                   tint = MaterialTheme.colorScheme.primary
-                                               )
-                                           }
-                                       } else if(AppVersion.isRunningOnWsa) {
-                                           IconButton(
-                                               onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_wsa))
-                                               }
-                                           ) {
-                                               Icon(
-                                                   painterResource(R.drawable.desktop_windows),
-                                                   null,
-                                                   tint = MaterialTheme.colorScheme.primary
-                                               )
-                                           }
-                                       }
-                                       if(DeviceOs.isHarmonyOsNextAndroidCompatible()) {
-                                           IconButton(
-                                               onClick = {
-                                                   showToast(context.getString(R.string.settings_person_info_tag_harmonry_next))
-                                               }
-                                           ) {
-                                               Icon(
-                                                   painterResource(R.drawable.circle),
-                                                   null,
-                                                   tint = MaterialTheme.colorScheme.primary
-                                               )
-                                           }
+                                       LiquidButton(
+                                           onClick = {
+                                               navHostTopController.push(SettingsSearchDestination, effect = RollTransitionEffect())
+                                           },
+                                           isCircle = true,
+                                           backdrop = backdrop
+                                       ) {
+                                           Icon(
+                                               painterResource(R.drawable.search),
+                                               null
+                                           )
                                        }
                                    }
                                 }
@@ -618,7 +600,7 @@ fun MainScreen(
                         FUNCTIONS -> {
                             if (showSearch) {
                                 SearchFuncs(searchText,backdrop, onShow = {
-                                    searchText = ""
+                                    searchText = EMPTY_STRING
                                     showSearch = it
                                 }) {
                                     searchText = it
@@ -629,8 +611,9 @@ fun MainScreen(
                         else -> {}
                     }
                 } else {
+                    val density = LocalDensity.current
                     if(useCustomBackground) {
-                        val customBackgroundAlpha by DataStoreManager.customCalendarSquareAlpha.collectAsState(initial = MyApplication.CALENDAR_SQUARE_ALPHA)
+                        var rightOffsetPx by remember { mutableStateOf<Float?>(null) }
                         val iconColor = IconButtonDefaults.iconButtonColors().contentColor
                         TopAppBar(
                             colors = topBarTransplantColor(),
@@ -638,20 +621,21 @@ fun MainScreen(
                                 Surface(
                                     shape = CircleShape,
                                     modifier = Modifier
+                                        // 限制右边界
+                                        .let {
+                                            rightOffsetPx?.let { offset ->
+                                                it.widthIn(max = with(density) { offset.toDp() } - CARD_NORMAL_DP*1)
+                                            } ?: it
+                                        }
                                         .padding(horizontal = APP_HORIZONTAL_DP - (if (showAll) 1.75.dp else 2.5.dp) * 3)
                                         .clip(CircleShape)
-                                        .layerGlass(
-                                            backGroundSource,
-                                            smallStyle.copy(
-                                                blur = 2.dp,
-                                                overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                                    customBackgroundAlpha
-                                                )
-                                            ),
+                                        .calendarSquareBackDrop(
+                                            backdrop = backdrop,
+                                            CalendarSquareBackDropSource.BUTTON,
                                         ),
                                     color = Color.Transparent
                                 ) {
-                                    Text(
+                                    ScrollText(
                                         topBarText(CALENDAR,context),
                                         modifier = Modifier
                                             .padding(
@@ -663,212 +647,200 @@ fun MainScreen(
                                     )
                                 }
                             },
-                            title = {
-
-                            },
+                            title = {},
                             actions = {
-                                val isFriend = CourseType.entries.all { swapUI > it.code }
-                                if (isFriend) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .layerGlass(
-                                                backGroundSource,
-                                                smallStyle.copy(
-                                                    blur = 2.dp,
-                                                    overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                                        customBackgroundAlpha
-                                                    )
-                                                )
-                                            )
-                                            .clickable {
-                                                navHostTopController.push(
-                                                    WorkAndRestDestination(
-                                                        swapUI.toString()
-                                                    ),
-                                                    effect = JumpTransitionEffectWallpaper()
-                                                )
-                                            },
-                                        color = Color.Transparent
-                                    ) {
-                                        Icon(
-                                            tint = iconColor,
-                                            painter = painterResource(id = WorkAndRestDestination.ICON),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .padding(CARD_NORMAL_DP * 3)
-                                        )
+                                Row(
+                                    modifier = Modifier.onGloballyPositioned {
+                                        rightOffsetPx = it.positionInWindow().x
                                     }
-                                } else {
+                                ) {
+                                    val isFriend = CourseType.entries.all { swapUI > it.code }
+                                    if (isFriend) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .calendarSquareBackDrop(
+                                                    backdrop,
+                                                    CalendarSquareBackDropSource.BUTTON
+                                                )
+                                                .clickable {
+                                                    navHostTopController.push(
+                                                        WorkAndRestDestination(
+                                                            swapUI.toString()
+                                                        ),
+                                                        effect = JumpTransitionEffectWallpaper()
+                                                    )
+                                                },
+                                            color = Color.Transparent
+                                        ) {
+                                            Icon(
+                                                tint = iconColor,
+                                                painter = painterResource(id = WorkAndRestDestination.ICON),
+                                                contentDescription = EMPTY_STRING,
+                                                modifier = Modifier
+                                                    .padding(CARD_NORMAL_DP * 3)
+                                            )
+                                        }
+                                    } else {
+                                        Surface(
+                                            shape = CircleShape,
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .calendarSquareBackDrop(
+                                                    backdrop,
+                                                    CalendarSquareBackDropSource.BUTTON
+                                                )
+                                                .clickable {
+                                                    navHostTopController.push(
+                                                        TermCoursesDestination(
+                                                            ifSaved,
+                                                            CALENDAR.name,
+                                                        ),
+                                                        effect = JumpTransitionEffectWallpaper()
+                                                    )
+                                                }
+                                            ,
+                                            color = Color.Transparent
+                                        ) {
+                                            Icon(
+                                                tint = iconColor,
+                                                painter = painterResource(id = R.drawable.category),
+                                                contentDescription = EMPTY_STRING,
+                                                modifier = Modifier
+                                                    .padding(CARD_NORMAL_DP * 3)
+                                            )
+                                        }
+                                    }
+                                    Spacer(Modifier.width(BUTTON_PADDING))
                                     Surface(
                                         shape = CircleShape,
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .layerGlass(
-                                                backGroundSource,
-                                                smallStyle.copy(
-                                                    blur = 2.dp,
-                                                    overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                                        customBackgroundAlpha
-                                                    )
-                                                )
+                                            .calendarSquareBackDrop(
+                                                backdrop,
+                                                CalendarSquareBackDropSource.BUTTON
                                             )
                                             .clickable {
-                                                navHostTopController.push(
-                                                    TermCoursesDestination(
-                                                        ifSaved,
-                                                        CALENDAR.name,
-                                                    ),
-                                                    effect = JumpTransitionEffectWallpaper()
-                                                )
+                                                showBottomSheet_multi = true
                                             }
                                         ,
                                         color = Color.Transparent
                                     ) {
                                         Icon(
+                                            painter = painterResource(id = R.drawable.tab_inactive),
+                                            contentDescription = EMPTY_STRING,
                                             tint = iconColor,
-                                            painter = painterResource(id = R.drawable.category),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .padding(CARD_NORMAL_DP * 3)
+                                            modifier = Modifier.padding(CARD_NORMAL_DP*3)
                                         )
                                     }
-                                }
-                                Spacer(Modifier.width(BUTTON_PADDING))
-                                Surface(
-                                    shape = CircleShape,
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .layerGlass(
-                                            backGroundSource,
-                                            smallStyle.copy(
-                                                blur = 2.dp,
-                                                overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                                    customBackgroundAlpha
-                                                )
+                                    Spacer(Modifier.width(BUTTON_PADDING))
+                                    Surface(
+                                        shape = CircleShape,
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .calendarSquareBackDrop(
+                                                backdrop,
+                                                CalendarSquareBackDropSource.BUTTON
                                             )
+                                            .clickable {
+                                                showAll = !showAll
+                                            }
+                                        ,
+                                        color = Color.Transparent
+                                    ) {
+                                        val animatedImageVector = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_expand)
+                                        val painter = rememberAnimatedVectorPainter(animatedImageVector, showAll)
+                                        Icon(
+                                            painter = painter,
+                                            contentDescription = EMPTY_STRING,
+                                            modifier = Modifier.padding(CARD_NORMAL_DP*3),
+                                            tint = iconColor,
                                         )
-                                        .clickable {
-                                            showBottomSheet_multi = true
-                                        }
-                                    ,
-                                    color = Color.Transparent
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.tab_inactive),
-                                        contentDescription = "",
-                                        tint = iconColor,
-                                        modifier = Modifier.padding(CARD_NORMAL_DP*3)
-                                    )
+                                    }
+                                    Spacer(Modifier.width(APP_HORIZONTAL_DP-(if (showAll) 1.75.dp else 2.5.dp)*3))
                                 }
-                                Spacer(Modifier.width(BUTTON_PADDING))
-                                Surface(
-                                    shape = CircleShape,
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .layerGlass(
-                                            backGroundSource,
-                                            smallStyle.copy(
-                                                blur = 2.dp,
-                                                overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                                    customBackgroundAlpha
-                                                )
-                                            )
-                                        )
-                                        .clickable {
-                                            showAll = !showAll
-                                        }
-                                    ,
-                                    color = Color.Transparent
-                                ) {
-                                    val animatedImageVector = AnimatedImageVector.animatedVectorResource(id = R.drawable.ic_anim_expand)
-                                    val painter = rememberAnimatedVectorPainter(animatedImageVector, showAll)
-                                    Icon(
-                                        painter = painter,//painterResource(id = if (showAll) R.drawable.collapse_content else R.drawable.expand_content),
-                                        contentDescription = "",
-                                        modifier = Modifier.padding(CARD_NORMAL_DP*3),
-                                        tint = iconColor,
-                                    )
-                                }
-                                Spacer(Modifier.width(APP_HORIZONTAL_DP-(if (showAll) 1.75.dp else 2.5.dp)*3))
                             },
                         )
                         if(swapUI == CourseType.ZHI_JIAN.code) {
-                            ZhiJianSearchBar(backGroundSource,customBackgroundAlpha,zhiJianStudentId,showAll) {
+                            ZhiJianSearchBar(backdrop,zhiJianStudentId,showAll) {
                                 zhiJianStudentId = it
                             }
                         }
-                        ScheduleTopDate(showAll, today,backGroundSource)
+                        ScheduleTopDate(showAll, today,backdrop)
                     } else {
                         TopAppBar(
                             colors = topBarTransplantColor(),
                             title = {
-                                Text(
+                                ScrollText(
                                     topBarText(CALENDAR,context),
                                     modifier = Modifier.controlCenterDrag()
                                 )
                             },
                             actions = {
-                                val isFriend = CourseType.entries.all { swapUI > it.code }
-                                if (isFriend) {
-                                    val dest = WorkAndRestDestination(swapUI.toString())
-//                                    SharedContainer(
-//                                        key = dest.key,
-//                                        shape = CircleShape,
-//                                        containerFilledStrategy = ContainerFilledStrategy.Color(Color.Transparent)
-//                                    ) {
-                                        IconButton(
+                                Row(modifier = Modifier.padding(end = BUTTON_END_PADDING)) {
+                                    val courseTypeEntries = remember { CourseType.entries }
+                                    val isFriend = remember(swapUI) { courseTypeEntries.all { swapUI > it.code } }
+                                    if (isFriend) {
+                                        val dest = remember(swapUI) { WorkAndRestDestination(swapUI.toString()) }
+                                        LiquidButton(
                                             onClick = {
-                                                navHostTopController.push(dest,effect = JumpTransitionEffectWallpaper())
-                                            }
+                                                navHostTopController.push(
+                                                    dest,
+                                                    effect = JumpTransitionEffectWallpaper()
+                                                )
+                                            },
+                                            backdrop = backdrop,
+                                            isCircle = true
                                         ) {
                                             Icon(
                                                 painter = painterResource(id = WorkAndRestDestination.ICON),
-                                                contentDescription = "",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                contentDescription = EMPTY_STRING,
                                             )
                                         }
-//                                    }
-                                } else {
-                                    val dest = TermCoursesDestination(
-                                        ifSaved,
-                                        CALENDAR.name
-                                    )
-//                                    SharedContainer(
-//                                        key = dest.key,
-//                                        shape = CircleShape,
-//                                        containerFilledStrategy = ContainerFilledStrategy.Color(Color.Transparent)
-//                                    ) {
-                                        IconButton(onClick = {
-                                            navHostTopController.push(dest,effect = JumpTransitionEffectWallpaper())
-                                        }) {
+                                    } else {
+                                        val dest = remember(ifSaved) { TermCoursesDestination(ifSaved, CALENDAR.name) }
+                                        LiquidButton(
+                                            onClick = {
+                                                navHostTopController.push(
+                                                    dest,
+                                                    effect = JumpTransitionEffectWallpaper()
+                                                )
+                                            },
+                                            backdrop = backdrop,
+                                            isCircle = true
+                                        ) {
                                             Icon(
                                                 painter = painterResource(id = TermCoursesDestination.ICON),
-                                                contentDescription = "",
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                contentDescription = EMPTY_STRING,
                                             )
                                         }
-//                                    }
-                                }
-                                IconButton(onClick = {
-                                    showBottomSheet_multi = true
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.tab_inactive),
-                                        contentDescription = "",
-                                        tint = MaterialTheme.colorScheme.primary,
+                                    }
+                                    Spacer(Modifier.width(BUTTON_PADDING))
+                                    LiquidButton(
+                                        onClick = {
+                                            showBottomSheet_multi = true
+                                        },
+                                        backdrop = backdrop,
+                                        isCircle = true
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.tab_inactive),
+                                            contentDescription = EMPTY_STRING,
+                                        )
+                                    }
+                                    Spacer(Modifier.width(BUTTON_PADDING))
+                                    // 动画写在内部
+                                    AnimatedExpandLiquidIconButton(
+                                        backdrop = backdrop,
+                                        valueState = showAll,
+                                        onClick = { showAll = !showAll }
                                     )
                                 }
-                                // 动画写在内部
-                                AnimatedIconButton(
-                                    valueState = showAll,
-                                    onClick = { showAll = !showAll }
-                                )
                             },
                         )
                         if(swapUI == CourseType.ZHI_JIAN.code) {
-                            ZhiJianSearchBar(null,1f,zhiJianStudentId,showAll) {
+                            ZhiJianSearchBar(null,zhiJianStudentId,showAll) {
                                 zhiJianStudentId = it
                             }
                         }
@@ -966,40 +938,70 @@ fun MainScreen(
             val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
             val color = if(targetPage == SETTINGS) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surface
             if (enableNewBottomBar){
-                val paddingSafely = remember { true }
-                val shape = remember(paddingSafely) {
-                    val corner = ScreenCornerHelper.corner
-                    if(paddingSafely || corner == 0.dp) {
+                val useBackground = useCustomBackground && targetPage == CALENDAR
+                val paddingSafely by DataStoreManager.enableNewBottomBarSafelyPadding.collectAsState(initial = true)
+                val shape = remember(
+//                    paddingSafely
+                ) {
+//                    val corner = ScreenCornerHelper.corner
+//                    if(paddingSafely || corner == 0.dp) {
                         CircleShape
-                    } else {
-                        RoundedCornerShape(corner)
-                    }
+//                    } else {
+//                        RoundedCornerShape(corner)
+//                    }
                 }
                 Box(
                     modifier = Modifier
                 ) {
                     Spacer(
                         modifier = Modifier
-                            .newBottomBarBlur(hazeState,color)
+                            .let {
+                                if (useBackground) {
+                                    it
+                                } else {
+                                    it.newBottomBarBlur(hazeState, color)
+                                }
+                            }
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth()
                             .navigationBarsPadding()
-                            .height(APP_HORIZONTAL_DP*1.75f)
+                            .height(APP_HORIZONTAL_DP * if(paddingSafely) 1.75f else 1f)
                     )
+                    val customBackgroundAlpha by DataStoreManager.customCalendarSquareAlpha.collectAsState(initial = MyApplication.CALENDAR_SQUARE_ALPHA)
+                    val maxValue = remember { .8f }
+                    val finalColor = if(useBackground) {
+                        val backgroundAlpha = customBackgroundAlpha.coerceIn(maxValue/2f,maxValue)
+                        MaterialTheme.colorScheme.secondaryContainer.copy(backgroundAlpha)
+                    } else {
+                        (
+                                if(isThemeDark())
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceBright
+                        ).copy(maxValue)
+//                        MaterialTheme.colorScheme.surfaceBright.copy(maxValue)
+                    }
                     @OptIn(ExperimentalNavigationBarApi::class)
                     NavigationBar(
                         enabled = isEnabled,
                         hazeState = hazeState,
                         hapticsEnabled = false,
+                        trackColor = if(useBackground) MaterialTheme.colorScheme.surfaceContainer.copy(customBackgroundAlpha) else MaterialTheme.colorScheme.surfaceContainerLow.copy(.75f),
                         aimAssist = true,
                         elevation = 0.dp,
                         itemHorizontalPadding = 0.dp,
-                        indicatorBlur = 10.dp,
-                        indicatorColor = MaterialTheme.colorScheme.surfaceBright.copy(.8f),
+                        indicatorBlur = if(useBackground) 0.dp else 2.dp,
+                        indicatorColor = finalColor,
                         contentColor = MaterialTheme.colorScheme.onSurface,
+                        selectedContentColor = if(useBackground) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
                         hazeModifier = Modifier
-                            .bottomBarBackDrop(backdrop, shape = shape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(.25f))
+                            .let {
+                                if(useBackground) {
+                                    it.calendarSquareBackDrop(backdrop,CalendarSquareBackDropSource.BOTTOM, shape = shape)
+                                } else {
+                                    it.bottomBarBackDrop(backdrop, shape = shape)
+                                }
+                            }
                             .let {
                                 if(isEnabled) {
                                     it
@@ -1014,10 +1016,11 @@ fun MainScreen(
                         modifier = Modifier
                             .padding(horizontal = APP_HORIZONTAL_DP)
                             .let {
-                                if(paddingSafely) {
+                                if (paddingSafely) {
                                     it.padding(bottom = APP_HORIZONTAL_DP)
                                 } else {
-                                    it
+                                    // 额外垫高
+                                    it.navigationBarSupplementPadding()
                                 }
                             }
                             .navigationBarsPadding()
@@ -1049,7 +1052,8 @@ fun MainScreen(
                 }
             } else {
                 if(useCustomBackground && targetPage == CALENDAR) {
-                    SpecialBottomBar(backGroundSource,items,navController,isEnabled)
+                    // TDOO
+                    SpecialBottomBar(backdrop,items,navController,isEnabled)
                 } else {
                     HazeBottomBarDynamic(hazeState,items,navController,isEnabled,color)
                 }
@@ -1471,8 +1475,7 @@ fun SearchEditScreen() {
 
 @Composable
 private fun ZhiJianSearchBar(
-    shaderState: ShaderState? = null,
-    customBackgroundAlpha : Float,
+    backdrop: Backdrop? = null,
     input : String,
     showAll : Boolean,
     onValueChange : (String) -> Unit,
@@ -1511,8 +1514,8 @@ private fun ZhiJianSearchBar(
         Dialog(
             onDismissRequest = { showAddDialog = false }
         ) {
-            var inputName by remember { mutableStateOf("") }
-            var inputRemark by remember { mutableStateOf("") }
+            var inputName by remember { mutableStateOf(EMPTY_STRING) }
+            var inputRemark by remember { mutableStateOf(EMPTY_STRING) }
             Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)) {
                 Column(modifier = Modifier.padding(vertical = APP_HORIZONTAL_DP)) {
                     CustomTextField(
@@ -1547,7 +1550,7 @@ private fun ZhiJianSearchBar(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    if(inputName.isEmpty() || inputName.isBlank()) {
+                                    if(inputName.isEmptyOrBlank()) {
                                         showToast("空名")
                                         return@launch
                                     }
@@ -1641,17 +1644,13 @@ private fun ZhiJianSearchBar(
             TextField(
                 modifier = Modifier
                     .let {
-                        shaderState?.let { state ->
+                        backdrop?.let { state ->
                             it
                                 .clip(MaterialTheme.shapes.medium)
-                                .layerGlass(
+                                .calendarSquareBackDrop(
                                     state,
-                                    largeStyle.copy(
-                                        blur = 2.5.dp,
-                                        overlayColor = MaterialTheme.colorScheme.surface.copy(
-                                            customBackgroundAlpha
-                                        )
-                                    )
+                                    CalendarSquareBackDropSource.SQUARE,
+                                    MaterialTheme.shapes.medium
                                 )
                         } ?: it
                     }

@@ -20,21 +20,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.hfut.schedule.application.MyApplication
+import androidx.compose.ui.unit.dp
 import com.hfut.schedule.R
-import com.xah.common.logic.state.NetworkUiState
+import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.logic.util.sys.Starter
 import com.hfut.schedule.network.api.model.Constant
-
 import com.hfut.schedule.ui.component.container.CardListItem
-import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import com.hfut.schedule.ui.component.network.CommonNetworkScreen
 import com.hfut.schedule.ui.component.screen.pager.PaddingForPageControllerButton
 import com.hfut.schedule.ui.component.screen.pager.PageController
-import com.hfut.schedule.ui.screen.home.search.function.school.webvpn.autoWebVpnForNews
 import com.hfut.schedule.ui.screen.home.search.function.school.webvpn.getWebVpnCookie
-
-import com.xah.common.ui.style.padding.InnerPaddingHeight
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
+import com.xah.common.logic.state.NetworkUiState
+import com.xah.common.ui.style.padding.InnerPaddingHeight
+import com.xah.common.ui.style.padding.navigationBarHeightPadding
 import kotlinx.coroutines.launch
 
 //*******最新模范写法****
@@ -54,6 +53,7 @@ fun XuanquNewsUI(innerPadding : PaddingValues,vm : NetWorkViewModel) {
     LaunchedEffect(page) {
         refreshNetwork()
     }
+    val enableNewBottomBar by DataStoreManager.enableNewBottomBar.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
     CommonNetworkScreen(uiState, onReload = refreshNetwork) {
         val list = (uiState as NetworkUiState.Success).data
@@ -63,18 +63,16 @@ fun XuanquNewsUI(innerPadding : PaddingValues,vm : NetWorkViewModel) {
                 item { InnerPaddingHeight(innerPadding,true) }
                 items(list.size, key = { it }) { index ->
                     val item = list[index]
-//                    MyCustomCard {
                     CardListItem(
                         headlineContent = { Text(item.title) },
                         overlineContent = { Text(item.date) },
                         leadingContent = { Text((index+1).toString()) },
                         modifier = Modifier.clickable {
                             scope.launch {
-                                autoWebVpnForNews(context ,Constant.NEWS_XC_URL + item.link,item.title,icon = R.drawable.stream, cookie = cookies)
+                                Starter.startWebUrlInner(context ,Constant.NEWS_XC_URL + item.link,item.title,icon = R.drawable.stream, cookie = cookies)
                             }
                         },
                     )
-//                    }
                 }
                 item { InnerPaddingHeight(innerPadding,false) }
                 item { PaddingForPageControllerButton() }
@@ -84,9 +82,9 @@ fun XuanquNewsUI(innerPadding : PaddingValues,vm : NetWorkViewModel) {
                 page,
                 onNextPage = { page = it },
                 onPreviousPage = { page = it },
-                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()-navigationBarHeightPadding),
-//                modifier = Modifier.padding(innerPadding),
-                paddingBottom = false
+                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()-if(enableNewBottomBar) 0.dp else navigationBarHeightPadding),
+                paddingBottom = false,
+                paddingSafely = enableNewBottomBar
             )
         }
     }

@@ -73,6 +73,7 @@ import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs
 import com.hfut.schedule.logic.util.storage.kv.SharedPrefs.prefs
 import com.hfut.schedule.logic.util.sys.showToast
+import com.hfut.schedule.ui.component.button.BUTTON_END_PADDING
 import com.hfut.schedule.ui.component.button.LiquidButton
 import com.hfut.schedule.ui.component.button.TopBarNavigationIcon
 import com.hfut.schedule.ui.component.container.CARD_NORMAL_DP
@@ -93,6 +94,7 @@ import com.hfut.schedule.ui.util.navigation.AppAnimationManager
 import com.hfut.schedule.ui.util.state.GlobalUiStateHolder
 import com.hfut.schedule.viewmodel.network.NetWorkViewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.common.ui.component.status.LoadingScreen
 import com.xah.common.ui.style.APP_HORIZONTAL_DP
 import com.xah.common.ui.style.color.topBarTransplantColor
@@ -471,18 +473,18 @@ fun TermReportScreen(vm: NetWorkViewModel) {
         terms.mapNotNull(SemesterParser::parseSemester).distinct()
     }
     val communityToken = remember(preparationAttempt) {
-        prefs.getString("TOKEN", "").orEmpty()
+        prefs.getString("TOKEN", EMPTY_STRING).orEmpty()
     }
     val huiXinAuth = remember(preparationAttempt) {
-        prefs.getString("auth", "").orEmpty()
+        prefs.getString("auth", EMPTY_STRING).orEmpty()
     }
     val libraryToken = remember(preparationAttempt) {
-        prefs.getString(SharedPrefs.LIBRARY_TOKEN, "").orEmpty()
+        prefs.getString(SharedPrefs.LIBRARY_TOKEN, EMPTY_STRING).orEmpty()
     }
     val storedJxglstuCookie = remember(preparationAttempt) {
-        prefs.getString("redirect", "").orEmpty()
+        prefs.getString("redirect", EMPTY_STRING).orEmpty()
     }
-    val webVpnCookie by DataStoreManager.webVpnCookies.collectAsState(initial = "")
+    val webVpnCookie by DataStoreManager.webVpnCookies.collectAsState(initial = EMPTY_STRING)
     val hasJxglstuCredential = if (GlobalUiStateHolder.webVpn) {
         webVpnCookie.isNotEmpty()
     } else {
@@ -928,7 +930,7 @@ fun TermReportScreen(vm: NetWorkViewModel) {
                             },
                             backdrop = backdrop,
                             isCircle = true,
-                            modifier = Modifier.padding(horizontal = APP_HORIZONTAL_DP)
+                            modifier = Modifier.padding(end = BUTTON_END_PADDING)
                         ) {
                             Icon(
                                 painterResource(R.drawable.ios_share),
@@ -998,7 +1000,7 @@ fun TermReportScreen(vm: NetWorkViewModel) {
                         currentPage = semester!!,
                         onNextPage = { semester = it },
                         onPreviousPage = { semester = it },
-                        gap = 20,
+                        gap = SemesterParser.GAP,
                         text = SemesterParser.parseSemester(semester!!) ?: "未知学期",
                         paddingBottom = false,
                         resetPage = initialSemester

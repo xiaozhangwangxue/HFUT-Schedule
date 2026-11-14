@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hfut.schedule.application.MyApplication
 import com.hfut.schedule.logic.util.storage.kv.DataStoreManager
+import com.hfut.schedule.logic.util.sys.datetime.DateTimeManager
+import com.hfut.schedule.ui.component.button.CalendarSquareBackDropSource
+import com.hfut.schedule.ui.component.button.calendarSquareBackDrop
 import com.hfut.schedule.ui.nav.destination.AddEventDestination
 import com.hfut.schedule.ui.nav.destination.CourseDetailApiDestination
 import com.hfut.schedule.ui.nav.destination.ExamDestination
@@ -36,13 +39,16 @@ import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.TimeTableItem
 import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.TimeTableType
 import com.hfut.schedule.ui.screen.home.calendar.timetable.logic.parseTimeToFloat
 import com.hfut.schedule.ui.style.special.calendarSquareGlass
+import com.kyant.backdrop.Backdrop
 import com.sharednav.common.helper.NoneRoundShape
+import com.xah.common.logic.util.EMPTY_STRING
 import com.xah.shader.state.ShaderState
 import com.xah.container.component.base.sharedContainer
 import com.xah.container.model.ContainerFilledStrategy
 import com.xah.floating.util.LocalFloatingController
 
 import com.xah.common.logic.util.LogUtil
+import java.time.LocalDate
 
 const val timeTextFactor = 0.85
 const val placeTextFactor = 0.9
@@ -56,7 +62,7 @@ fun TimeTable(
     modifier: Modifier = Modifier,
     squareModifier : Modifier = Modifier,
     scaleFactor : Float = 1f,
-    shaderState : ShaderState? = null,
+    shaderState : Backdrop? = null,
     onTapBlankRegion : ((Offset) -> Unit)? = null,
     onLongTapBlankRegion : ((Offset) -> Unit)? = null,
     onDoubleTapBlankRegion : ((Offset) -> Unit)? = null,
@@ -70,6 +76,16 @@ fun TimeTable(
     val calendarSquareTextPadding by DataStoreManager.calendarSquareTextPadding.collectAsState(initial = MyApplication.CALENDAR_SQUARE_TEXT_PADDING)
 
     val enableMergeSquare by DataStoreManager.enableMergeSquare.collectAsState(initial = false)
+
+    // 当前显示周 == 今天所在周，且今天在显示列内（7列或工作日的5列）时，算出今天所在列索引（0起步）；否则null
+    val todayColumnIndex = remember(week, showAll) {
+        val todayDayOfWeek = LocalDate.now().dayOfWeek.value
+        if (week.toLong() == DateTimeManager.currentWeek && (showAll || todayDayOfWeek in 1..5)) {
+            (todayDayOfWeek - 1).coerceIn(0, if (showAll) 6 else 4)
+        } else {
+            null
+        }
+    }
 
     val list = remember(items,week) {
         if(week > items.size || week > MyApplication.MAX_WEEK) {
@@ -119,6 +135,7 @@ fun TimeTable(
                 hourHeight = calendarSquareHeight.dp*scaleFactor,
                 startTime = startTime,
                 endTime = endTime,
+                todayColumnIndex = todayColumnIndex,
                 onDoubleTapBlankRegion = onDoubleTapBlankRegion,
                 onLongTapBlankRegion = onLongTapBlankRegion,
                 onTapBlankRegion = onTapBlankRegion
@@ -227,9 +244,11 @@ fun TimeTable(
                         }
                         .let {
                             if (hasBackground) {
-                                it.calendarSquareGlass(
+                                it.calendarSquareBackDrop(
                                     shaderState!!,
-                                    MaterialTheme.colorScheme.surface.copy(customBackgroundAlpha)
+                                    CalendarSquareBackDropSource.SQUARE,
+                                    MaterialTheme.shapes.extraSmall,
+                                    color.first
                                 )
                             } else {
                                 it
@@ -272,7 +291,7 @@ fun TimeTable(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = item.name + (item.teacher?.let { "@$it" } ?: ""),
+                                    text = item.name + (item.teacher?.let { "@$it" } ?: EMPTY_STRING),
                                     fontSize = textSize,
                                     textAlign = TextAlign.Center,
                                     lineHeight = lineHeight,
@@ -360,6 +379,7 @@ fun TimeTable(
                 hourHeight = calendarSquareHeight.dp*scaleFactor,
                 startTime = startTime,
                 endTime = endTime,
+                todayColumnIndex = todayColumnIndex,
                 onDoubleTapBlankRegion = onDoubleTapBlankRegion,
                 onLongTapBlankRegion = onLongTapBlankRegion,
                 onTapBlankRegion = onTapBlankRegion
@@ -433,9 +453,11 @@ fun TimeTable(
                         }
                         .let {
                             if (hasBackground) {
-                                it.calendarSquareGlass(
+                                it.calendarSquareBackDrop(
                                     shaderState!!,
-                                    MaterialTheme.colorScheme.surface.copy(customBackgroundAlpha)
+                                    CalendarSquareBackDropSource.SQUARE,
+                                    MaterialTheme.shapes.extraSmall,
+                                    color.first
                                 )
                             } else {
                                 it
@@ -474,7 +496,7 @@ fun TimeTable(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = item.name + (item.teacher?.let { "@$it" } ?: ""),
+                                text = item.name + (item.teacher?.let { "@$it" } ?: EMPTY_STRING),
                                 lineHeight = lineHeight,
                                 fontSize = textSize,
                                 textAlign = TextAlign.Center,
