@@ -126,43 +126,6 @@ private struct CampusMailView: View {
     }
 }
 
-private struct NativeWebVPNView: View {
-    @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
-    @State private var hasSession = false
-
-    var body: some View {
-        List {
-            Section("校外访问状态") {
-                Label(hasSession ? "已保存 WebVPN 会话" : "尚未登录 WebVPN", systemImage: hasSession ? "checkmark.shield.fill" : "lock.shield")
-                    .foregroundStyle(hasSession ? .green : .secondary)
-                Picker("教务连接方式", selection: $connectionMode) {
-                    ForEach(AcademicConnectionMode.allCases) { mode in Text(mode.title).tag(mode.rawValue) }
-                }
-            }
-            Section("登录") {
-                SourceAnchoredNavigationLink(sourceID: "webvpn-login") {
-                    PortalWebView(url: URL(string: "https://webvpn.hfut.edu.cn/login?cas_login=true")!)
-                } label: {
-                    Label(hasSession ? "打开 WebVPN 门户" : "使用统一身份认证登录", systemImage: "rectangle.portrait.and.arrow.right")
-                }
-            }
-            Section("使用说明") {
-                Text("登录成功后，应用会保存 WebVPN 与统一身份认证 Cookie；选择“校外 WebVPN”后，教务及校内网页会自动通过 WebVPN 访问，无需每个栏目重复登录。")
-            }
-        }
-        .onAppear { refreshStatus() }
-        .onChange(of: connectionMode) { _, value in
-            if value == AcademicConnectionMode.webVPN.rawValue { refreshStatus() }
-        }
-    }
-
-    private func refreshStatus() {
-        hasSession = CampusSessionStore.shared.allCookies.contains {
-            $0.domain.lowercased().contains("webvpn.hfut.edu.cn")
-        }
-    }
-}
-
 private struct NativeWebNavigationView: View {
     private struct Favorite: Codable, Identifiable, Hashable {
         var id = UUID()

@@ -138,7 +138,7 @@ signing_team="$(<"${work_dir}/team")"
 app_identity="$(<"${work_dir}/app.identity")"
 widget_identity="$(<"${work_dir}/widget.identity")"
 stamp="$(date +%Y%m%d-%H%M%S)"
-ipa_path="${dist_dir}/HFUTSchedule-iOS-1.2.0-temporary-signed-${stamp}.ipa"
+ipa_path=""
 app_path="${derived_dir}/Build/Products/Release-iphoneos/HFUTSchedule.app"
 widget_path="${app_path}/PlugIns/HFUTScheduleWidget.appex"
 
@@ -168,6 +168,9 @@ cp "${work_dir}/app.mobileprovision" "${app_path}/embedded.mobileprovision"
 
 # Reject re-signing that leaves the extension outside the main app's actual shared group.
 "${script_dir}/verify_widget_signing.sh" "${app_path}"
+
+version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${app_path}/Info.plist")
+ipa_path="${dist_dir}/HFUTSchedule-iOS-${version}-temporary-signed-${stamp}.ipa"
 
 echo "==> 打包 IPA"
 mkdir -p "${dist_dir}" "${work_dir}/Payload"

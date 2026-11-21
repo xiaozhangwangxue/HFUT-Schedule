@@ -72,6 +72,15 @@ final class CampusSessionStore: @unchecked Sendable {
         return HTTPCookieStorage.shared.cookies ?? []
     }
 
+    /// Tests only persisted WebVPN ticket metadata; an arbitrary portal cookie is not login evidence.
+    func hasSavedWebVPNTicket(now: Date = .now) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return WebVPNBrowsingPolicy.hasValidTicket(readRecordsUnlocked().map {
+            .init(name: $0.name, domain: $0.domain, expiresAt: $0.expiresAt)
+        }, now: now)
+    }
+
     /// Removes only the selected service's cookies from both the live cookie jar
     /// and the persisted Keychain copy. This is used when the user explicitly
     /// opens the login screen and needs a fresh CAS form instead of an automatic

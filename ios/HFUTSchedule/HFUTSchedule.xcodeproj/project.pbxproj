@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		011B015B72B69CF51F9EA9A4 /* ScheduleBackupPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A742832907DC6FCD12A8C9 /* ScheduleBackupPayload.swift */; };
 		01A8F6B4E7115380A3E60FBE /* NovemberPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 166C6840A3F6EB0D940E6B60 /* NovemberPersistenceTests.swift */; };
+		0767F82F6E06E4518178C76B /* WebVPNBrowsingSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C0C9B92C7436AE3860ED925 /* WebVPNBrowsingSessionTests.swift */; };
 		0782374711F22A7F8B71F5AF /* AcademicUpgradeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA56C79D999E08E74FE8EE83 /* AcademicUpgradeTests.swift */; };
 		0E66697DE559CFBE503EA9D6 /* CalendarExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FD1CECED72B517CAFB9A35 /* CalendarExporter.swift */; };
 		1296C7DDDD35A78821A56373 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B76EDDB25B66726ADAC9524 /* AppTheme.swift */; };
@@ -42,12 +43,14 @@
 		5CB9F3C37964AB5522E4155E /* LibraryServiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30643DAEE7FA8A115E1D4893 /* LibraryServiceView.swift */; };
 		6448AA89AA2865AD759EC828 /* SettingsScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBC2EC60C7E11EAE3A00869 /* SettingsScreens.swift */; };
 		6A814394E0DA17DB0FD287E8 /* AppSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651A6B1CA3460718AB42B8D0 /* AppSettingsStore.swift */; };
+		6C9C07D52317E3DAD3009C27 /* WebVPNView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852B93A820EE83967D3F78A4 /* WebVPNView.swift */; };
 		6CB2A425408E11CDA6ADA8B3 /* HolidayCalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21BF4FE41A5B73B381CF7B16 /* HolidayCalendarStore.swift */; };
 		6F87426BDF5FF41AAC0650F9 /* WidgetPublicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65806893C54265E3298C1977 /* WidgetPublicationTests.swift */; };
 		72DA1158E53A551EDCB508BD /* CASLoginClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E31F42B6CE0D1A6A764B55 /* CASLoginClient.swift */; };
 		7429FD0F296FAF2E6F8CA967 /* NovemberSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB7D14FC062A6377018341C /* NovemberSupportViews.swift */; };
 		7824E0D7B4EBF6CE6A24CB8F /* UpcomingExamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6FBA4E3739E7A1A81FBBFD3 /* UpcomingExamTests.swift */; };
 		7A0D2A9D9712D4D2D719ADB0 /* TomorrowPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E5CE0D7860FD901F39A85FB /* TomorrowPlanView.swift */; };
+		7AB0ED7C67E40BC1B244A1BB /* WebVPNConversionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F48E1D271DA2014B3E807F /* WebVPNConversionModel.swift */; };
 		82DB3FD29B2288C11933E095 /* WeeklyScheduleWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590CDCB6A15985C1C38D7B5 /* WeeklyScheduleWidgetView.swift */; };
 		83B66340E190377AF12EE98E /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D44D706B873C376660720FE /* ScheduleView.swift */; };
 		84BFD795A886E43987AE70A8 /* DuoLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A8E8EAE44ED4C0336E9C75 /* DuoLayoutTests.swift */; };
@@ -68,6 +71,8 @@
 		A6E25A01D12F50141C202123 /* WidgetCalendarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60945149461EE95FD14810E2 /* WidgetCalendarTests.swift */; };
 		A736EAB22EA96B47F3B03A14 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F0E3911F4C88C4F38BEDE4 /* CourseDetailView.swift */; };
 		A89CDC21A3CBCE1B7625BC35 /* FeatureCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F648DE462AA53268833BE6B1 /* FeatureCatalogTests.swift */; };
+		A940221DA3F8AC2532FDE123 /* WebVPNConversionModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A183A30ED6B1C5126C0A8D4F /* WebVPNConversionModelTests.swift */; };
+		ABF9A2C609781ED62750ACC9 /* WebVPNURLConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F7197F3FFB1D242C43D548 /* WebVPNURLConverterTests.swift */; };
 		AEF1593C8DA4ABBE2C454C6F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C31E16CE43EAF7ACA3328B /* AppState.swift */; };
 		B19B792954D7E033783D3A04 /* CourseNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63DB1CCC021AB0C5537CEA /* CourseNotificationManager.swift */; };
 		B2F350128D1AF7FBE8445C76 /* GlassSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ADF53983339A1298C10365C /* GlassSurface.swift */; };
@@ -82,6 +87,7 @@
 		D91BC2AC767F10D166BF2592 /* AppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE753B35B7C78FB422F52B7 /* AppShortcuts.swift */; };
 		D9FA8D371B83850606981E69 /* ProgramPlanViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24D21D36331F2F6652176F5 /* ProgramPlanViews.swift */; };
 		DAF3A3FD6789AB7E1CB33199 /* stu.json in Resources */ = {isa = PBXBuildFile; fileRef = 4612EE6FFEF44A60EA8A8DF4 /* stu.json */; };
+		DB220C7E72ADD19543907FEE /* WebVPNBrowsingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66759D6A7E33D985B8148FAB /* WebVPNBrowsingSession.swift */; };
 		DCEFFF99B63C7E53A0B3A506 /* CampusCloudConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C02B2BD30AB801728B88AB1E /* CampusCloudConfig.swift */; };
 		DD7E48B9576E08606403B85F /* AIAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E508CA3C56E9BE1E97B753FA /* AIAssistantView.swift */; };
 		E00D762B50998695789CC7DB /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5EF9BF5E075553B3BC0EE46 /* SectionHeader.swift */; };
@@ -174,17 +180,23 @@
 		6099C2CFD92F26F36EF43E0D /* OfficialCampusAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialCampusAPIClient.swift; sourceTree = "<group>"; };
 		651A6B1CA3460718AB42B8D0 /* AppSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettingsStore.swift; sourceTree = "<group>"; };
 		65806893C54265E3298C1977 /* WidgetPublicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetPublicationTests.swift; sourceTree = "<group>"; };
+		66759D6A7E33D985B8148FAB /* WebVPNBrowsingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNBrowsingSession.swift; sourceTree = "<group>"; };
 		674BAF3726C926029641D4BF /* AcademicStudentInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicStudentInfoView.swift; sourceTree = "<group>"; };
+		69F48E1D271DA2014B3E807F /* WebVPNConversionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNConversionModel.swift; sourceTree = "<group>"; };
 		6A4E2D5F150A4908C42717E4 /* AcademicRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicRecords.swift; sourceTree = "<group>"; };
+		6C0C9B92C7436AE3860ED925 /* WebVPNBrowsingSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNBrowsingSessionTests.swift; sourceTree = "<group>"; };
 		6E5CE0D7860FD901F39A85FB /* TomorrowPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TomorrowPlanView.swift; sourceTree = "<group>"; };
+		74F7197F3FFB1D242C43D548 /* WebVPNURLConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNURLConverterTests.swift; sourceTree = "<group>"; };
 		7CA03C51666B26531B13C70A /* CampusSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampusSessionStore.swift; sourceTree = "<group>"; };
 		81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleStore.swift; sourceTree = "<group>"; };
 		82A2C17D5F7A181EABAAD1CC /* ScheduleBackupDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleBackupDocument.swift; sourceTree = "<group>"; };
 		839B072306659B2A53C5E287 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		850A144603AEC626B2078445 /* AcademicScheduleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademicScheduleModels.swift; sourceTree = "<group>"; };
+		852B93A820EE83967D3F78A4 /* WebVPNView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNView.swift; sourceTree = "<group>"; };
 		8657EA2B9AAFDCA9EE45E6B7 /* CustomEventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEventStore.swift; sourceTree = "<group>"; };
 		8924215A5FB3B58A7AEE4D14 /* FeatureDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureDetailView.swift; sourceTree = "<group>"; };
 		96A8E8EAE44ED4C0336E9C75 /* DuoLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuoLayoutTests.swift; sourceTree = "<group>"; };
+		A183A30ED6B1C5126C0A8D4F /* WebVPNConversionModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNConversionModelTests.swift; sourceTree = "<group>"; };
 		A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVPNURLConverter.swift; sourceTree = "<group>"; };
 		AB9BE3AD52A49F2DE355E1AB /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		ACDD4BD05E04F55081BB634B /* WidgetScheduleBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetScheduleBridge.swift; sourceTree = "<group>"; };
@@ -259,6 +271,9 @@
 				166C6840A3F6EB0D940E6B60 /* NovemberPersistenceTests.swift */,
 				0BED3422F35DFC30351AC75D /* NovemberUpgradeTests.swift */,
 				D6FBA4E3739E7A1A81FBBFD3 /* UpcomingExamTests.swift */,
+				6C0C9B92C7436AE3860ED925 /* WebVPNBrowsingSessionTests.swift */,
+				A183A30ED6B1C5126C0A8D4F /* WebVPNConversionModelTests.swift */,
+				74F7197F3FFB1D242C43D548 /* WebVPNURLConverterTests.swift */,
 				60945149461EE95FD14810E2 /* WidgetCalendarTests.swift */,
 				65806893C54265E3298C1977 /* WidgetPublicationTests.swift */,
 				BE97F05BEF0361501712A119 /* WidgetSnapshotBridgeTests.swift */,
@@ -333,6 +348,8 @@
 				F3A742832907DC6FCD12A8C9 /* ScheduleBackupPayload.swift */,
 				81DE3CA7F635A188347E7D73 /* ScheduleStore.swift */,
 				E42E706C5A9171E442FC8679 /* UpcomingExamResolver.swift */,
+				66759D6A7E33D985B8148FAB /* WebVPNBrowsingSession.swift */,
+				69F48E1D271DA2014B3E807F /* WebVPNConversionModel.swift */,
 				A1DA4474D590CF1A1B4882DA /* WebVPNURLConverter.swift */,
 			);
 			path = Services;
@@ -398,6 +415,7 @@
 				E2D970CEFB3A44F057944DFE /* TodayCampusView.swift */,
 				6E5CE0D7860FD901F39A85FB /* TomorrowPlanView.swift */,
 				12C4FB87CBDD7C5EB11B095E /* UpcomingExamDetailView.swift */,
+				852B93A820EE83967D3F78A4 /* WebVPNView.swift */,
 				FDEBC86B4AFDBEF06A547284 /* WidgetSyncSettingsView.swift */,
 			);
 			path = Views;
@@ -541,6 +559,9 @@
 				01A8F6B4E7115380A3E60FBE /* NovemberPersistenceTests.swift in Sources */,
 				E16277E678E6191C8A7DFEB7 /* NovemberUpgradeTests.swift in Sources */,
 				7824E0D7B4EBF6CE6A24CB8F /* UpcomingExamTests.swift in Sources */,
+				0767F82F6E06E4518178C76B /* WebVPNBrowsingSessionTests.swift in Sources */,
+				A940221DA3F8AC2532FDE123 /* WebVPNConversionModelTests.swift in Sources */,
+				ABF9A2C609781ED62750ACC9 /* WebVPNURLConverterTests.swift in Sources */,
 				A6E25A01D12F50141C202123 /* WidgetCalendarTests.swift in Sources */,
 				6F87426BDF5FF41AAC0650F9 /* WidgetPublicationTests.swift in Sources */,
 				D79843C801CBCD7DA4C924B1 /* WidgetSnapshotBridgeTests.swift in Sources */,
@@ -613,7 +634,10 @@
 				7A0D2A9D9712D4D2D719ADB0 /* TomorrowPlanView.swift in Sources */,
 				23FC601FBFAC799E70E0340C /* UpcomingExamDetailView.swift in Sources */,
 				14682A3B6C19669BCA4EE98C /* UpcomingExamResolver.swift in Sources */,
+				DB220C7E72ADD19543907FEE /* WebVPNBrowsingSession.swift in Sources */,
+				7AB0ED7C67E40BC1B244A1BB /* WebVPNConversionModel.swift in Sources */,
 				8EB74BE1D436DCDA74247798 /* WebVPNURLConverter.swift in Sources */,
+				6C9C07D52317E3DAD3009C27 /* WebVPNView.swift in Sources */,
 				F60257563B7DB7EFD0F798B1 /* WeeklyScheduleWidgetView.swift in Sources */,
 				55A6CE739EC79F3EE48DDF59 /* WidgetScheduleBridge.swift in Sources */,
 				E59B64BDDBCCCBBBD596AFED /* WidgetScheduleCalendar.swift in Sources */,
@@ -717,14 +741,14 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = HFUTSchedule/HFUTSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HFUTSchedule/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios;
 				PRODUCT_NAME = HFUTSchedule;
 				SDKROOT = iphoneos;
@@ -761,14 +785,14 @@
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = HFUTSchedule/HFUTSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HFUTSchedule/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios;
 				PRODUCT_NAME = HFUTSchedule;
 				SDKROOT = iphoneos;
@@ -850,7 +874,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = HFUTScheduleWidget/HFUTScheduleWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HFUTScheduleWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -858,7 +882,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios.widget;
 				PRODUCT_NAME = HFUTScheduleWidget;
 				SDKROOT = iphoneos;
@@ -875,7 +899,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = HFUTScheduleWidget/HFUTScheduleWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HFUTScheduleWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -883,7 +907,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xiaozhangwangxue.hfutschedule.ios.widget;
 				PRODUCT_NAME = HFUTScheduleWidget;
 				SDKROOT = iphoneos;

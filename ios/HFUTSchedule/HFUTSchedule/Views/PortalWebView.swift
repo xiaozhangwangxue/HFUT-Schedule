@@ -141,7 +141,9 @@ private struct WebViewRepresentable: UIViewRepresentable {
         webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 HFUTSchedule-iOS"
         context.coordinator.didRequestInitialLoad = true
         CampusSessionStore.shared.hydrateWebKit(configuration.websiteDataStore.httpCookieStore) {
-            webView.load(URLRequest(url: url))
+            Task { @MainActor in
+                webView.load(URLRequest(url: initialURL()))
+            }
         }
         return webView
     }
@@ -150,7 +152,15 @@ private struct WebViewRepresentable: UIViewRepresentable {
         context.coordinator.parent = self
         guard !context.coordinator.didRequestInitialLoad else { return }
         context.coordinator.didRequestInitialLoad = true
-        webView.load(URLRequest(url: url))
+        webView.load(URLRequest(url: initialURL()))
+    }
+
+    @MainActor
+    private func initialURL() -> URL {
+        WebVPNBrowsingSession.shared.initialURL(
+            url,
+            isProtectedFlow: academicMode != nil || onAcademicAuthenticated != nil || autoOpenCampusMailbox
+        )
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {

@@ -2,22 +2,32 @@
 
 合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本，基于 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码与接口文档。
 
-当前版本：**1.2.1**（2026-11-14），修复升级或重新签名后「App 有课程，小组件仍无数据」的问题，并补充同步状态和手动发送入口。
+当前版本：**1.2.2 build 4**（2026-11-21），补齐 WebVPN 双向网址转换、结果复制与打开，以及当前运行期间的全局网页转换。
 
 上游同步基线保留自 1.2.0：已核对 **2026-10-01 至 2026-11-14** 的全部 65 条提交和 5 次正式发布，覆盖正式版 **4.21.4.1** 和开发分支 [`b3cb252e`](https://github.com/Chiu-xaH/HFUT-Schedule/commit/b3cb252e44f024720f6f8fb6216ad076550ee119)。
 
-- [iOS 1.2.1 小组件修复说明](docs/ios/1.2.1.md)
+- [iOS 1.2.2 WebVPN 更新说明](docs/ios/1.2.2.md)
+- [iOS 1.2.1 小组件修复历史](docs/ios/1.2.1.md)
 - [iOS 1.2.0 更新历史](docs/ios/1.2.0.md)
 - [上游完整更新审计与 iOS 对照](docs/ios/upstream-audit-2026-11-14.md)
 - [iOS 迁移状态与边界](ios/HFUTSchedule/MIGRATION.md)
 
 ## 下载与安装
 
-发布文件见 [GitHub Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)。侧载安装优先下载 `HFUTSchedule-iOS-1.2.1-resignable.ipa`：它以无证书、无描述文件的 ad-hoc 签名保留 App 与 Widget 的共组声明，供侧载工具读取后重新签名，不能直接安装。另提供纯 `unsigned.ipa` 给自行完整配置签名的构建者。重签名时必须保留 Widget 扩展，并让 App 和 Widget 使用相同的首个 Keychain 共享组；具体工具是否支持该配置需要核验。签名权限、设备登记与有效期由所用签名方式决定。
+发布文件见 [GitHub Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)。侧载安装优先下载 `HFUTSchedule-iOS-1.2.2-resignable.ipa`：它以无证书、无描述文件的 ad-hoc 签名保留 App 与 Widget 的共组声明，供侧载工具读取后重新签名，不能直接安装。另提供纯 `unsigned.ipa` 给自行完整配置签名的构建者。重签名时必须保留 Widget 扩展，并让 App 和 Widget 使用相同的首个 Keychain 共享组；具体工具是否支持该配置需要核验。签名权限、设备登记与有效期由所用签名方式决定。
 
 公共 IPA 不包含个人课表快照、账号、Cookie、密码或 API Key。安装后在 App 内登录并同步自己的数据。`dist/` 是本机构建输出目录，不纳入 Git 源码。
 
-## 1.2.1 小组件与窗口适配
+## 1.2.2 WebVPN 更新
+
+- 在「查询中心 → WebVPN」提供普通链接转代理、代理链接还原、示例、复制、打开与清除；转换可离线完成。
+- 打开 WebVPN 结果复用已保存的可用会话；还原的普通结果没有登录限制。全局开关开启时，普通链接的打开仍会再次转换。
+- 全局 WebVPN 仅在当前运行期间生效，默认关闭，只有已有可用票据时才能开启；CAS / 教务认证页面与回调保留原认证路由。
+- 正确保留端口、路径、查询参数与片段，并对无效链接明确报错。
+
+本次只核对并补齐对应 WebVPN 功能，不宣称同步最新上游的其他新增功能。范围与验证见 [1.2.2 更新说明](docs/ios/1.2.2.md)。签名、SDK 27.2、Duo 与 Widget 方案沿用 1.2.1。
+
+## 1.2.1 小组件与窗口适配历史
 
 - 恢复启动时发布已有本地课表，回到前台也会重新发送；无需修改课程或重新登录来触发同步。
 - 移除共享通道中的固定团队前缀。两个目标使用动态 `AppIdentifierPrefix` 共组，运行时遵循当前签名授予的默认组。
@@ -69,7 +79,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-模拟器测试、资源检查和签名说明见 [iOS 工程说明](ios/HFUTSchedule/README.md)。本次最终验证结果统一记录在 [1.2.1 更新说明](docs/ios/1.2.1.md#验证)；1.2.0 验证保留在其历史说明中。
+模拟器测试、资源检查和签名说明见 [iOS 工程说明](ios/HFUTSchedule/README.md)。本次最终验证结果统一记录在 [1.2.2 更新说明](docs/ios/1.2.2.md#验证)；1.2.1 与 1.2.0 验证保留在各自历史说明中。
 
 ## 目录
 

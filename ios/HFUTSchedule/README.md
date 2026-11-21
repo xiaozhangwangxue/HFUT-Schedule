@@ -1,8 +1,8 @@
 # 聚在工大 iOS 工程
 
-当前版本 **1.2.1**，运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
+当前版本 **1.2.2 build 4**（2026-11-21），运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
 
-1.2.1 修复已保存课表在升级 / 重签名后没有到达小组件的通道问题。上游同步范围沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md)，当前修复见 [1.2.1](../../docs/ios/1.2.1.md)。
+1.2.2 补齐 WebVPN 双向网址转换与全局网页转换，范围和验证见 [当前更新说明](../../docs/ios/1.2.2.md)。本次仅核对对应 WebVPN 源码，不包含最新上游场地预约等其他新增功能。完整同步范围仍沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md) 和 [1.2.1](../../docs/ios/1.2.1.md)。
 
 ## 工程组成
 
@@ -40,7 +40,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
 ```
 
-产物位于 `dist/HFUTSchedule-iOS-1.2.1-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.1-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
+产物位于 `dist/HFUTSchedule-iOS-1.2.2-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.2-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
 
 模拟器测试使用本机已有目标。先执行 `xcrun simctl list devices available`，再从工程目录运行：
 
@@ -53,7 +53,15 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 
 目标名称按本机可用模拟器调整。`HFUTSchedule` 共享 scheme 关联 `HFUTScheduleTests`。测试使用构造样例、临时目录和注入传输；DeepSeek 与 QWeather 测试不访问真实 API，也不消耗用户额度。
 
-本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.1 更新说明的验证章节](../../docs/ios/1.2.1.md#验证)。
+本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.2 更新说明的验证章节](../../docs/ios/1.2.2.md#验证)。
+
+## WebVPN 网址工具
+
+「查询中心 → WebVPN」提供普通链接转 WebVPN 和代理链接还原。两页均有示例、输入清空、转换及结果复制 / 打开 / 清除；转换完全在本机完成，不要求登录或网络。输入需带完整 `http://` 或 `https://`，还原只接受本校的有效代理链接。端口、编码路径、查询参数与片段分别保留；损坏数据明确报错。
+
+WebVPN 结果在本机保存的会话票据可用后打开；没有可用会话时先引导登录。还原后的普通结果没有 WebVPN 登录限制，但若全局 WebVPN 已开启，打开阶段仍会按全局设置再次转换。
+
+全局开关仅存内存、默认关闭，只在已保存的票据通过可用性检查后允许开启。开启后作用于普通网页打开入口，已有代理链接保持原样；CAS 登录、教务认证页面和认证回调不参与全局转换。签名、SDK、Duo 和小组件仍沿用 1.2.1 方案，不能把本次离线 URL 测试视为真实校方会话验收。
 
 ## 认证与数据
 
