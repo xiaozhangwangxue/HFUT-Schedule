@@ -42,7 +42,7 @@ xcodebuild \
 
 python3 - "${app_path}" "${build_sdk}" <<'PY'
 from pathlib import Path
-import json, plistlib, sys
+import hashlib, json, plistlib, sys
 app = Path(sys.argv[1])
 expected_sdk = sys.argv[2]
 for bundle in [app, *app.glob('PlugIns/*.appex')]:
@@ -53,6 +53,11 @@ for bundle in [app, *app.glob('PlugIns/*.appex')]:
 snapshots = list(app.rglob('ScheduleSnapshot.json'))
 if not snapshots or not (app/'stu.json').exists():
     raise SystemExit('Public bundle is missing its widget snapshot or campus links.')
+model = app/'tessdata/captcha.traineddata'
+if not model.exists() or hashlib.sha256(model.read_bytes()).hexdigest() != 'c419bb2456ed54477b29dd8f2020ba6a351cd42796fbcfcf42af08655c8cafcc':
+    raise SystemExit('Public bundle is missing the verified upstream CAPTCHA model.')
+if not (app/'OCR-ThirdParty-Notices.txt').exists():
+    raise SystemExit('Public bundle is missing OCR third-party notices.')
 for path in snapshots:
     payload = json.loads(path.read_text())
     courses = payload if isinstance(payload, list) else payload.get('courses', [])

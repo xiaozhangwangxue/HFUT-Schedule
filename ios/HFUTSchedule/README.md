@@ -1,8 +1,8 @@
 # 聚在工大 iOS 工程
 
-当前版本 **1.2.2 build 4**（2026-11-21），运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
+当前版本 **1.2.3 build 5**（2026-11-22），运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
 
-1.2.2 补齐 WebVPN 双向网址转换与全局网页转换，范围和验证见 [当前更新说明](../../docs/ios/1.2.2.md)。本次仅核对对应 WebVPN 源码，不包含最新上游场地预约等其他新增功能。完整同步范围仍沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md) 和 [1.2.1](../../docs/ios/1.2.1.md)。
+1.2.3 补齐 CAS 直连和 WebVPN 原生登录页的本地验证码自动填写，范围和验证见 [当前更新说明](../../docs/ios/1.2.3.md)。本次仅核对上游 `b50f498f0e65cf3828749af28bc68a1943b9817b` 的验证码相关源码，不包含该提交的其他功能更新。完整同步范围仍沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md)、[1.2.1](../../docs/ios/1.2.1.md) 和 [1.2.2 WebVPN 更新](../../docs/ios/1.2.2.md)。
 
 ## 工程组成
 
@@ -12,12 +12,13 @@
 | `HFUTScheduleWidget/` | 大号周课表 WidgetKit 扩展 |
 | `Shared/` | 周课表共享模型、存储通道与小组件视图 |
 | `HFUTScheduleTests/` | 解析、时间规则、存储、校车、AI 与天气回归测试 |
+| `HFUTSchedule/Resources/tessdata/` | 原生登录验证码识别使用的公开 Tesseract 模型 |
 | `project.yml` | XcodeGen 工程定义；新增文件后重新生成工程 |
 | `scripts/` | 构建、本机签名及私有快照工具 |
 
 ## 构建与测试
 
-使用包含 iOS 27.2 SDK 的 Xcode，先安装 XcodeGen：
+使用包含 iOS 27.2 SDK 的 Xcode，先安装 XcodeGen。Swift Package Manager 固定依赖 `SwiftyTesseract/libtesseract` 0.2.0（Tesseract 4.1.0），首次构建会解析该依赖：
 
 ```sh
 brew install xcodegen
@@ -40,7 +41,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
 ```
 
-产物位于 `dist/HFUTSchedule-iOS-1.2.2-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.2-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
+产物位于 `dist/HFUTSchedule-iOS-1.2.3-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.3-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
 
 模拟器测试使用本机已有目标。先执行 `xcrun simctl list devices available`，再从工程目录运行：
 
@@ -53,7 +54,13 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 
 目标名称按本机可用模拟器调整。`HFUTSchedule` 共享 scheme 关联 `HFUTScheduleTests`。测试使用构造样例、临时目录和注入传输；DeepSeek 与 QWeather 测试不访问真实 API，也不消耗用户额度。
 
-本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.2 更新说明的验证章节](../../docs/ios/1.2.2.md#验证)。
+本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.3 更新说明的验证章节](../../docs/ios/1.2.3.md#验证)。
+
+## 原生登录验证码自动填写
+
+CAS 直连和 WebVPN 原生登录页共用本地 Tesseract 识别能力：对当前会话已经取得的图片先灰度处理，再按单行文字识别并尝试填入输入框。图片刷新后重新识别，旧图片的结果不能回填新表单。用户手动修改优先；关闭自动填写开关后取消任务并忽略迟到结果。失败时仍可手动输入或刷新图片，不自动提交登录，也不向任意网页注入识别逻辑。
+
+模型随 App 内置于 `HFUTSchedule/Resources/tessdata/captcha.traineddata`，来自本仓库 `tools/Captcha-Ocr/成品/`，以 `captcha` 语言加载，无需额外下载或向 OCR 服务上传图片。已核对 Android 下载使用的 `eng.traineddata`、仓库训练模型与 iOS 内置资源：均为 11,697,722 字节，SHA-256 一致。相同模型不保证两端每张图片的识别结果相同；模型来源、具体摘要、上游核对范围与验证边界详见 [1.2.3](../../docs/ios/1.2.3.md)。
 
 ## WebVPN 网址工具
 

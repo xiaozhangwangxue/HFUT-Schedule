@@ -1,4 +1,8 @@
 name: HFUTSchedule
+packages:
+  libtesseract:
+    url: https://github.com/SwiftyTesseract/libtesseract.git
+    exactVersion: 0.2.0
 options:
   bundleIdPrefix: com.xiaozhangwangxue
   deploymentTarget:
@@ -18,8 +22,14 @@ targets:
     platform: iOS
     sources:
       - path: HFUTSchedule
+        excludes:
+          - Resources/tessdata
       - path: Shared
+      - path: HFUTSchedule/Resources/tessdata
+        type: folder
+        buildPhase: resources
     dependencies:
+      - package: libtesseract
       - target: HFUTScheduleWidget
         embed: true
     settings:
@@ -32,8 +42,9 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SUPPORTS_MACCATALYST: NO
-        CURRENT_PROJECT_VERSION: 4
-        MARKETING_VERSION: 1.2.2
+        OTHER_LDFLAGS: ["$(inherited)", "-lz", "-lc++"]
+        CURRENT_PROJECT_VERSION: 5
+        MARKETING_VERSION: 1.2.3
         CODE_SIGNING_ALLOWED: YES
         CODE_SIGN_ENTITLEMENTS: HFUTSchedule/HFUTSchedule.entitlements
   HFUTScheduleWidget:
@@ -52,8 +63,8 @@ targets:
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
         SUPPORTS_MACCATALYST: NO
-        CURRENT_PROJECT_VERSION: 4
-        MARKETING_VERSION: 1.2.2
+        CURRENT_PROJECT_VERSION: 5
+        MARKETING_VERSION: 1.2.3
         CODE_SIGNING_ALLOWED: YES
         SWIFT_EMIT_LOC_STRINGS: YES
         CODE_SIGN_ENTITLEMENTS: HFUTScheduleWidget/HFUTScheduleWidget.entitlements
@@ -62,6 +73,11 @@ targets:
     platform: iOS
     sources:
       - path: HFUTScheduleTests
+        excludes:
+          - Resources/CaptchaFixtures
+      - path: HFUTScheduleTests/Resources/CaptchaFixtures
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: HFUTSchedule
     settings:

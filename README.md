@@ -2,11 +2,12 @@
 
 合肥工业大学校园服务 App 的原生 **iOS / SwiftUI** 版本，基于 [Chiu-xaH/HFUT-Schedule](https://github.com/Chiu-xaH/HFUT-Schedule) 移植，保留上游 Android 源码与接口文档。
 
-当前版本：**1.2.2 build 4**（2026-11-21），补齐 WebVPN 双向网址转换、结果复制与打开，以及当前运行期间的全局网页转换。
+当前版本：**1.2.3 build 5**（2026-11-22），为 CAS 直连和 WebVPN 原生登录页补齐本地 Tesseract 验证码自动填写。
 
 上游同步基线保留自 1.2.0：已核对 **2026-10-01 至 2026-11-14** 的全部 65 条提交和 5 次正式发布，覆盖正式版 **4.21.4.1** 和开发分支 [`b3cb252e`](https://github.com/Chiu-xaH/HFUT-Schedule/commit/b3cb252e44f024720f6f8fb6216ad076550ee119)。
 
-- [iOS 1.2.2 WebVPN 更新说明](docs/ios/1.2.2.md)
+- [iOS 1.2.3 验证码自动填写更新说明](docs/ios/1.2.3.md)
+- [iOS 1.2.2 WebVPN 更新历史](docs/ios/1.2.2.md)
 - [iOS 1.2.1 小组件修复历史](docs/ios/1.2.1.md)
 - [iOS 1.2.0 更新历史](docs/ios/1.2.0.md)
 - [上游完整更新审计与 iOS 对照](docs/ios/upstream-audit-2026-11-14.md)
@@ -14,18 +15,26 @@
 
 ## 下载与安装
 
-发布文件见 [GitHub Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)。侧载安装优先下载 `HFUTSchedule-iOS-1.2.2-resignable.ipa`：它以无证书、无描述文件的 ad-hoc 签名保留 App 与 Widget 的共组声明，供侧载工具读取后重新签名，不能直接安装。另提供纯 `unsigned.ipa` 给自行完整配置签名的构建者。重签名时必须保留 Widget 扩展，并让 App 和 Widget 使用相同的首个 Keychain 共享组；具体工具是否支持该配置需要核验。签名权限、设备登记与有效期由所用签名方式决定。
+发布文件见 [GitHub Releases](https://github.com/xiaozhangwangxue/HFUT-Schedule/releases)。侧载安装优先下载 `HFUTSchedule-iOS-1.2.3-resignable.ipa`：它以无证书、无描述文件的 ad-hoc 签名保留 App 与 Widget 的共组声明，供侧载工具读取后重新签名，不能直接安装。另提供纯 `unsigned.ipa` 给自行完整配置签名的构建者。重签名时必须保留 Widget 扩展，并让 App 和 Widget 使用相同的首个 Keychain 共享组；具体工具是否支持该配置需要核验。签名权限、设备登记与有效期由所用签名方式决定。
 
 公共 IPA 不包含个人课表快照、账号、Cookie、密码或 API Key。安装后在 App 内登录并同步自己的数据。`dist/` 是本机构建输出目录，不纳入 Git 源码。
 
-## 1.2.2 WebVPN 更新
+## 1.2.3 验证码自动填写
+
+- CAS 直连和 WebVPN 原生登录页使用本机 Tesseract 对已取得的验证码图片灰度处理、单行识别并填写；刷新图片后重新识别。
+- 支持手动修改优先、关闭开关取消自动填写和失败后手动输入；不会自动提交登录，也不会识别任意网页上的验证码。
+- 随 App 内置本仓库 `tools/Captcha-Ocr` 的训练模型，无需另行下载；已按字节和 SHA-256 核对，与 Android 下载使用的模型一致，文件名和加载语言按平台分别配置。
+
+本次仅核对最新上游 `b50f498f` 的验证码相关功能，不是全量上游同步。实现范围与验证见 [1.2.3 更新说明](docs/ios/1.2.3.md)。WebVPN 网址工具与既有签名、SDK、Duo、Widget 方案继续保留。
+
+## 1.2.2 WebVPN 更新历史
 
 - 在「查询中心 → WebVPN」提供普通链接转代理、代理链接还原、示例、复制、打开与清除；转换可离线完成。
 - 打开 WebVPN 结果复用已保存的可用会话；还原的普通结果没有登录限制。全局开关开启时，普通链接的打开仍会再次转换。
 - 全局 WebVPN 仅在当前运行期间生效，默认关闭，只有已有可用票据时才能开启；CAS / 教务认证页面与回调保留原认证路由。
 - 正确保留端口、路径、查询参数与片段，并对无效链接明确报错。
 
-本次只核对并补齐对应 WebVPN 功能，不宣称同步最新上游的其他新增功能。范围与验证见 [1.2.2 更新说明](docs/ios/1.2.2.md)。签名、SDK 27.2、Duo 与 Widget 方案沿用 1.2.1。
+1.2.2 仅核对并补齐对应 WebVPN 功能，不宣称同步该版本检查时最新上游的其他新增功能。范围与历史验证见 [1.2.2 更新说明](docs/ios/1.2.2.md)。签名、SDK 27.2、Duo 与 Widget 方案沿用 1.2.1。
 
 ## 1.2.1 小组件与窗口适配历史
 
@@ -55,6 +64,7 @@
 - 四个主栏目：**课程表 / 聚焦 / 查询中心 / 选项**。
 - 周课表、课程详情、离线手动课程、教务同步、系统日历导出、课程提醒与快捷指令。
 - CAS 原生认证与校方会话复用，支持校内直连和校外 WebVPN。
+- 原生 CAS 登录页的本地验证码识别与自动填写，保留手动输入与显式登录。
 - 成绩与分析、考试、学籍、培养方案、选课、评教、全校课程和空教室查询。
 - 48 项校园服务入口，包括校园卡、电费、校园网、洗浴、洗衣（**海乐生活**）、第二课堂、图书馆、宿舍评分、今日校园、慧新易校、费用中心、就业服务与校车。
 - 深色模式、外观与偏好设置、设置项搜索和大号 WidgetKit 周课表小组件。
@@ -63,7 +73,7 @@
 
 ## 构建
 
-运行要求为 **iOS 17.0 及以上**。发布构建要求包含 **iOS 27.2 SDK** 的 Xcode，并使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。在仓库根目录执行：
+运行要求为 **iOS 17.0 及以上**。发布构建要求包含 **iOS 27.2 SDK** 的 Xcode，并使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen)。Tesseract 依赖通过 Swift Package Manager 固定为 `SwiftyTesseract/libtesseract` 0.2.0，首次构建需解析依赖。在仓库根目录执行：
 
 ```sh
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
@@ -79,7 +89,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-模拟器测试、资源检查和签名说明见 [iOS 工程说明](ios/HFUTSchedule/README.md)。本次最终验证结果统一记录在 [1.2.2 更新说明](docs/ios/1.2.2.md#验证)；1.2.1 与 1.2.0 验证保留在各自历史说明中。
+模拟器测试、资源检查和签名说明见 [iOS 工程说明](ios/HFUTSchedule/README.md)。本次最终验证结果统一记录在 [1.2.3 更新说明](docs/ios/1.2.3.md#验证)；较早版本验证保留在各自历史说明中。
 
 ## 目录
 
