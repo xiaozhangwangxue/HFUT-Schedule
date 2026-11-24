@@ -1,14 +1,24 @@
 import SwiftUI
 import WebKit
 
+@MainActor
 struct PortalWebView: View {
     let url: URL
     var academicMode: AcademicConnectionMode?
     var onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     var autoOpenCampusMailbox = false
+    var cookieHeader: String?
     @State private var isLoading = true
     @State private var title = ""
-    @State private var webViewReference = PortalWebViewReference()
+    @StateObject private var webViewReference = PortalBrowserController()
+    @Environment(\.openURL) private var openURL
+    @State private var showsFind = false
+    @State private var findText = ""
+    @State private var showsCookieEditor = false
+    @State private var temporaryCookie = ""
+    @State private var favoriteURL: URL?
+    @State private var favoriteTitle = ""
+    @State private var toolMessage: String?
     @State private var isExtractingSummary = false
     @State private var summaryPage: DeepSeekWebPageContext?
     @State private var summaryError: String?
@@ -17,12 +27,14 @@ struct PortalWebView: View {
         url: URL,
         academicMode: AcademicConnectionMode? = nil,
         onAcademicAuthenticated: (([HTTPCookie]) -> Void)? = nil,
-        autoOpenCampusMailbox: Bool = false
+        autoOpenCampusMailbox: Bool = false,
+        cookieHeader: String? = nil
     ) {
         self.url = url
         self.academicMode = academicMode
         self.onAcademicAuthenticated = onAcademicAuthenticated
         self.autoOpenCampusMailbox = autoOpenCampusMailbox
+        self.cookieHeader = cookieHeader
     }
 
     var body: some View {
@@ -33,6 +45,7 @@ struct PortalWebView: View {
                 onAcademicAuthenticated: onAcademicAuthenticated,
                 autoOpenCampusMailbox: autoOpenCampusMailbox,
                 reference: webViewReference,
+                cookieHeader: cookieHeader,
                 isLoading: $isLoading,
                 pageTitle: $title
             )
@@ -49,6 +62,14 @@ struct PortalWebView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: isLoading)
+        .overlay(alignment: .bottom) {
+            if let error = webViewReference.errorMessage {
+                VStack(spacing: 8) {
+                    Text(error).font(.footnote)
+                    Button("关闭提示") { webViewReference.errorMessage = nil }
+                }.padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)).padding()
+            }
+        }
         .navigationTitle(title.isEmpty ? "校园门户" : title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -60,7 +81,67 @@ struct PortalWebView: View {
                 .disabled(isLoading || isExtractingSummary)
                 .accessibilityLabel("使用 AI 概括当前网页")
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu("网页工具", systemImage: "ellipsis.circle") {
+                    Button("后退", systemImage: "chevron.left") { webViewReference.goBack() }.disabled(!webViewReference.canGoBack)
+                    Button("前进", systemImage: "chevron.right") { webViewReference.goForward() }.disabled(!webViewReference.canGoForward)
+                    Button("刷新", systemImage: "arrow.clockwise") { webViewReference.reload() }
+                    Button("页面内搜索", systemImage: "text.magnifyingglass") { showsFind = true }
+                    Menu("当前链接", systemImage: "link") { linkTools(webViewReference.currentURL ?? url) }
+                    Menu("初始链接", systemImage: "link.badge.plus") { linkTools(url) }
+                    Button("设置临时 Cookie", systemImage: "key") { showsCookieEditor = true }
+                }
+            }
         }
+        .safeAreaInset(edge: .bottom) {
+            if showsFind {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        TextField("在当前网页查找", text: $findText)
+                            .textInputAutocapitalization(.never).autocorrectionDisabled()
+                            .onSubmit { webViewReference.find(findText) }
+                        Button("上一处", systemImage: "chevron.up") { webViewReference.find(findText, backwards: true) }.labelStyle(.iconOnly)
+                        Button("下一处", systemImage: "chevron.down") { webViewReference.find(findText) }.labelStyle(.iconOnly)
+                        Button("关闭查找", systemImage: "xmark") { showsFind = false; webViewReference.clearFind() }.labelStyle(.iconOnly)
+                    }
+                    if let message = webViewReference.findMessage { Text(message).font(.caption).foregroundStyle(.secondary) }
+                }.padding().background(.bar)
+            }
+        }
+        .sheet(isPresented: $showsCookieEditor) {
+            AppNavigationStack {
+                Form {
+                    TextField("name=value; name2=value2", text: $temporaryCookie, axis: .vertical)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    Text("只应用于当前网页所在主机，并重新载入该网页。").font(.caption).foregroundStyle(.secondary)
+                }
+                .navigationTitle("临时 Cookie")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("取消") { showsCookieEditor = false } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("应用并刷新") {
+                            Task { @MainActor in
+                                do {
+                                    try await webViewReference.applyCookieHeader(temporaryCookie, to: webViewReference.currentURL ?? url)
+                                    temporaryCookie = ""; showsCookieEditor = false
+                                } catch { toolMessage = error.localizedDescription }
+                            }
+                        }.disabled(temporaryCookie.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+                .alert("网页工具", isPresented: Binding(get: { toolMessage != nil }, set: { if !$0 { toolMessage = nil } })) {
+                    Button("好") { toolMessage = nil }
+                } message: { Text(toolMessage ?? "") }
+            }
+        }
+        .alert("添加收藏", isPresented: Binding(get: { favoriteURL != nil }, set: { if !$0 { favoriteURL = nil } })) {
+            TextField("网页名称", text: $favoriteTitle)
+            Button("取消", role: .cancel) { favoriteURL = nil }
+            Button("保存") {
+                if let favoriteURL { try? WebFavoriteStore.save(title: favoriteTitle, url: favoriteURL) }
+                favoriteURL = nil
+            }
+        } message: { Text(favoriteURL?.absoluteString ?? "") }
         .navigationDestination(item: $summaryPage) { page in
             AIAssistantView(page: page)
         }
@@ -71,6 +152,20 @@ struct PortalWebView: View {
             Button("好", role: .cancel) { summaryError = nil }
         } message: {
             Text(summaryError ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private func linkTools(_ target: URL) -> some View {
+        Button("复制链接", systemImage: "doc.on.doc") { UIPasteboard.general.string = target.absoluteString }
+        ShareLink(item: target) { Label("分享链接", systemImage: "square.and.arrow.up") }
+        Button("在浏览器中打开", systemImage: "safari") { openURL(target) }
+        Button(WebFavoriteStore.contains(target) ? "已收藏 · 修改名称" : "添加收藏", systemImage: "star") {
+            favoriteTitle = title.isEmpty ? target.host ?? "网页" : title
+            favoriteURL = target
+        }
+        if WebFavoriteStore.contains(target) {
+            Button("取消收藏", systemImage: "star.slash", role: .destructive) { try? WebFavoriteStore.remove(target) }
         }
     }
 
@@ -94,16 +189,13 @@ struct PortalWebView: View {
     }
 }
 
-private final class PortalWebViewReference {
-    weak var webView: WKWebView?
-}
-
 private struct WebViewRepresentable: UIViewRepresentable {
     let url: URL
     let academicMode: AcademicConnectionMode?
     let onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     let autoOpenCampusMailbox: Bool
-    let reference: PortalWebViewReference
+    let reference: PortalBrowserController
+    let cookieHeader: String?
     @Binding var isLoading: Bool
     @Binding var pageTitle: String
 
@@ -142,7 +234,11 @@ private struct WebViewRepresentable: UIViewRepresentable {
         context.coordinator.didRequestInitialLoad = true
         CampusSessionStore.shared.hydrateWebKit(configuration.websiteDataStore.httpCookieStore) {
             Task { @MainActor in
-                webView.load(URLRequest(url: initialURL()))
+                let target = initialURL()
+                if let cookieHeader, !cookieHeader.isEmpty {
+                    do { try await reference.applyCookieHeader(cookieHeader, to: target) }
+                    catch { reference.errorMessage = error.localizedDescription }
+                } else { webView.load(URLRequest(url: target)) }
             }
         }
         return webView
@@ -175,11 +271,13 @@ private struct WebViewRepresentable: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation?) {
             parent.isLoading = true
+            parent.reference.synchronize()
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
             parent.isLoading = false
             parent.pageTitle = webView.title ?? "校园门户"
+            parent.reference.synchronize()
             CampusSessionStore.shared.captureWebKit(webView.configuration.websiteDataStore.httpCookieStore)
             if parent.academicMode == .webVPN,
                !enteredAcademicAfterVPNLogin,

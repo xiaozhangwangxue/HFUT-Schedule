@@ -12,7 +12,8 @@ enum AppTheme {
 
     static func applyAccent(hex: String, saturation: Double) {
         let base = hex.isEmpty ? defaultAccent : (Color(hex: hex) ?? defaultAccent)
-        accent = adjusted(base, saturation: saturation)
+        let style = ThemeColorStyle(rawValue: UserDefaults.standard.string(forKey: AppSettingsKey.colorStyle) ?? "normal") ?? .normal
+        accent = adjusted(base, saturation: saturation * style.saturationMultiplier)
     }
 
     /// 恢复上次保存的主题色。
@@ -35,17 +36,43 @@ enum AppTheme {
         ))
     }
 
-    static var background: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(uiColor: .systemBackground),
-                Color(uiColor: .secondarySystemBackground),
-                AppTheme.accent.opacity(0.10),
-                AppTheme.violet.opacity(0.08)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    static var background: some View { AppBackground() }
+}
+
+enum ThemeColorStyle: String, CaseIterable, Identifiable {
+    case normal, subtle, vibrant, monochrome
+    var id: String { rawValue }
+    var title: String {
+        switch self { case .normal: "标准"; case .subtle: "淡雅"; case .vibrant: "鲜明"; case .monochrome: "单色" }
+    }
+    var saturationMultiplier: Double {
+        switch self { case .normal: 1; case .subtle: 0.4; case .vibrant: 1.5; case .monochrome: 0 }
+    }
+}
+
+private struct AppBackground: View {
+    @Environment(\.colorScheme) private var scheme
+    @AppStorage(AppSettingsKey.pureBlack) private var pureBlack = false
+    @AppStorage(AppSettingsKey.accentHex) private var accentHex = ""
+    @AppStorage(AppSettingsKey.colorStyle) private var colorStyle = ThemeColorStyle.normal.rawValue
+    @AppStorage(AppSettingsKey.accentSaturation) private var saturation = 1.0
+    var body: some View {
+        if scheme == .dark && pureBlack {
+            Color.black
+        } else {
+            // Read stored colors here as well as in the root tint, so open pages react immediately.
+            let style = ThemeColorStyle(rawValue: colorStyle) ?? .normal
+            let seed = UIColor(Color(hex: accentHex) ?? AppTheme.defaultAccent)
+            let accent = styled(seed, multiplier: saturation * style.saturationMultiplier)
+            LinearGradient(colors: [Color(uiColor: .systemBackground), Color(uiColor: .secondarySystemBackground),
+                                    accent.opacity(0.10), accent.opacity(0.08)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+        }
+    }
+    private func styled(_ seed: UIColor, multiplier: Double) -> Color {
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard seed.getHue(&h, saturation: &s, brightness: &b, alpha: &a) else { return Color(uiColor: seed) }
+        return Color(uiColor: UIColor(hue: h, saturation: min(1, max(0, s * multiplier)), brightness: b, alpha: a))
     }
 }
 

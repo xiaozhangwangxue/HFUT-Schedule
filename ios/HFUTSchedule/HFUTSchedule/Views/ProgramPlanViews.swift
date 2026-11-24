@@ -76,7 +76,7 @@ struct ProgramPlanView: View {
                         .padding(.vertical, 4)
                     }
                     ForEach(root.children) { child in
-                        NavigationLink {
+                        AppNavigationLink {
                             ProgramModuleView(node: child, selectedCourse: $selectedCourse)
                         } label: {
                             VStack(alignment: .leading, spacing: 3) {
@@ -114,6 +114,13 @@ struct ProgramPlanView: View {
             }
         }
         .searchable(text: $keyword, prompt: "搜索课程、类型或代码")
+        .toolbar {
+            Menu("更多", systemImage: "ellipsis.circle") {
+                AppNavigationLink("逐课程修读与方案外课程") { AcademicProgramProgressView() }
+                AppNavigationLink("全校培养方案") { AllAcademicProgramsView() }
+                AppNavigationLink("选课与学分确认") { AcademicCourseConfirmationView() }
+            }
+        }
         .navigationTitle("培养方案")
         .navigationBarTitleDisplayMode(.inline)
         .task { if root == nil { await load() } }
@@ -143,7 +150,7 @@ struct ProgramPlanView: View {
             async let done = client.fetchProgramCompletion()
             root = try await tree
             completion = try? await done
-        } catch {
+        } catch { AcademicServiceDiagnostics.record(context: "培养方案读取", error: error);
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -171,7 +178,7 @@ struct ProgramModuleView: View {
             if !node.children.isEmpty {
                 Section(node.remark ?? "模块") {
                     ForEach(node.children) { child in
-                        NavigationLink {
+                        AppNavigationLink {
                             ProgramModuleView(node: child, selectedCourse: $selectedCourse)
                         } label: {
                             VStack(alignment: .leading, spacing: 3) {
@@ -280,7 +287,7 @@ struct ProgramCourseDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             List {
                 Section("课程") {
                     LabeledContent("名称", value: course.name)
@@ -300,17 +307,17 @@ struct ProgramCourseDetailSheet: View {
                     Section("备注") { Text(course.remark).font(.footnote) }
                 }
                 Section("相关查询") {
-                    NavigationLink {
+                    AppNavigationLink {
                         OfficialCourseSearchView()
                     } label: {
                         Label("其他教学班开课查询", systemImage: "magnifyingglass")
                     }
-                    NavigationLink {
+                    AppNavigationLink {
                         OfficialClassroomSearchView()
                     } label: {
                         Label("教室状态查询", systemImage: "door.left.hand.open")
                     }
-                    NavigationLink {
+                    AppNavigationLink {
                         OfficialFailRateView()
                     } label: {
                         Label("挂科率查询", systemImage: "percent")

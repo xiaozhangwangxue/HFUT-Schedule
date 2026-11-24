@@ -11,6 +11,7 @@ struct LoginPortalView: View {
     @State private var syncMessage = "登录成功后将自动同步学籍、课表、成绩与考试"
     @State private var resultMessage: String?
     @State private var usesWebLoginFallback = false
+    @State private var excludesAcademic = false
 
     private var selectedMode: AcademicConnectionMode {
         AcademicConnectionMode(rawValue: connectionMode) ?? .direct
@@ -27,13 +28,15 @@ struct LoginPortalView: View {
             } else {
                 NativeCASLoginView(
                     mode: selectedMode,
+                    excludesAcademic: excludesAcademic,
                     onAuthenticated: synchronizeAll,
                     onPreparationFailure: recoverFromPreparationFailure
                 )
             }
         }
-            .id(selectedMode)
+            .id("\(selectedMode.rawValue)|\(excludesAcademic)")
             .safeAreaInset(edge: .top) {
+                VStack(spacing: 8) {
                 Picker("访问方式", selection: $connectionMode) {
                     ForEach(AcademicConnectionMode.allCases) { mode in
                         Text(mode.title).tag(mode.rawValue)
@@ -42,6 +45,9 @@ struct LoginPortalView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 14)
                 .padding(.top, 6)
+                Toggle("跳过教务系统，只登录校园平台", isOn: $excludesAcademic).font(.caption).padding(.horizontal, 16).disabled(isSyncing)
+                LoginServiceScopeView(mode: selectedMode, excludesAcademic: excludesAcademic)
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 Label(isSyncing ? "正在同步教务数据…" : syncMessage, systemImage: isSyncing ? "arrow.triangle.2.circlepath" : "lock.shield.fill")
@@ -95,12 +101,13 @@ struct LoginPortalView: View {
             var gradesSynced = false
             var examsSynced = false
 
+            if !excludesAcademic {
             do {
                 let info = try await client.fetchStudentInfo()
                 syncedStudentInfo = info
                 await MainActor.run { studentStore.replace(with: info) }
                 completed.append("学籍")
-            } catch { failures.append("学籍：\(error.localizedDescription)") }
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error); failures.append("学籍：\(error.localizedDescription)") }
 
             do {
                 let schedule = try await client.fetchSchedule(semesterID: AcademicPortal.currentSemesterID)
@@ -110,24 +117,25 @@ struct LoginPortalView: View {
                 guard saved else { throw CocoaError(.fileWriteUnknown) }
                 try? await notificationManager.reschedule(for: scheduleStore.courses)
                 completed.append("课表")
-            } catch { failures.append("课表：\(error.localizedDescription)") }
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error); failures.append("课表：\(error.localizedDescription)") }
 
             do {
                 let grades = try await client.fetchGrades()
                 await MainActor.run { recordsStore.replaceGrades(with: grades) }
                 completed.append("成绩")
                 gradesSynced = true
-            } catch { failures.append("成绩：\(error.localizedDescription)") }
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error); failures.append("成绩：\(error.localizedDescription)") }
 
             do {
                 let exams = try await client.fetchExams()
                 await MainActor.run { recordsStore.replaceExams(with: exams) }
                 completed.append("考试")
                 examsSynced = true
-            } catch { failures.append("考试：\(error.localizedDescription)") }
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error); failures.append("考试：\(error.localizedDescription)") }
+            }
 
             let uniAppUsername = username.isEmpty ? (syncedStudentInfo?.studentID ?? "") : username
-            if !uniAppUsername.isEmpty {
+            if !excludesAcademic, !uniAppUsername.isEmpty {
                 var uniAppError: Error?
                 var uniAppLoggedIn = OfficialCampusAPIClient.shared.hasUniAppToken
                 if !uniAppLoggedIn {
@@ -139,7 +147,7 @@ struct LoginPortalView: View {
                         uniAppError = nil
                         uniAppLoggedIn = true
                         completed.append("合工大教务 API")
-                    } catch {
+                    } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                         uniAppError = error
                     }
                 }
@@ -154,7 +162,7 @@ struct LoginPortalView: View {
                         completed.append("成绩（官方 API）")
                         gradesSynced = true
                         failures.removeAll { $0.hasPrefix("成绩：") }
-                    } catch {
+                    } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                         failures.append("成绩（官方 API）：\(error.localizedDescription)")
                     }
                 }
@@ -165,7 +173,7 @@ struct LoginPortalView: View {
                         completed.append("考试（官方 API）")
                         examsSynced = true
                         failures.removeAll { $0.hasPrefix("考试：") }
-                    } catch {
+                    } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                         failures.append("考试（官方 API）：\(error.localizedDescription)")
                     }
                 }
@@ -174,21 +182,26 @@ struct LoginPortalView: View {
             do {
                 _ = try await OfficialCampusAPIClient.shared.refreshCommunityToken()
                 completed.append("智慧社区 API")
-            } catch {
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                 failures.append("智慧社区 API：\(error.localizedDescription)")
             }
 
             do {
+                _ = try await CampusServiceClient.shared.refreshOnePortalToken()
+                completed.append("信息门户")
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error); failures.append("信息门户：\(error.localizedDescription)") }
+
+            do {
                 _ = try await CampusServiceClient.shared.refreshHuiXinToken()
                 completed.append("一卡通与生活缴费")
-            } catch {
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                 failures.append("一卡通：\(error.localizedDescription)")
             }
 
             do {
                 _ = try await CampusServiceClient.shared.fetchSecondClassActivities()
                 completed.append("第二课堂")
-            } catch {
+            } catch { PlatformDiagnosticsStore.capture(context: "校方登录与同步", error: error);
                 failures.append("第二课堂：\(error.localizedDescription)")
             }
 

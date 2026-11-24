@@ -17,7 +17,7 @@ struct AcademicScheduleSyncView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             ZStack(alignment: .bottom) {
                 AcademicWebView(
                     syncTrigger: syncTrigger,

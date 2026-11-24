@@ -7,6 +7,7 @@ private struct WeeklyScheduleEntry: TimelineEntry {
     let monday: Date?
     let courses: [WidgetCourseSnapshot]
     let hasScheduleData: Bool
+    var revision: UUID? = nil
 
     var viewData: WeeklyScheduleViewData {
         WeeklyScheduleViewData(date: date, week: week, monday: monday, courses: courses, hasScheduleData: hasScheduleData)
@@ -25,20 +26,20 @@ private struct WeeklyScheduleProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (WeeklyScheduleEntry) -> Void) {
-        completion(entry(previewWhenEmpty: context.isPreview))
+        completion(entry(previewWhenEmpty: context.isPreview, acknowledge: false))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WeeklyScheduleEntry>) -> Void) {
-        let current = entry(previewWhenEmpty: false)
+        let current = entry(previewWhenEmpty: false, acknowledge: true)
         completion(Timeline(entries: [current], policy: .after(WidgetScheduleCalendar.nextRefresh(
             after: current.date, hasScheduleData: current.hasScheduleData
         ))))
     }
 
-    private func entry(previewWhenEmpty: Bool, date: Date = .now) -> WeeklyScheduleEntry {
+    private func entry(previewWhenEmpty: Bool, date: Date = .now, acknowledge: Bool) -> WeeklyScheduleEntry {
         // The bridge acknowledges only App Group / shared-keychain snapshots.
         // A filtered empty week still proves that schedule data was received.
-        let result = WidgetSnapshotStore.loadResult(acknowledge: true)
+        let result = WidgetSnapshotStore.loadResult(acknowledge: acknowledge)
         let projected = WidgetScheduleCalendar.project(result.snapshot, on: date)
         let showPreview = previewWhenEmpty && !result.hasScheduleData
         return WeeklyScheduleEntry(
@@ -46,7 +47,8 @@ private struct WeeklyScheduleProvider: TimelineProvider {
             week: projected.week,
             monday: projected.monday,
             courses: showPreview ? Self.previewCourses : projected.courses,
-            hasScheduleData: result.hasScheduleData || showPreview
+            hasScheduleData: result.hasScheduleData || showPreview,
+            revision: result.snapshot?.revision
         )
     }
 
@@ -94,6 +96,7 @@ private struct WidgetRootView: View {
 
     var body: some View {
         WeeklyScheduleWidgetView(data: entry.viewData)
+            .id(entry.revision)
             .containerBackground(for: .widget) {
                 WidgetPalette.resolve(colorScheme).canvas
             }

@@ -48,7 +48,7 @@ struct SettingsNavigationRow<Destination: View>: View {
     @ViewBuilder var destination: () -> Destination
 
     var body: some View {
-        NavigationLink {
+        AppNavigationLink {
             destination()
         } label: {
             HStack(spacing: 12) {
@@ -77,11 +77,16 @@ struct AppearanceSettingsView: View {
     @AppStorage(AppSettingsKey.accentHex) private var accentHex = ""
     @AppStorage(AppSettingsKey.accentSaturation) private var saturation = 1.0
     @AppStorage(AppSettingsKey.liquidGlass) private var liquidGlass = true
-    @AppStorage(AppSettingsKey.showTeacherInSquare) private var showTeacher = false
+    @AppStorage(AppSettingsKey.teacherDisplayMode) private var teacherMode = 0
+    @AppStorage(AppSettingsKey.colorStyle) private var colorStyle = ThemeColorStyle.normal.rawValue
+    @AppStorage(AppSettingsKey.bottomBarStyle) private var bottomStyle = "system"
+    @AppStorage(AppSettingsKey.bottomBarInset) private var bottomInset = 8.0
     @AppStorage(AppSettingsKey.mergeConflictingSquares) private var mergeConflicts = false
     @AppStorage(AppSettingsKey.backgroundBlur) private var backgroundBlur = 0.35
     @AppStorage(AppSettingsKey.showAllTabLabels) private var showAllTabLabels = true
     @State private var backgroundItem: PhotosPickerItem?
+    @State private var accentItem: PhotosPickerItem?
+    @State private var photoError: String?
     @State private var customColor = Color.blue
 
     private var backgroundColor: Binding<Color> {
@@ -92,6 +97,18 @@ struct AppearanceSettingsView: View {
                 AppTheme.applyAccent(hex: accentHex, saturation: saturation)
             }
         )
+    }
+
+    private var hueBinding: Binding<Double> {
+        Binding(get: {
+            let color = UIColor(Color(hex: accentHex) ?? AppTheme.defaultAccent)
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+            color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+            return Double(hue)
+        }, set: { hue in
+            accentHex = Color(uiColor: UIColor(hue: hue, saturation: 0.72, brightness: 0.92, alpha: 1)).hexString ?? ""
+            AppTheme.applyAccent(hex: accentHex, saturation: saturation)
+        })
     }
 
     var body: some View {
@@ -111,12 +128,22 @@ struct AppearanceSettingsView: View {
             }
 
             Section("主题色") {
+                Picker("配色风格", selection: $colorStyle) {
+                    ForEach(ThemeColorStyle.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                PhotosPicker(selection: $accentItem, matching: .images) {
+                    Label("从照片提取主题色", systemImage: "photo.badge.checkmark")
+                }
                 HStack {
                     SettingsIcon(systemName: "paintpalette.fill")
                     Text("自定义取色").font(.subheadline.weight(.medium))
                     Spacer()
                     ColorPicker("", selection: backgroundColor, supportsOpacity: false)
                         .labelsHidden()
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("色相").font(.subheadline)
+                    Slider(value: hueBinding, in: 0...1).tint(backgroundColor.wrappedValue)
                 }
                 HStack {
                     SettingsIcon(systemName: "sun.max.fill", tint: .orange)
@@ -141,15 +168,17 @@ struct AppearanceSettingsView: View {
                 SettingsToggleRow(icon: "cube.transparent.fill", title: "液态玻璃",
                                   subtitle: "使用系统材质实现毛玻璃与层级模糊",
                                   tint: AppTheme.cyan, isOn: $liquidGlass)
+                AppNavigationLink("层级模糊与转场配置") { MotionAppearanceSettingsView() }
                 Text("动效与透明度会自动跟随系统的「减弱动态效果」「降低透明度」设置。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("课程表") {
-                SettingsToggleRow(icon: "person.fill", title: "方格内显示教师",
-                                  subtitle: "在课程方格中显示授课教师",
-                                  tint: AppTheme.violet, isOn: $showTeacher)
+                Picker("显示教师", selection: $teacherMode) {
+                    Text("不显示").tag(0); Text("仅多名教师时").tag(1); Text("始终显示").tag(2)
+                }
+                AppNavigationLink("方格高度、文字与透明度") { TimetableAppearanceSettingsView() }
                 SettingsToggleRow(icon: "rectangle.stack.fill", title: "合并冲突方格",
                                   subtitle: "同一时间段的课程合并显示",
                                   tint: .teal, isOn: $mergeConflicts)
@@ -181,6 +210,12 @@ struct AppearanceSettingsView: View {
             }
 
             Section("底栏") {
+                Picker("底栏样式", selection: $bottomStyle) {
+                    Text("系统").tag("system"); Text("悬浮").tag("floating")
+                }
+                if bottomStyle == "floating" {
+                    HStack { Text("底部间距"); Slider(value: $bottomInset, in: 0...32, step: 1); Text("\(Int(bottomInset))") }
+                }
                 SettingsToggleRow(icon: "dock.rectangle", title: "显示所有底栏标签",
                                   subtitle: "显示全部标签或仅显示选中项",
                                   tint: .brown, isOn: $showAllTabLabels)
@@ -189,8 +224,23 @@ struct AppearanceSettingsView: View {
         .navigationTitle("外观")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            AppSettingsKey.migrateLegacyPreferences()
             customColor = backgroundColor.wrappedValue
         }
+        .onChange(of: colorStyle) { _, _ in AppTheme.applyAccent(hex: accentHex, saturation: saturation) }
+        .onChange(of: accentItem) { _, item in
+            guard let item else { return }
+            Task {
+                do {
+                    guard let data = try await item.loadTransferable(type: Data.self) else { throw CocoaError(.fileReadCorruptFile) }
+                    accentHex = try ThemeImageColorExtractor.dominantHex(in: data)
+                    AppTheme.applyAccent(hex: accentHex, saturation: saturation)
+                } catch { photoError = "无法从这张照片取色：\(error.localizedDescription)" }
+            }
+        }
+        .alert("照片取色", isPresented: Binding(get: { photoError != nil }, set: { if !$0 { photoError = nil } })) {
+            Button("好") { photoError = nil }
+        } message: { Text(photoError ?? "") }
         .onChange(of: backgroundItem) { _, item in
             guard let item else { return }
             Task { await saveBackground(item) }
@@ -208,20 +258,31 @@ struct AppearanceSettingsView: View {
 
 struct PreferencesSettingsView: View {
     @EnvironmentObject private var eventStore: CustomEventStore
+    @EnvironmentObject private var recordsStore: AcademicRecordsStore
+    @EnvironmentObject private var studentStore: AcademicStudentStore
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var notificationManager: CourseNotificationManager
     @EnvironmentObject private var appState: AppState
 
-    @AppStorage(AppSettingsKey.defaultCourseSource) private var courseSource = DefaultCourseSource.academic.rawValue
+    @AppStorage(AppSettingsKey.defaultCourseSource) private var courseSource = ScheduleSource.academic.rawValue
     @AppStorage(AppSettingsKey.autoTermStart) private var autoTermStart = true
     @AppStorage(AppSettingsKey.manualTermStart) private var manualTermStart = 0.0
+    @AppStorage(AppSettingsKey.manualSemesterID) private var manualSemesterID = 0
+    @AppStorage(AppSettingsKey.focusShowsCard) private var focusShowsCard = true
+    @AppStorage(AppSettingsKey.focusShowsElectric) private var focusShowsElectric = true
+    @AppStorage(AppSettingsKey.focusShowsNetwork) private var focusShowsNetwork = true
+    @AppStorage(AppSettingsKey.focusShowsTomorrow) private var focusShowsTomorrow = true
+    @AppStorage(AppSettingsKey.focusShowsWeather) private var focusShowsWeather = true
     @AppStorage(AppSettingsKey.showFinishedToday) private var showFinishedToday = true
     @AppStorage(AppSettingsKey.showExpiredEvents) private var showExpiredEvents = false
     @AppStorage(AppSettingsKey.focusCardAction) private var focusCardAction = FocusCardAction.recharge.rawValue
-    @AppStorage(AppSettingsKey.xuanchengQuota) private var xuanchengQuota = 30.0
+    @AppStorage(AppSettingsKey.xuanchengQuota) private var xuanchengQuota = AppSettingsDefaults.xuanchengQuota
     @AppStorage(AppSettingsKey.ignoreExcludedGrades) private var ignoreExcludedGrades = false
     @State private var exportingBackup = false
     @State private var importingBackup = false
+    @State private var pendingBackup: ScheduleBackupPayload?
+    @State private var preparingBackup = false
+    @State private var guestDownload: Task<Void, Never>?
     @State private var message: String?
     @State private var cacheSize = "—"
 
@@ -248,22 +309,24 @@ struct PreferencesSettingsView: View {
 
             Section("课程表") {
                 Picker("默认课程表", selection: $courseSource) {
-                    ForEach(DefaultCourseSource.allCases) { source in
+                    ForEach(ScheduleSource.allCases) { source in
                         Text(source.title).tag(source.rawValue)
                     }
                 }
-                if let source = DefaultCourseSource(rawValue: courseSource) {
+                if let source = ScheduleSource(rawValue: courseSource) {
                     Text(source.detail).font(.caption).foregroundStyle(.secondary)
                 }
                 LabeledContent("当前学期", value: "第 \(currentWeek) 周 · \(AcademicPortal.currentSemesterID)")
                 Toggle(isOn: $autoTermStart) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("自动计算学期").font(.subheadline.weight(.medium))
-                        Text("按日期自动判断学期；关闭后可手动指定学期开始时间")
+                        Text("按日期自动判断学期；关闭后可指定学期编号和学期开始时间")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 if !autoTermStart {
+                    Stepper("学期编号：\(manualSemesterID)", value: $manualSemesterID,
+                            in: max(1, AcademicPortal.automaticSemesterID - 20)...(AcademicPortal.automaticSemesterID + 20))
                     DatePicker("学期开始时间", selection: manualTermBinding, displayedComponents: .date)
                         .onChange(of: manualTermStart) { _, value in
                             UserDefaults.standard.set(value, forKey: AppSettingsKey.manualTermStart)
@@ -272,10 +335,15 @@ struct PreferencesSettingsView: View {
             }
 
             Section("聚焦") {
+                Toggle("显示一卡通", isOn: $focusShowsCard)
+                Toggle("显示宿舍电费", isOn: $focusShowsElectric)
+                Toggle("显示校园网", isOn: $focusShowsNetwork)
+                Toggle("显示明日课程", isOn: $focusShowsTomorrow)
+                Toggle("显示天气", isOn: $focusShowsWeather)
                 Picker("聚焦首卡片功能", selection: $focusCardAction) {
                     ForEach(FocusCardAction.allCases) { Text($0.title).tag($0.rawValue) }
                 }
-                NavigationLink("管理自建日程") { CustomEventsView() }
+                AppNavigationLink("管理自建日程") { CustomEventsView() }
             }
 
             Section("偏好与配置") {
@@ -300,7 +368,7 @@ struct PreferencesSettingsView: View {
                     Spacer()
                     Text("\(Int(xuanchengQuota)) GiB").foregroundStyle(.secondary)
                 }
-                Slider(value: $xuanchengQuota, in: 5...100, step: 5)
+                Slider(value: $xuanchengQuota, in: AppSettingsDefaults.xuanchengQuotaRange, step: 10)
 
                 Toggle(isOn: $ignoreExcludedGrades) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -328,7 +396,11 @@ struct PreferencesSettingsView: View {
         }
         .navigationTitle("偏好与配置")
         .navigationBarTitleDisplayMode(.inline)
-        .task { cacheSize = Self.cacheSizeText() }
+        .task {
+            cacheSize = Self.cacheSizeText()
+            AppSettingsKey.migrateLegacyPreferences()
+            if manualSemesterID <= 0 { manualSemesterID = AcademicPortal.automaticSemesterID }
+        }
         .onChange(of: autoTermStart) { _, _ in scheduleStore.refreshWidgetSnapshot() }
         .onChange(of: manualTermStart) { _, _ in scheduleStore.refreshWidgetSnapshot() }
         .fileExporter(
@@ -339,9 +411,16 @@ struct PreferencesSettingsView: View {
         ) { result in
             if case .failure(let error) = result { message = error.localizedDescription }
         }
-        .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.json]) { result in
+        .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.json, .zip]) { result in
             importBackup(result)
         }
+        .confirmationDialog("恢复这份备份？", isPresented: Binding(get: { pendingBackup != nil }, set: { if !$0 { pendingBackup = nil } }), titleVisibility: .visible) {
+            Button("恢复数据", role: .destructive) { if let payload = pendingBackup { pendingBackup = nil; restoreBackup(payload) } }
+            Button("取消", role: .cancel) { pendingBackup = nil }
+        } message: {
+            Text(pendingBackup?.importSummary ?? "将替换课表、日程和备份中包含的应用数据。恢复前会自动保存安全备份。")
+        }
+        .onDisappear { guestDownload?.cancel() }
         .alert("提示", isPresented: Binding(
             get: { message != nil },
             set: { if !$0 { message = nil } }
@@ -354,17 +433,25 @@ struct PreferencesSettingsView: View {
 
     private var storageSection: some View {
     Section("存储") {
-        NavigationLink { WidgetSyncSettingsView() } label: { Label("桌面小组件", systemImage: "rectangle.on.rectangle") }
+        AppNavigationLink { WidgetSyncSettingsView() } label: { Label("桌面小组件", systemImage: "rectangle.on.rectangle") }
         Button {
             exportingBackup = true
         } label: {
-            Label("导出课表备份", systemImage: "square.and.arrow.up")
+            Label("导出应用数据备份", systemImage: "square.and.arrow.up")
         }
         Button {
             importingBackup = true
         } label: {
-            Label("恢复课表备份", systemImage: "square.and.arrow.down")
+            Label("恢复 iOS / Android 备份", systemImage: "square.and.arrow.down")
         }
+        if preparingBackup || guestDownload != nil {
+            HStack { ProgressView(); Text("正在读取备份…") }
+            if guestDownload != nil { Button("取消下载") { guestDownload?.cancel() } }
+        } else {
+            Button { downloadGuestData() } label: { Label("下载游客预设数据", systemImage: "person.crop.circle.badge.questionmark") }
+        }
+        Text("备份包含课表、日程、成绩考试、学籍、网址收藏、背景、调休和兼容偏好，不包含密码、Cookie 或令牌。恢复 Android ZIP 仅迁移可对应的本地数据。").font(.caption).foregroundStyle(.secondary)
+        AppNavigationLink("维护、在线更新与模型管理") { MaintenanceSettingsView() }
         Button {
             clearCache()
         } label: {
@@ -402,14 +489,14 @@ struct PreferencesSettingsView: View {
     }
 
     private func clearCache() {
-        URLCache.shared.removeAllCachedResponses()
-        cacheSize = Self.cacheSizeText()
-        message = "已清理缓存"
+        Task {
+            do { try await AppCacheManager.clear(); cacheSize = Self.cacheSizeText(); message = "已清理网页、网络与临时文件缓存" }
+            catch { cacheSize = Self.cacheSizeText(); message = "部分缓存未能清理：\(error.localizedDescription)" }
+        }
     }
 
     private static func cacheSizeText() -> String {
-        let bytes = URLCache.shared.currentDiskUsage + URLCache.shared.currentMemoryUsage
-        return String(format: "%.2f MB", Double(bytes) / 1_048_576)
+        AppCacheManager.sizeText()
     }
 
     private func importBackup(_ result: Result<URL, Error>) {
@@ -417,33 +504,65 @@ struct PreferencesSettingsView: View {
             let url = try result.get()
             let granted = url.startAccessingSecurityScopedResource()
             defer { if granted { url.stopAccessingSecurityScopedResource() } }
-            let payload = try ScheduleBackupPayload.decode(Data(contentsOf: url))
-            let previousEvents = eventStore.events
-            let previous = ScheduleBackupPayload(courses: scheduleStore.courses, events: previousEvents, preferences: BackupPreferences.capture())
+            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            guard size <= PortableZIPReader.maximumExpandedBytes else { throw CocoaError(.fileReadTooLarge) }
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            preparingBackup = true
+            Task {
+                defer { preparingBackup = false }
+                do { pendingBackup = try await Task.detached(priority: .userInitiated) { try ScheduleBackupPayload.decode(data) }.value }
+                catch { message = "读取失败：\(error.localizedDescription)" }
+            }
+        } catch { message = "读取失败：\(error.localizedDescription)" }
+    }
+
+    private func downloadGuestData() {
+        guestDownload = Task {
+            defer { guestDownload = nil }
+            do {
+                var request = URLRequest(url: URL(string: "https://gitee.com/chiu-xah/HFUT-Schedule/releases/download/Android/hfut_schedule_guest_data.zip")!)
+                request.timeoutInterval = 60
+                let (url, response) = try await URLSession.shared.download(for: request)
+                defer { try? FileManager.default.removeItem(at: url) }
+                guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw CocoaError(.fileReadUnknown) }
+                try Task.checkCancellation()
+                importBackup(.success(url))
+            } catch { if !Task.isCancelled { message = "预设下载失败：\(error.localizedDescription)" } }
+        }
+    }
+
+    private func restoreBackup(_ payload: ScheduleBackupPayload) {
+        let previous = ScheduleBackupPayload(courses: scheduleStore.courses, events: eventStore.events,
+            preferences: BackupPreferences.capture(), applicationData: BackupApplicationData.capture())
+        do {
             let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                 .appendingPathComponent("恢复前备份", isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let safetyURL = directory.appendingPathComponent("恢复前-\(UUID().uuidString).json")
             try JSONEncoder().encode(previous).write(to: safetyURL, options: .atomic)
-            if let events = payload.events, !eventStore.restore(events) {
-                throw CocoaError(.fileWriteUnknown)
-            }
-            guard scheduleStore.replace(with: payload.courses) else {
-                let rolledBack = payload.events == nil || eventStore.restore(previousEvents)
-                message = rolledBack ? "恢复失败，课程和日程保持恢复前的状态。" : "课程恢复失败，日程回滚也未成功。恢复前的数据已保存在“恢复前备份”目录中。"
-                return
-            }
-            if let preferences = payload.preferences {
-                BackupPreferences.restore(preferences)
+            do {
+                try payload.applicationData?.restore()
+                if let events = payload.events, !eventStore.restore(events) { throw CocoaError(.fileWriteUnknown) }
+                guard scheduleStore.replace(with: payload.courses) else { throw CocoaError(.fileWriteUnknown) }
+                if let preferences = payload.preferences { BackupPreferences.restore(preferences) }
+                if let grades = payload.applicationData?.grades { recordsStore.replaceGrades(with: grades) }
+                if let exams = payload.applicationData?.exams { recordsStore.replaceExams(with: exams) }
+                if let student = payload.applicationData?.student { studentStore.replace(with: student) }
                 AppTheme.restoreAccent()
+                NotificationCenter.default.post(name: Notification.Name("appBackupRestored"), object: nil)
                 scheduleStore.refreshWidgetSnapshot()
+                Task { try? await notificationManager.reschedule(for: payload.courses) }
+                message = payload.importSummary ?? "已恢复 \(payload.courses.count) 个课程时段及备份内的应用数据。来源缓存等内容在重新打开相关页面后生效。"
+            } catch {
+                try previous.applicationData?.restore()
+                if let preferences = previous.preferences { BackupPreferences.restore(preferences) }
+                let eventsOK = eventStore.restore(previous.events ?? [])
+                let coursesOK = scheduleStore.replace(with: previous.courses)
+                message = eventsOK && coursesOK ? "恢复失败，已回滚到恢复前数据：\(error.localizedDescription)" : "恢复未成功完成，请使用“恢复前备份”目录中的安全备份。"
             }
-            Task { try? await notificationManager.reschedule(for: payload.courses) }
-            message = "已恢复 \(payload.courses.count) 门课程\(payload.events.map { "、\($0.count) 项日程" } ?? "")。"
-        } catch {
-            message = "恢复失败：\(error.localizedDescription)"
-        }
+        } catch { message = "恢复失败：\(error.localizedDescription)。恢复前数据可在“恢复前备份”中找回。" }
     }
+
 }
 
 // MARK: - 网络
@@ -451,9 +570,8 @@ struct PreferencesSettingsView: View {
 struct NetworkSettingsView: View {
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @AppStorage(AppSettingsKey.useDefaultCardPassword) private var useDefaultCardPassword = true
-    @AppStorage(AppSettingsKey.autoRefreshLogin) private var autoRefreshLogin = false
+    @AppStorage("useDefaultSchoolNetPassword") private var useDefaultSchoolNetPassword = true
     @AppStorage(AppSettingsKey.dataReporting) private var dataReporting = true
-    @AppStorage(AppSettingsKey.pageSize) private var pageSize = 30
 
     @State private var cardPassword = AppSecretStore.read(AppSecretStore.Account.cardPassword) ?? ""
     @State private var schoolNetPassword = AppSecretStore.read(AppSecretStore.Account.schoolNetPassword) ?? ""
@@ -461,7 +579,7 @@ struct NetworkSettingsView: View {
     @State private var aiKey = AppSecretStore.read(AppSecretStore.Account.aiAPIKey) ?? ""
     @State private var editing: EditingField?
     @State private var message: String?
-    @State private var isRefreshingLogin = false
+    @State private var showsFullLogin = false
     @State private var isRefreshingAcademicPassword = false
 
     private enum EditingField: String, Identifiable {
@@ -503,6 +621,7 @@ struct NetworkSettingsView: View {
                     }
                 }
                 if !isXuancheng {
+                    Toggle("使用合肥校园网默认密码", isOn: $useDefaultSchoolNetPassword)
                     Toggle(isOn: $useDefaultCardPassword) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("使用合肥校区默认密码").font(.subheadline.weight(.medium))
@@ -554,8 +673,9 @@ struct NetworkSettingsView: View {
                 }.disabled(isRefreshingAcademicPassword)
                 AcademicPasswordChangeLink()
                 SettingsToggleRow(icon: "arrow.clockwise.circle.fill", title: "自动刷新登录状态",
-                                  subtitle: "冷启动后自动在后台完成一次统一身份认证",
-                                  tint: AppTheme.cyan, isOn: $autoRefreshLogin)
+                                  subtitle: "原项目暂未开放此项，请使用下方的手动刷新登录",
+                                  tint: AppTheme.cyan, isOn: .constant(false))
+                    .disabled(true)
                 Button {
                     editing = .ai
                 } label: {
@@ -573,10 +693,10 @@ struct NetworkSettingsView: View {
 
             Section("其它") {
                 SettingsToggleRow(icon: "chart.bar.doc.horizontal.fill", title: "数据上报",
-                                  subtitle: "允许上传崩溃日志等非敏感数据，帮助改进体验",
+                                  subtitle: "允许发送匿名使用计数；不包含账号、课表或认证信息",
                                   tint: .orange, isOn: $dataReporting)
                 Button {
-                    Task { await refreshLogin() }
+                    showsFullLogin = true
                 } label: {
                     HStack(spacing: 12) {
                         SettingsIcon(systemName: "arrow.triangle.2.circlepath", tint: AppTheme.mint)
@@ -586,20 +706,15 @@ struct NetworkSettingsView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        if isRefreshingLogin { ProgressView().controlSize(.small) }
+
                     }
                 }
-                Stepper(value: $pageSize, in: 10...100, step: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("请求范围 | \(pageSize) 条/页").font(.subheadline.weight(.medium))
-                        Text("一次加载的条目数，越大加载越慢但显示更多")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
+
             }
         }
         .navigationTitle("网络")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showsFullLogin) { AppNavigationStack { LoginPortalView() } }
         .sheet(item: $editing) { field in
             SecretEditorSheet(
                 title: field.title,
@@ -650,17 +765,7 @@ struct NetworkSettingsView: View {
         message = "已保存"
     }
 
-    @MainActor
-    private func refreshLogin() async {
-        isRefreshingLogin = true
-        defer { isRefreshingLogin = false }
-        do {
-            _ = try await CampusServiceClient.shared.refreshOnePortalToken()
-            message = "登录状态已刷新"
-        } catch {
-            message = "刷新失败：\(error.localizedDescription)"
-        }
-    }
+
 }
 
 struct SecretEditorSheet: View {
@@ -673,7 +778,7 @@ struct SecretEditorSheet: View {
     @State private var value = ""
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             Form {
                 SecureField(placeholder, text: $value)
                     .textInputAutocapitalization(.never)
@@ -752,11 +857,10 @@ struct SettingsSearchView: View {
         Entry(title: "一卡通密码", detail: "快速充值与校园网登录", target: .network),
         Entry(title: "校园网密码", detail: "校园网一键登录", target: .network),
         Entry(title: "教务系统密码", detail: "同班同学、教室、培养方案", target: .network),
-        Entry(title: "自动刷新登录状态", detail: "冷启动后台统一认证", target: .network),
+        Entry(title: "自动刷新登录状态", detail: "原项目尚未开放；可手动刷新登录", target: .network),
         Entry(title: "DeepSeek AI 助手", detail: "API Key、网页摘要", target: .network),
         Entry(title: "数据上报", detail: "崩溃日志上报", target: .network),
         Entry(title: "刷新登录状态", detail: "重新登录一次", target: .network),
-        Entry(title: "请求范围", detail: "一次加载的条目数", target: .network),
         Entry(title: "版本与开源许可", detail: "当前版本、反馈、开源协议", target: .about)
     ]
 
@@ -773,7 +877,7 @@ struct SettingsSearchView: View {
     var body: some View {
         List {
             ForEach(filtered) { entry in
-                NavigationLink {
+                AppNavigationLink {
                     destination(for: entry.target)
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
@@ -799,20 +903,7 @@ struct SettingsSearchView: View {
         case .appearance: AppearanceSettingsView()
         case .preferences: PreferencesSettingsView()
         case .network: NetworkSettingsView()
-        case .about:
-            List {
-                Section {
-                    LabeledContent("版本", value: AppInfo.version)
-                    LabeledContent("界面", value: "SwiftUI + Liquid Glass")
-                }
-                Section { NavigationLink("开发者选项") { DeveloperInfoView() } }
-                Section("开源") {
-                    Text("本项目基于原 Android 项目 Chiu-xaH/HFUT-Schedule 移植，遵循 Apache License 2.0。")
-                        .font(.footnote)
-                }
-            }
-            .navigationTitle("维护与关于")
-            .navigationBarTitleDisplayMode(.inline)
+        case .about: MaintenanceSettingsView()
         }
     }
 }

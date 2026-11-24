@@ -1,5 +1,7 @@
 import Foundation
 
+extension Notification.Name { static let campusCalendarChanged = Notification.Name("HFUTCampusCalendarChanged") }
+
 /// holiday-cn 数据源里的一天（原项目使用 Chiu-xaH/holiday-cn）。
 struct HolidayDay: Codable, Equatable, Hashable {
     let name: String
@@ -68,6 +70,7 @@ final class HolidayCalendarStore: @unchecked Sendable {
         days = merged.sorted { $0.date < $1.date }
         lastLoaded = Date()
         persistCache()
+        NotificationCenter.default.post(name: .campusCalendarChanged, object: nil)
     }
 
     private func fetch(year: Int) async throws -> [HolidayDay] {
@@ -134,11 +137,13 @@ final class SpecialWorkDayStore: @unchecked Sendable {
     func setTarget(_ targetDate: String, for date: Date) {
         mapping[HolidayCalendarStore.key(for: date)] = targetDate
         persist()
+        NotificationCenter.default.post(name: .campusCalendarChanged, object: nil)
     }
 
     func removeTarget(for date: Date) {
         mapping.removeValue(forKey: HolidayCalendarStore.key(for: date))
         persist()
+        NotificationCenter.default.post(name: .campusCalendarChanged, object: nil)
     }
 
     private func persist() {

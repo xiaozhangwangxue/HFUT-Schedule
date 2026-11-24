@@ -332,12 +332,14 @@ struct AcademicClient {
         semesterID: Int,
         courseName: String? = nil,
         className: String? = nil,
-        code: String? = nil
+        code: String? = nil,
+        page: Int = 1,
+        pageSize: Int = 30
     ) async throws -> [OfficialCourseSearchResult] {
         let context = try await loadStudentContext()
         let query = [
             URLQueryItem(name: "nameZhLike", value: className?.nilIfBlank),
-            URLQueryItem(name: "queryPage__", value: "1,30"),
+            URLQueryItem(name: "queryPage__", value: "\(max(1, page)),\(max(1, pageSize))"),
             URLQueryItem(name: "courseNameZhLike", value: courseName?.nilIfBlank),
             URLQueryItem(name: "codeLike", value: code?.nilIfBlank)
         ].filter { $0.value != nil }
@@ -362,12 +364,13 @@ struct AcademicClient {
                 department: entry.lesson.departmentName?.nilIfBlank,
                 credits: entry.lesson.credits,
                 weeks: entry.lesson.suggestedWeeks?.nilIfBlank,
-                schedule: entry.lesson.scheduleText?.nilIfBlank
+                schedule: entry.lesson.scheduleText?.nilIfBlank,
+                lessonDetails: Self.details(for: entry.lesson)
             )
         }
     }
 
-    private func loadStudentContext() async throws -> StudentContext {
+    func loadStudentContext() async throws -> StudentContext {
         // Match the Android client: do not follow this redirect. The numeric
         // dataId exists in the Location header and is not the public student
         // number, so losing the 302 makes every academic endpoint unusable.
@@ -405,7 +408,7 @@ struct AcademicClient {
         return StudentContext(studentID: studentID, bizTypeID: bizTypeID)
     }
 
-    private func get(_ path: String, query: [URLQueryItem] = []) async throws -> Data {
+    func get(_ path: String, query: [URLQueryItem] = []) async throws -> Data {
         var components = URLComponents(url: AcademicPortal.url(path, mode: mode), resolvingAgainstBaseURL: false)!
         components.queryItems = query.isEmpty ? nil : query
         return try await request(components.url!, method: "GET", body: nil)
@@ -575,17 +578,22 @@ struct AcademicClient {
             URLQueryItem(name: "batchId", value: batchID),
             URLQueryItem(name: "studentId", value: String(context.studentID))
         ])
-        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let list = root["models"] as? [[String: Any]] else { return [] }
-        return list.compactMap { item in
-            guard let id = item["id"] as? Int,
-                  let submit = item["changeMajorSubmit"] as? [String: Any] else { return nil }
-            return TransferMyApply(
-                id: id,
-                major: Self.localizedName(submit["major"]),
+        return try Self.parseMyTransferApplications(data)
+    }
+
+    static func parseMyTransferApplications(_ data: Data) throws -> [TransferMyApply] {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let list = root["models"] as? [[String: Any]] else {
+            throw AcademicClientError.invalidData("校方没有返回可确认的转专业申请列表")
+        }
+        return try list.map { item in
+            guard let id = Self.int(item["id"]),
+                  let submit = item["changeMajorSubmit"] as? [String: Any] else {
+                throw AcademicClientError.invalidData("转专业申请标识无法解析，不能确认撤销状态")
+            }
+            return TransferMyApply(id: id, major: Self.localizedName(submit["major"]),
                 department: Self.localizedName(submit["department"]),
-                status: Self.transferStatusText((item["applyStatus"] as? String) ?? "")
-            )
+                status: Self.transferStatusText(item["applyStatus"] as? String ?? ""))
         }
     }
 
@@ -632,15 +640,15 @@ struct AcademicClient {
         return String(text[captured])
     }
 
-    private func request(_ path: String, method: String, body: Data?) async throws -> Data {
-        try await request(AcademicPortal.url(path, mode: mode), method: method, body: body)
+    func request(_ path: String, method: String, body: Data?, contentType: String = "application/json") async throws -> Data {
+        try await request(AcademicPortal.url(path, mode: mode), method: method, body: body, contentType: contentType)
     }
 
-    private func request(_ url: URL, method: String, body: Data?) async throws -> Data {
+    func request(_ url: URL, method: String, body: Data?, contentType: String = "application/json") async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
-        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        if body != nil { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
         attachCookies(to: &request)
         let (data, response) = try await data(for: request)
         guard AcademicPortal.isAcademicPage(response.url, mode: mode) else {
@@ -649,7 +657,7 @@ struct AcademicClient {
         return data
     }
 
-    private func formPost(_ path: String, fields: [(String, String)]) async throws -> Data {
+    func formPost(_ path: String, fields: [(String, String)]) async throws -> Data {
         var request = URLRequest(url: AcademicPortal.url(path, mode: mode))
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -745,7 +753,7 @@ struct AcademicClient {
         return parts.isEmpty ? "根节点" : parts.joined(separator: ".")
     }
 
-    private struct StudentContext {
+    struct StudentContext {
         let studentID: Int
         let bizTypeID: Int
     }
@@ -941,7 +949,7 @@ enum AcademicHTMLParser {
 /// It preserves nested card/form boundaries and decoded attributes, rather
 /// than relying on a regex that can accidentally select another student's ID
 /// or an unrelated password input elsewhere on the page.
-private final class AcademicHTMLElement {
+final class AcademicHTMLElement {
     let tag: String
     let attributes: [String: String]
     weak var parent: AcademicHTMLElement?

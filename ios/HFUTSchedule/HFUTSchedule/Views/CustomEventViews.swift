@@ -44,7 +44,7 @@ struct CustomEventEditor: View {
     private var isNew: Bool { !store.events.contains { $0.id == event.id } }
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             Form {
                 Section {
                     Picker("类型", selection: $event.kind) {
@@ -53,6 +53,22 @@ struct CustomEventEditor: View {
                     TextField("标题", text: $event.title)
                     TextField("地点（可选）", text: $event.location)
                     TextField("说明（可选）", text: $event.detail, axis: .vertical)
+                    AppNavigationLink("选择教学楼") { EventBuildingPicker(selection: $event.location) }
+                    Menu("选择学习平台") {
+                        ForEach(LearningPlatform.presets, id: \.self) { platform in
+                            Button(platform) { event.detail = platform }
+                        }
+                    }
+                }
+                Section {
+                    AppNavigationLink {
+                        AIAssistantView(initialQuestion: CustomEventAIPrompt.text(now: Date()))
+                    } label: { Label("AI 辅助创建日程", systemImage: "wand.and.stars") }
+                    if event.isValid {
+                        SingleCalendarExportButton(occurrence: PlatformScheduleOccurrence(id: "event|\(event.id.uuidString)",
+                            sourceID: event.id.uuidString, kind: event.kind == .deadline ? .deadline : .event,
+                            title: event.title, location: event.location, detail: event.detail, start: event.start, end: event.end))
+                    }
                 }
                 Section("时间") {
                     if event.kind == .event {
@@ -88,5 +104,49 @@ struct CustomEventEditor: View {
             event.start = value
             event.end = value.addingTimeInterval(duration)
         })
+    }
+}
+
+enum CustomEventAIPrompt {
+    static func text(now: Date) -> String {
+        """
+        请帮助我理解并整理日程，可以先询问缺少的信息，最终返回规范JSON：
+        {"title":"标题","type":"Schedule或DeadLine","timeParts":[{"dateTime":{"start":"YYYY-MM-DD HH:mm或null","end":"YYYY-MM-DD HH:mm"},"description":"地点、链接或备注，可为null"}]}
+        Schedule是有开始和结束的普通线下日程；DeadLine是只关心截止时间的作业/报告，start为null。
+        原版日程模板不支持跨天的单次Schedule，如涉及跨天请先说明并询问拆分方式。信息不明确时请询问类型、标题、时间、地点或备注。
+        当前时间：\(now.formatted(date: .numeric, time: .shortened))。请先询问我要创建什么日程。
+        """
+    }
+}
+
+private struct EventBuildingPicker: View {
+    struct Building: Decodable, Identifiable {
+        struct Summary: Decodable { let id: Int; let nameZh: String }
+        let building: Summary
+        let campus: String
+        var id: Int { building.id }
+    }
+    @Binding var selection: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var buildings: [Building] = []
+    @State private var query = ""
+    @State private var error: String?
+    var body: some View {
+        List {
+            ForEach(buildings.filter { query.isEmpty || $0.building.nameZh.localizedCaseInsensitiveContains(query) }) { item in
+                Button { selection = item.building.nameZh; dismiss() } label: {
+                    VStack(alignment: .leading) { Text(item.building.nameZh); Text(item.campus).font(.caption).foregroundStyle(.secondary) }
+                }
+            }
+            if let error { Text(error).foregroundStyle(.red) }
+        }.navigationTitle("选择教学楼").searchable(text: $query)
+            .task {
+                do {
+                    let url = URL(string: "https://raw.githubusercontent.com/Chiu-xaH/HFUT-Schedule/dev/src/source/building/list.json")!
+                    let (data, response) = try await URLSession.shared.data(from: url)
+                    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { throw URLError(.badServerResponse) }
+                    buildings = try JSONDecoder().decode([Building].self, from: data)
+                } catch { self.error = error.localizedDescription }
+            }
     }
 }

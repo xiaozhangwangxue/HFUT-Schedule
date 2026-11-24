@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AIAssistantView: View {
     var page: DeepSeekWebPageContext?
+    var initialQuestion: String? = nil
     @AppStorage("aiDeepSeekModel") private var modelName = DeepSeekModel.flash.rawValue
     @State private var input = ""
     @State private var messages: [DeepSeekMessage] = []
@@ -22,7 +23,7 @@ struct AIAssistantView: View {
                         ForEach(DeepSeekModel.allCases) { model in Text(model.title).tag(model.rawValue) }
                     }
                     .disabled(isSending)
-                    NavigationLink { NetworkSettingsView() } label: {
+                    AppNavigationLink { NetworkSettingsView() } label: {
                         Label(hasAPIKey ? "DeepSeek 已配置" : "配置 DeepSeek ApiKey", systemImage: "key.fill")
                     }
                 } footer: {
@@ -102,8 +103,9 @@ struct AIAssistantView: View {
         }
         .onAppear {
             hasAPIKey = !(AppSecretStore.read(AppSecretStore.Account.aiAPIKey) ?? "").isEmpty
-            if page != nil && messages.isEmpty && input.isEmpty {
-                input = "请概括这个网页的主要内容，并列出需要注意的时间、地点与操作。"
+            if messages.isEmpty && input.isEmpty {
+                if let initialQuestion { input = initialQuestion }
+                else if page != nil { input = "简明扼要地归纳网页中的关键信息，包括需要注意的时间、地点与操作。" }
             }
         }
         .onDisappear { requestTask?.cancel() }

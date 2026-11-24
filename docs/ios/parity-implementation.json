@@ -1,0 +1,1800 @@
+{
+  "baseline": {
+    "version": "1.2.3 build 5",
+    "commit": "5a129136d859fb019e98de74aebd3049ba14ce11"
+  },
+  "upstream": {
+    "branch": "dev",
+    "commit": "9670096e15dd04d561da08aded3828046228d6e3",
+    "latestFormalRelease": "4.21.4.1"
+  },
+  "requested": "Complete missing and partial behavior then release",
+  "phase": "validated-packaged-ready-for-release",
+  "items": [
+    {
+      "id": "C002",
+      "feature": "智慧社区课表作为主课表源",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C003",
+      "feature": "合工大教务UniApp课表源",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C004",
+      "feature": "指间工大课表源",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C005",
+      "feature": "教务2课表视图",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C006",
+      "feature": "好友课表申请、查看与切换",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C008",
+      "feature": "所有教学周的缩略课表总览",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C009",
+      "feature": "课表双指缩放与恢复高度",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C010",
+      "feature": "周次悬浮按钮拖动切周与回弹",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C011",
+      "feature": "课表空白双击直接添加日程",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C013",
+      "feature": "冲突课程合并后的逐项选择",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C017",
+      "feature": "当天课程结束后自动切换明日课程",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C018",
+      "feature": "法定休息日隐藏当天课程",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C020",
+      "feature": "电费信息卡直接显示余额",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C021",
+      "feature": "校园网卡直接显示实时信息",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C022",
+      "feature": "新出成绩计数提示",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicRecordsStore.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C023",
+      "feature": "聚焦内气象预警卡",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C024",
+      "feature": "下拉统一刷新课表/会话/生活信息",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C025",
+      "feature": "公共日程与公共网课DDL读取展示",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C026",
+      "feature": "公共网课条目直达学习平台或网页",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C029",
+      "feature": "截止事项剩余小时与明日标识",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C030",
+      "feature": "日程编辑器楼宇/学习平台快捷选择",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift"
+      ],
+      "testGroups": [
+        "NovemberUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C031",
+      "feature": "新建日程联动DeepSeek预设JSON提示词",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift"
+      ],
+      "testGroups": [
+        "NovemberUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C034",
+      "feature": "跳过教务系统登录其他校园平台",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginServiceScopeView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CASLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C035",
+      "feature": "登录前展示教务网络连通状态",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginServiceScopeView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CASLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "C036",
+      "feature": "登录模式对应的服务刷新范围说明",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginServiceScopeView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CASLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S002",
+      "feature": "自选课程参与平均分与小数位设置",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicRecordsStore.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S003",
+      "feature": "智慧社区成绩及班级/专业排名",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicParityViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicParityAPI.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S005",
+      "feature": "校务行独立登录与数据页",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicParityViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicParityAPI.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S007",
+      "feature": "教务处公共考试通知/全校考试安排",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicParityViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicParityAPI.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S009",
+      "feature": "逐课程修读状态和方案外课程",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S010",
+      "feature": "全校培养方案搜索与他人方案详情",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S011",
+      "feature": "选课确认/学分确认结果",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S014",
+      "feature": "实际选课和退课提交",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S015",
+      "feature": "已选课程清单与官方冲突预览（另有原生预览）",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S016",
+      "feature": "教师评教任务、状态及提交",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S018",
+      "feature": "隐藏批次代号及学院/专业搜索",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S019",
+      "feature": "申请专业和撤销申请",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S020",
+      "feature": "笔面试安排、申请成绩及排名详情",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicOperationsViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicOperations.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S022",
+      "feature": "开课搜索的学期/教学班条件与课表形式结果",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S023",
+      "feature": "学期课程汇总的未排课/教材信息",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S025",
+      "feature": "教室全天时间轴及整学期周课表",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S027",
+      "feature": "挂科率结果分页与原版细节展示",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S030",
+      "feature": "证件照与行政班同学通讯录",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicContactsView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicContactsAPI.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S032",
+      "feature": "原生账单分页、详情、关键词及日期范围查询",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S033",
+      "feature": "消费统计、消费地点分析及预测",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S038",
+      "feature": "原生一键登录/注销及连通性测试",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S039",
+      "feature": "历史月费用量及学期网络统计",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S041",
+      "feature": "呱呱花洒MAC绑定/备注及启停状态",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S042",
+      "feature": "洗浴使用码查看/重置、账单、备用loginCode登录",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S046",
+      "feature": "借阅记录关键词频次与聚合分析",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/LibraryKeywordAnalysisView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LibraryServiceView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S048",
+      "feature": "社区场地/座位列表与分页",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CommunityAppointmentView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S049",
+      "feature": "场地可用时段和可预约过滤",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CommunityAppointmentView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S053",
+      "feature": "第二课堂活动分页与活动详情",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S056",
+      "feature": "办事大厅事项分类/搜索列表",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusDirectoryViews.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S061",
+      "feature": "实时天气及官方详情链接",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusWeatherClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S062",
+      "feature": "默认内嵌实时气象预警",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusWeatherClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S064",
+      "feature": "校区新闻、教务公告、学院新闻分类/搜索与分页",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusNewsHubView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNewsClient.swift"
+      ],
+      "testGroups": [
+        "CampusNewsAndShortcutsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S065",
+      "feature": "就业招聘/宣讲等搜索、类别和分页",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusDirectoryViews.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S066",
+      "feature": "本科招生地区/年份计划与录取分数线",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AdmissionsQueryView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S068",
+      "feature": "事务跟踪提案板、状态流程和筛选",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusProposalView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S069",
+      "feature": "开发者通知收件箱、已读计数/红点",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DeveloperNotificationsView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S070",
+      "feature": "学业/考试/成绩趋势与排名报告",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ExtendedTermReportView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S071",
+      "feature": "消费预测、餐饮/地点统计报告",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ExtendedTermReportView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S072",
+      "feature": "图书馆、宿舍评分、校园网生活报告",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ExtendedTermReportView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S073",
+      "feature": "报告准备、学期范围、全选与图片导出分享",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ExtendedTermReportView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S074",
+      "feature": "云日程浏览/搜索/排序/下载到本地",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CloudCommunityClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/SupabasePublicConfiguration.swift"
+      ],
+      "testGroups": [
+        "CloudCommunityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S075",
+      "feature": "校园邮箱注册/登录、云贡献及我的管理",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CloudCommunityClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/SupabasePublicConfiguration.swift"
+      ],
+      "testGroups": [
+        "CloudCommunityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S076",
+      "feature": "已下载云日程管理与适用范围过滤",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CloudCommunityClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/SupabasePublicConfiguration.swift"
+      ],
+      "testGroups": [
+        "CloudCommunityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S078",
+      "feature": "第三方常用应用完整快捷集合",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ThirdPartyShortcutsView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/ThirdPartyShortcut.swift"
+      ],
+      "testGroups": [
+        "CampusNewsAndShortcutsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S080",
+      "feature": "教学班同学姓名/学号搜索与分组统计",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S081",
+      "feature": "教室名称检索与课程地点预填",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S082",
+      "feature": "空教室多楼栋/多楼层选择和分页",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S083",
+      "feature": "搜索所得教学班的完整课程资料",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicSearchViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicSearchAPI.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S084",
+      "feature": "学号点击复制和敏感字段显隐",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AcademicContactsView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicContactsAPI.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S085",
+      "feature": "合肥慧新洗衣缴费专用入口",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "S086",
+      "feature": "楼层图片正确资源路径与教室编号高亮",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/BuildingFloorMapView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T002",
+      "feature": "手动自定义主题色和色彩调节",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AppearanceDetailSettings.swift",
+        "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ThemeImageColorExtractor.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T003",
+      "feature": "由照片或系统壁纸提取主题色",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AppearanceDetailSettings.swift",
+        "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ThemeImageColorExtractor.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T004",
+      "feature": "纯黑深色背景开关实际生效",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AppearanceDetailSettings.swift",
+        "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ThemeImageColorExtractor.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T005",
+      "feature": "液态玻璃和层级模糊可独立关闭",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AppearanceDetailSettings.swift",
+        "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ThemeImageColorExtractor.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T006",
+      "feature": "转场级别、速率、默认动画和容器形变配置",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/AppearanceDetailSettings.swift",
+        "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ThemeImageColorExtractor.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T008",
+      "feature": "底栏标签显示策略开关",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/RootView.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T009",
+      "feature": "新版悬浮底栏样式与安全边距配置",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/RootView.swift"
+      ],
+      "testGroups": [
+        "AppearancePreferencesTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T010",
+      "feature": "课表方格高度、文字大小、内边距和透明度调节",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T012",
+      "feature": "方格教师显示的条件模式",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T013",
+      "feature": "默认课表来源设置的实际切换",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleSourcesView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleSourceClient.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T014",
+      "feature": "自动学期、手动semesterID与手动开始日期",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/AcademicPortal.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T017",
+      "feature": "聚焦首卡各数据项显示开关",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Models/PublicCampusEvent.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/QWeatherPublicPage.swift"
+      ],
+      "testGroups": [
+        "CoreParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T020",
+      "feature": "校园网流量配额设置实际生效",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T022",
+      "feature": "使用默认一卡通密码开关实际生效",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/LifeServicesClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LifeServicesViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusServiceClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicParityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T025",
+      "feature": "刷新登录状态覆盖范围",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/LoginServiceScopeView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CASLoginClient.swift"
+      ],
+      "testGroups": [
+        "AcademicUpgradeTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T026",
+      "feature": "数据上报设置与实际实现",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CloudCommunityClient.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift"
+      ],
+      "testGroups": [
+        "CloudCommunityTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T028",
+      "feature": "Android ZIP备份兼容及完整应用数据范围",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AndroidBackupImporter.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/BackupApplicationData.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortableZIPReader.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleBackupPayload.swift"
+      ],
+      "testGroups": [
+        "MaintenanceBackupTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T029",
+      "feature": "下载导入游客预设数据源",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AndroidBackupImporter.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/BackupApplicationData.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortableZIPReader.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleBackupPayload.swift"
+      ],
+      "testGroups": [
+        "MaintenanceBackupTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T030",
+      "feature": "缓存清理范围",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AppMaintenance.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/MaintenanceSettingsView.swift"
+      ],
+      "testGroups": [
+        "MaintenanceBackupTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T032",
+      "feature": "版本检查和更新说明",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AppMaintenance.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/MaintenanceSettingsView.swift"
+      ],
+      "testGroups": [
+        "MaintenanceBackupTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T033",
+      "feature": "开发诊断与运行环境",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AppMaintenance.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/MaintenanceSettingsView.swift"
+      ],
+      "testGroups": [
+        "MaintenanceBackupTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T036",
+      "feature": "网页正文注入与摘要发送步骤",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T039",
+      "feature": "当前网页刷新",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T040",
+      "feature": "页面内查找与上/下一匹配",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T041",
+      "feature": "复制/分享当前URL或初始URL",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T042",
+      "feature": "从当前网页直接加入收藏",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T044",
+      "feature": "网址工具自定义Cookie输入",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PortalBrowserController.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift"
+      ],
+      "testGroups": [
+        "PortalBrowserToolsTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "T048",
+      "feature": "OCR模型下载、外部模型导入与删除",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CaptchaModelStore.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CASCaptchaRecognizer.swift"
+      ],
+      "testGroups": [
+        "CaptchaModelManagementTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P001",
+      "feature": "扫描CAS二维码并确认网页登录",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScannerService.swift"
+      ],
+      "testGroups": [
+        "PlatformScannerWidgetTests",
+        "ZhiJianScannerTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P002",
+      "feature": "从相册识别二维码",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScannerService.swift"
+      ],
+      "testGroups": [
+        "PlatformScannerWidgetTests",
+        "ZhiJianScannerTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P003",
+      "feature": "扫码结果复制、打开网页和Wi-Fi辅助操作",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/ScannerService.swift"
+      ],
+      "testGroups": [
+        "PlatformScannerWidgetTests",
+        "ZhiJianScannerTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P004",
+      "feature": "今日/明日聚焦课程列表桌面组件",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/Shared/FocusWidgetSnapshot.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/FocusWidgetPublisher.swift",
+        "ios/HFUTSchedule/HFUTScheduleWidget/FocusScheduleWidget.swift"
+      ],
+      "testGroups": [
+        "PlatformScannerWidgetTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P005",
+      "feature": "聚焦组件字号配置与组件内刷新按钮",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/Shared/FocusWidgetSnapshot.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/FocusWidgetPublisher.swift",
+        "ios/HFUTSchedule/HFUTScheduleWidget/FocusScheduleWidget.swift"
+      ],
+      "testGroups": [
+        "PlatformScannerWidgetTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P008",
+      "feature": "课程和考试的实时活动/持续进度通知",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CourseLiveActivityManager.swift",
+        "ios/HFUTSchedule/HFUTScheduleWidget/CourseLiveActivityWidget.swift",
+        "ios/HFUTSchedule/HFUTSchedule/HFUTScheduleApp.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P009",
+      "feature": "课程提醒按真实日期、教学周及考试安排",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CourseNotificationManager.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PlatformScheduleOccurrence.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/PlatformOccurrenceDetailView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P010",
+      "feature": "点击课程系统提醒直达对应课程详情",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CourseNotificationManager.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PlatformScheduleOccurrence.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/PlatformOccurrenceDetailView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P011",
+      "feature": "按整学期实际排课日期导出系统日历",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CalendarIntegrationView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P012",
+      "feature": "选择系统日历账号及更新/清除已导出的学期课程",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CalendarIntegrationView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P013",
+      "feature": "考试、聚焦日程和云日程单项加入系统日历",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CalendarIntegrationView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/CloudCommunityView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P014",
+      "feature": "系统快捷指令覆盖范围和后台执行",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/AppShortcuts.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/PlatformQuickActions.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Services/CampusNetworkLoginClient.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P016",
+      "feature": "兼容原版深链目标和查询参数",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Models/PlatformDeepLink.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/PlatformDeepLinkView.swift"
+      ],
+      "testGroups": [
+        "PlatformIntegrationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P017",
+      "feature": "应用内启动台/返回栈切换与快捷外观面板",
+      "baselineStatus": "missing",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/PlatformNavigationCoordinator.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/PlatformLaunchpadView.swift",
+        "ios/HFUTSchedule/HFUTSchedule/RootView.swift"
+      ],
+      "testGroups": [
+        "PlatformNavigationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    },
+    {
+      "id": "P020",
+      "feature": "异常详情诊断界面",
+      "baselineStatus": "partial",
+      "state": "implemented-integrated-tests-passed-device-acceptance-pending",
+      "evidence": [
+        "ios/HFUTSchedule/HFUTSchedule/Services/PlatformDiagnosticsStore.swift",
+        "ios/HFUTSchedule/HFUTSchedule/Views/PlatformDiagnosticsView.swift"
+      ],
+      "testGroups": [
+        "PlatformNavigationTests"
+      ],
+      "verificationBoundary": "Source implementation and integrated build/tests; school-account APIs and signed physical device remain unverified where applicable."
+    }
+  ],
+  "lastCheckpoint": "2026-11-24 final integration",
+  "integrationEvidence": {
+    "build4": "passed",
+    "tests7": {
+      "executed": 271,
+      "failures": 1,
+      "remainingFailure": "Simulator Vision synthetic QR InvalidTransition; isolated repro and fallback in progress"
+    }
+  },
+  "release": {
+    "version": "1.3.0",
+    "build": 7,
+    "sdk": "iOS 27.2",
+    "date": "2026-11-24"
+  },
+  "validation": {
+    "fullSuite": "build-parity-integration-10-tests.log: 288 tests, 0 failures, TEST SUCCEEDED; Xcode 27.2, iOS 27.2 Simulator",
+    "liveSchoolAccount": false,
+    "resignedPhysicalDevice": false,
+    "scope": "197 baseline audit records; this file tracks exactly 119 missing/partial records, not a percent completion score.",
+    "deviceReleaseBuild": "BUILD SUCCEEDED; App and Widget iphoneos27.2, 1.3.0 build7",
+    "artifacts": "1.3.0-validation.json"
+  }
+}

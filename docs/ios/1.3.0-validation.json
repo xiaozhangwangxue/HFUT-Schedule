@@ -1,0 +1,66 @@
+{
+  "date": "2026-11-24",
+  "version": "1.3.0",
+  "build": 7,
+  "toolchain": {
+    "Xcode": "27.2 beta",
+    "build": "27B5019j",
+    "deviceSDK": "iphoneos27.2",
+    "simulatorSDK": "iphonesimulator27.2",
+    "minimumOS": "17.0"
+  },
+  "automatedTests": {
+    "total": 288,
+    "failures": 0,
+    "result": "TEST SUCCEEDED",
+    "device": "iPhone 18 Pro / iOS 27.2 Simulator",
+    "log": "build-parity-integration-10-tests.log",
+    "commands": [
+      "xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule -sdk iphonesimulator27.2 -destination platform=iOS Simulator,id=FE85ACCE-693F-4DA5-ACEA-11F8C56EE0F0 -derivedDataPath build/Captcha27_2 CODE_SIGNING_ALLOWED=NO test"
+    ]
+  },
+  "deviceReleaseBuild": {
+    "result": "BUILD SUCCEEDED",
+    "sdk": "iphoneos27.2",
+    "signed": false,
+    "log": "build-parity-1.3.0-release.log"
+  },
+  "visualChecks": {
+    "actualAppLaunch": "Main focus screen rendered after launch (headless simulator screenshot); no school login",
+    "report": "Actual exported PNG from synthetic report fixture inspected",
+    "electricity": "Both campus pages rendered with synthetic saved meters and explicitly labelled sample balances",
+    "interactiveSimulatorGUI": "Not available in installed minimal Xcode; system open-URL confirmation prevented route interaction; routing verified by code and tests rather than claiming interactive QA"
+  },
+  "publicEndpointChecks": [
+    "Official Hf/XC public news and academic notices parsed by production Swift parser",
+    "Official department directory parsed",
+    "Official admissions history: conditions, CSRF/cookie and detail response verified; plan currently returned no conditions",
+    "Official QWeather public current conditions and warning pages parsed; no upstream signing private key used"
+  ],
+  "bundleAssertions": [
+    "App and embedded Widget: version1.3.0/build7/DTSDKName=iphoneos27.2",
+    "ScheduleSnapshot.json equals []",
+    "stu.json and verified captcha.traineddata and OCR notices present",
+    "No provisioning profiles",
+    "Ad-hoc metadata has the same first shared Keychain access group in app and widget",
+    "ZIP integrity passed"
+  ],
+  "artifacts": [
+    {
+      "file": "HFUTSchedule-iOS-1.3.0-resignable.ipa",
+      "bytes": 13342253,
+      "sha256": "c39e147d2df2d47e23c1dcda42c6214ee7df0d9bd9f9cf69c51d087145f110d5"
+    },
+    {
+      "file": "HFUTSchedule-iOS-1.3.0-unsigned.ipa",
+      "bytes": 13283127,
+      "sha256": "ff46bd1ead2ae76b9603ab029224cc9ef990d8f7c53be375e99223078235f1c0"
+    }
+  ],
+  "unverified": [
+    "Real school-account queries and server mutations",
+    "Real Supabase account activation/contribution",
+    "Physical re-signed device widget ACK/refresh and Live Activity",
+    "Physical iPhone Duo windows"
+  ]
+}

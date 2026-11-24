@@ -42,7 +42,7 @@ struct WorkServiceView: View {
         List {
             Section("就业服务") {
                 ForEach(entries) { entry in
-                    NavigationLink {
+                    AppNavigationLink {
                         PortalWebView(url: entry.url)
                     } label: {
                         HStack(spacing: 12) {
@@ -66,7 +66,7 @@ struct WorkServiceView: View {
         .navigationTitle("就业服务")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
+                AppNavigationLink {
                     PortalWebView(url: entries[0].url)
                 } label: {
                     Text("就业系统")
@@ -147,7 +147,7 @@ struct BusScheduleView: View {
                let advisory = CampusBusService.holidayAdvisory(for: holidayDay),
                let feature = FeatureCatalog.all.first(where: { $0.nativeDestination == .holidays }) {
                 Section {
-                    NavigationLink {
+                    AppNavigationLink {
                         FeatureDetailView(feature: feature)
                     } label: {
                         Label(advisory, systemImage: "calendar.badge.exclamationmark")
@@ -188,7 +188,7 @@ struct BusScheduleView: View {
         .navigationTitle("校车")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
+                AppNavigationLink {
                     PortalWebView(url: CampusBusService.pageURL)
                 } label: {
                     Image(systemName: "network")

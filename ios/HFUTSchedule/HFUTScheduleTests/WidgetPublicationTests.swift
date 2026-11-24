@@ -20,6 +20,7 @@ final class WidgetPublicationTests: XCTestCase {
         struct Attempt {
             let courses: [WidgetCourseSnapshot]
             let termStart: Date?
+            let forcesNewRevision: Bool
         }
         var attempts: [Attempt] = []
         var reloadCount = 0
@@ -27,13 +28,33 @@ final class WidgetPublicationTests: XCTestCase {
         var termStart: Date? = Date(timeIntervalSince1970: 1_800_000_000)
 
         func store(at url: URL, enabled: Bool = true) -> ScheduleStore {
-            ScheduleStore(fileURL: url, syncWidgets: enabled, snapshotPublisher: { [self] courses, termStart in
-                attempts.append(Attempt(courses: courses, termStart: termStart))
+            ScheduleStore(fileURL: url, syncWidgets: enabled, snapshotPublisher: { [self] courses, termStart, forceNewRevision in
+                attempts.append(Attempt(courses: courses, termStart: termStart, forcesNewRevision: forceNewRevision))
                 return allowsWrite
             }, timelineReloader: { [self] in
                 reloadCount += 1
             }, termStartResolver: { [self] _ in termStart })
         }
+    }
+
+    @MainActor
+    func testEverySuccessfulMutationForcesNewRevisionBeforeReload() throws {
+        let recorder = PublicationRecorder()
+        let store = recorder.store(at: try temporaryDirectory().appendingPathComponent("mutations.json"))
+        let first = course()
+        XCTAssertTrue(store.add(first))
+        XCTAssertTrue(store.replaceAcademicCourses(with: [first]))
+        XCTAssertTrue(store.replaceAcademicCourses(with: [first]), "Identical resync must also force a fresh timeline read")
+        XCTAssertTrue(store.remove(id: first.id))
+        XCTAssertTrue(store.replace(with: [first]))
+        XCTAssertTrue(store.removeAll())
+        XCTAssertEqual(recorder.attempts.count, 6)
+        XCTAssertTrue(recorder.attempts.allSatisfy(\.forcesNewRevision))
+        XCTAssertEqual(recorder.reloadCount, 6)
+        XCTAssertTrue(store.refreshWidgetSnapshot())
+        XCTAssertEqual(recorder.attempts.last?.forcesNewRevision, false, "An ordinary foreground republish can reuse an acknowledged revision")
+        XCTAssertTrue(store.refreshWidgetSnapshot(forceNewRevision: true))
+        XCTAssertEqual(recorder.attempts.last?.forcesNewRevision, true)
     }
 
     @MainActor

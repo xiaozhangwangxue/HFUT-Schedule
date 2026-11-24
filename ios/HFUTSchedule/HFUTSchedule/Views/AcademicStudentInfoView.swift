@@ -1,7 +1,11 @@
 import SwiftUI
+import UIKit
 
 struct AcademicStudentInfoView: View {
     @EnvironmentObject private var studentStore: AcademicStudentStore
+    @AppStorage("studentInfoShowsSensitiveFields") private var showsSensitive = false
+    @State private var photo: UIImage?
+    @State private var photoError: String?
 
     var body: some View {
         Group {
@@ -9,16 +13,24 @@ struct AcademicStudentInfoView: View {
                 List {
                     Section {
                         HStack(spacing: 14) {
-                            GlassIcon(systemName: "person.crop.circle.fill", tint: AppTheme.violet, size: 56)
+                            if let photo {
+                                Image(uiImage: photo).resizable().scaledToFill().frame(width: 56, height: 72).clipShape(RoundedRectangle(cornerRadius: 9))
+                            } else {
+                                GlassIcon(systemName: "person.crop.circle.fill", tint: AppTheme.violet, size: 56)
+                            }
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(info.name.isEmpty ? "在校生" : info.name)
                                     .font(.title3.bold())
-                                Text(info.studentID)
+                                Button { UIPasteboard.general.string = info.studentID } label: { Text(info.studentID) }
                                     .font(.subheadline.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
                         }
                         .padding(.vertical, 6)
+                        Toggle("显示敏感信息", isOn: $showsSensitive)
+                        AppNavigationLink { AcademicAdministrativeContactsView() } label: { Label("行政班同学通讯录", systemImage: "person.2") }
+                        if let photoError { Text(photoError).font(.caption).foregroundStyle(.secondary) }
+                        Button("刷新学籍照片", systemImage: "arrow.clockwise") { Task { await loadPhoto() } }
                     }
 
                     fieldSection("学籍信息", keys: ["院系", "院系名称", "学院", "专业", "专业名称", "专业方向", "行政班", "班级", "校区", "培养方案", "学籍状态", "学历层次", "学制", "入学日期", "预计毕业日期"])
@@ -33,7 +45,7 @@ struct AcademicStudentInfoView: View {
                     if !remaining.isEmpty {
                         Section("其他信息") {
                             ForEach(remaining, id: \.key) { item in
-                                LabeledContent(item.key, value: item.value)
+                                LabeledContent(item.key, value: displayedValue(item.value, key: item.key)).textSelection(.enabled)
                             }
                         }
                     }
@@ -48,6 +60,7 @@ struct AcademicStudentInfoView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .task { if studentStore.info != nil { await loadPhoto() } }
     }
 
     @ViewBuilder
@@ -60,11 +73,26 @@ struct AcademicStudentInfoView: View {
             if !rows.isEmpty {
                 Section(title) {
                     ForEach(rows, id: \.key) { item in
-                        LabeledContent(item.key, value: item.value)
+                        LabeledContent(item.key, value: displayedValue(item.value, key: item.key)).textSelection(.enabled)
                     }
                 }
             }
         }
+    }
+
+    private func displayedValue(_ value: String, key: String) -> String {
+        let sensitive = ["身份证", "证件", "电话", "手机", "邮箱", "邮件", "地址", "密码", "生日", "出生"]
+        return !showsSensitive && sensitive.contains(where: { key.contains($0) }) ? "••••••" : value
+    }
+
+    @MainActor private func loadPhoto() async {
+        photoError = nil
+        do {
+            let mode = AcademicConnectionMode(rawValue: UserDefaults.standard.string(forKey: "academicConnectionMode") ?? "") ?? .direct
+            let data = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies).studentPhoto()
+            guard let image = UIImage(data: data) else { throw AcademicClientError.invalidData("校方未返回可识别的学籍照片") }
+            photo = image
+        } catch { AcademicServiceDiagnostics.record(context: "学籍照片读取", error: error); photoError = error.localizedDescription }
     }
 
     private func remainingFields(_ info: AcademicStudentInfo) -> [(key: String, value: String)] {
@@ -84,7 +112,7 @@ struct AcademicPasswordChangeLink: View {
     }
 
     var body: some View {
-        NavigationLink {
+        AppNavigationLink {
             PortalWebView(url: AcademicPortal.url("my/account", mode: selectedMode))
                 .navigationTitle("修改教务密码")
                 .navigationBarTitleDisplayMode(.inline)

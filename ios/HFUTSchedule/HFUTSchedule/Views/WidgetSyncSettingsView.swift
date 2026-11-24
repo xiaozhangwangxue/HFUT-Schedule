@@ -21,7 +21,7 @@ struct WidgetSyncSettingsView: View {
                     Text(message).font(.footnote).foregroundStyle(.secondary)
                 }
                 Button("重新发送现有课表", systemImage: "arrow.clockwise") {
-                    scheduleStore.refreshWidgetSnapshot()
+                    scheduleStore.refreshWidgetSnapshot(forceNewRevision: true)
                     updateStatus()
                 }
             } header: {

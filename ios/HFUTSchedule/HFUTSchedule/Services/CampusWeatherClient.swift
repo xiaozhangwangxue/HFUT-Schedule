@@ -83,14 +83,17 @@ struct CampusWeatherClient {
     typealias Transport = (URLRequest) async throws -> (Data, URLResponse)
     private let transport: Transport
     private let qWeather: QWeatherConfiguration?
+    private let usesPublicPage: Bool
 
     init(qWeather: QWeatherConfiguration? = nil, session: URLSession = .shared) {
         self.qWeather = qWeather
+        usesPublicPage = true
         transport = { try await session.data(for: $0) }
     }
 
-    init(qWeather: QWeatherConfiguration? = nil, transport: @escaping Transport) {
+    init(qWeather: QWeatherConfiguration? = nil, usesPublicPage: Bool = false, transport: @escaping Transport) {
         self.qWeather = qWeather
+        self.usesPublicPage = usesPublicPage
         self.transport = transport
     }
 
@@ -106,6 +109,20 @@ struct CampusWeatherClient {
                     warningStatus: "和风天气连接未成功，请打开官方预警页查看当前预警。"
                 )
             }
+        }
+        if usesPublicPage {
+            do {
+                let observationData = try await request(URLRequest(url: location.officialWeatherURL))
+                let observation = try QWeatherPublicPage.observation(String(decoding: observationData, as: UTF8.self))
+                let warningState: CampusWeatherWarningState
+                do {
+                    let data = try await request(URLRequest(url: location.officialWarningURL))
+                    warningState = .available(try QWeatherPublicPage.warnings(String(decoding: data, as: UTF8.self)))
+                } catch { warningState = .unavailable("预警读取暂未成功，可打开官方预警页面。") }
+                return CampusWeatherReport(observation: observation, source: "和风天气", detailURL: location.officialWeatherURL,
+                    warningURL: location.officialWarningURL, warnings: warningState)
+            } catch is CancellationError { throw CancellationError() }
+            catch { try Task.checkCancellation() }
         }
         return try await fetchOpenMeteo(
             location: location,

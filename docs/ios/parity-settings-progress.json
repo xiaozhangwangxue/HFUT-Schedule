@@ -1,0 +1,124 @@
+{
+  "baseline": "5a129136d859fb019e98de74aebd3049ba14ce11",
+  "upstream": "9670096e15dd04d561da08aded3828046228d6e3",
+  "implementedIDs": [
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T010",
+    "T012",
+    "T017",
+    "T025",
+    "T026",
+    "T028",
+    "T029",
+    "T030",
+    "T032",
+    "T033",
+    "T036",
+    "T039",
+    "T040",
+    "T041",
+    "T042",
+    "T044",
+    "T048",
+    "S074",
+    "S075",
+    "S076",
+    "S064",
+    "S078"
+  ],
+  "rootIntegrationIDs": [
+    "T008",
+    "T009",
+    "T013",
+    "T014",
+    "T020",
+    "T022"
+  ],
+  "features": {
+    "appearance": "Four color styles, hue/saturation/manual/photo color, effective black/glass/layer blur, page entrance effect/speed and container settings, timetable and conditional-teacher preferences with legacy migration.",
+    "browser": "Current WKWebView back/forward/reload/find, current/original URL copy/share/open/favorite, selected-origin Cookie tools. Existing WebVPN/OCR chain retained.",
+    "maintenance": "Stable iOS releases filtered and numerically compared from GitHub; release history, redacted diagnostics share, WebKit/network/cache cleanup.",
+    "ocr": "Upstream-download/local import with actual Tesseract LSTM validation, cancellation, atomic replacement and deletion falling back to bundled model. Explicit recognizer injection including nil remains authoritative.",
+    "backup": "Version 3 JSON adds grades/exams/student/favorites/background/adjustments/source caches/preferences; versions 2/legacy course arrays still accepted. Restore preview, safety backup and rollback. ZIP stored/deflated CRC/path/size checks; Android DataStore protobuf, old XML, Room events/favorites/adjustments, academic timetable/grade/exam/student cache, UniApp exam migration. Guest preset downloads through same pipeline.",
+    "cloud": "Upstream Supabase registration/password login/check/refresh, Keychain session; public event list, search/sort/reverse/class-campus filters; imported local records and version comparison; clone/overwrite, contribution creation/edit/deletion, download-count RPC. Anonymous opt-controlled usage sends no personal student fields.",
+    "news": "Native hub mirrors all 7 Hefei and 19 Xuancheng academic categories, Xuancheng campus notices, original search API, title/date filtering, real numbered pagination and dynamically parsed official department directory.",
+    "thirdParty": "Complete 12-card StarterScreen collection; upstream-confirmed Alipay schemes with HTTPS fallbacks, official websites or verified Apple App Store entries for remaining apps, copy/share link and manual mini-program search help."
+  },
+  "verification": {
+    "integration": "Root build-parity-integration-4.log BUILD SUCCEEDED, later tests6 compiled all CloudCommunity files too.",
+    "tests6Passed": [
+      "AppearancePreferencesTests (2)",
+      "MaintenanceBackupTests (4)",
+      "PortalBrowserToolsTests (4)",
+      "CloudCommunityTests (3)"
+    ],
+    "tests6FailureFixed": "Old CASCaptchaRecognizer explicit-nil missing-model test; default managed lookup now uses a separate no-argument initializer.",
+    "newAwaitingRun": [
+      "CampusNewsAndShortcutsTests (4)"
+    ],
+    "guestPreset": "Original Gitee archive URL fetched successfully; structure checked only. No public preset contents copied to the repository.",
+    "notVerified": "Live school-account/API mutations, Supabase account activation and actual contributed data, re-signed device behavior and on-device visual flows.",
+    "newsLiveHTML": {
+      "date": "2026-11-24",
+      "urls": [
+        "https://jwc.hfut.edu.cn/tzgg/jxbzl.htm",
+        "https://xcjwb.hfut.edu.cn/1177/list1.htm",
+        "https://xc.hfut.edu.cn/1955/list.htm",
+        "https://www.hfut.edu.cn/jgsz/yxsz.htm"
+      ],
+      "nativeParserResults": [
+        "8 items / 122 pages",
+        "14 items / 10 pages",
+        "14 items / 73 pages",
+        "26 departments"
+      ],
+      "method": "Actual downloaded public HTML parsed by the same CampusNewsClient Swift implementation, compiled against the existing structural DOM reader. No article contents copied into repository fixtures."
+    },
+    "tests7Passed": [
+      "CASCaptchaRecognizerTests (4, includes explicit nil missing-model contract)",
+      "CaptchaModelManagementTests (1)",
+      "CloudCommunityTests (4, includes contribution mutation/RPC contract)"
+    ],
+    "modelContractRegression": "Fixed and verified by root tests7: explicit modelDirectory:nil returns missingModel; no-argument recognizer dynamically selects managed/bundled model."
+  },
+  "intentionalPlatformDifferences": [
+    "iOS cannot read system wallpaper. User-selected photo supplies theme extraction.",
+    "System interactive navigation timing remains controlled by iOS; speed preference controls content entrance animation.",
+    "Android credentials, executable/platform files and unrelated Android caches are not migrated into iOS storage.",
+    "QWeather upstream uses an embedded PKCS8 signing private key. It was not duplicated; user-supplied weather configuration remains supported.",
+    "Analytics uses anonymous placeholders instead of uploading original name/student-ID/department values."
+  ],
+  "hooks": {
+    "mainEntry": "CloudCommunityView()",
+    "maintenance": "MaintenanceSettingsView()",
+    "launch": "await CloudCommunityClient.shared.reportAnonymousUsageIfAllowed()",
+    "backupNotification": "appBackupRestored",
+    "bottomBarStyle": "appBottomBarStyle: system/floating, appBottomBarInset default 8",
+    "focus": "focusShowsCard, focusShowsElectric, focusShowsNetwork, focusShowsTomorrow, focusShowsWeather (all true by default)",
+    "news": "CampusNewsHubView()",
+    "thirdParty": "ThirdPartyShortcutsView()"
+  },
+  "thirdPartyPrimarySources": [
+    "https://apps.apple.com/cn/app/id1302204874",
+    "https://apps.apple.com/cn/app/id1563408569",
+    "https://apps.apple.com/cn/app/id1207509945",
+    "https://apps.apple.com/cn/app/id414478124",
+    "https://www.yuketang.cn/",
+    "https://www.icourse163.org/",
+    "https://i.chaoxing.com/",
+    "https://github.com/AlipayDocs/open-docs/blob/main/support/%E6%94%AF%E4%BB%98%E5%AE%9D%E5%B0%8F%E7%A8%8B%E5%BA%8F/%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90/%E5%B0%8F%E7%A8%8B%E5%BA%8Fscheme%E9%93%BE%E6%8E%A5%E4%BB%8B%E7%BB%8D.md"
+  ],
+  "finalRootIntegration": {
+    "date": "2026-11-24",
+    "sdk": "iOS 27.2",
+    "tests": 288,
+    "failures": 0,
+    "deviceReleaseBuild": "BUILD SUCCEEDED",
+    "liveAccount": false,
+    "physicalDevice": false
+  }
+}

@@ -2,13 +2,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ScheduleBackupDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
+    static var readableContentTypes: [UTType] { [.json, .zip] }
 
     var payload: ScheduleBackupPayload
     var courses: [Course] { payload.courses }
 
-    init(courses: [Course], events: [CustomEvent] = []) {
-        payload = ScheduleBackupPayload(courses: courses, events: events, preferences: BackupPreferences.capture())
+    @MainActor init(courses: [Course], events: [CustomEvent] = []) {
+        payload = ScheduleBackupPayload(courses: courses, events: events, preferences: BackupPreferences.capture(), applicationData: BackupApplicationData.capture())
     }
 
     init(configuration: ReadConfiguration) throws {

@@ -17,6 +17,7 @@ final class CASLoginClient: @unchecked Sendable {
     private static let webVPNAcademicLogin = "https://webvpn.hfut.edu.cn/http/77726476706e69737468656265737421faef469034247d1e760e9cb8d6502720ede479/eams5-student/neusoft-sso/login"
 
     private let mode: AcademicConnectionMode
+    private let excludesAcademic: Bool
     private let cookieStorage: HTTPCookieStorage
     private let session: URLSession
     private var webVPNFlavoring: String?
@@ -27,8 +28,9 @@ final class CASLoginClient: @unchecked Sendable {
     private var directLoginCookieHeader: String?
     private var directCaptchaCookieHeader: String?
 
-    init(mode: AcademicConnectionMode = .direct) {
+    init(mode: AcademicConnectionMode = .direct, excludesAcademic: Bool = false) {
         self.mode = mode
+        self.excludesAcademic = excludesAcademic
         cookieStorage = .shared
         let configuration = URLSessionConfiguration.ephemeral
         // Every Cookie header is attached explicitly below. This mirrors the
@@ -111,7 +113,7 @@ final class CASLoginClient: @unchecked Sendable {
     }
 
     private func fetchExecution() async throws -> (String, [HTTPCookie]) {
-        let loginURL = try Self.directLoginURL()
+        let loginURL = try Self.directLoginURL(includeService: !excludesAcademic)
         let (loginData, response) = try await data(
             for: URLRequest(url: loginURL),
             accepted: 200..<300,
@@ -175,6 +177,25 @@ final class CASLoginClient: @unchecked Sendable {
         }
         guard (200..<400).contains(response.statusCode) else {
             throw CASLoginError.http(response.statusCode)
+        }
+
+        if excludesAcademic {
+            if mode == .direct {
+                guard cookieStorage.cookies?.contains(where: {
+                    $0.domain.hasSuffix("cas.hfut.edu.cn") && ["TGC", "CASTGC"].contains($0.name) && !$0.value.isEmpty
+                }) == true else {
+                    throw CASLoginError.invalidCredentials("CAS 未建立登录凭据，请检查账号、密码或验证码")
+                }
+            } else {
+                let url = URL(string: Self.webVPNRoot + "wengine-vpn/cookie?method=get&host=cas.hfut.edu.cn&scheme=http&path=/cas/login")!
+                let (data, _) = try await data(for: URLRequest(url: url), accepted: 200..<300)
+                guard String(data: data, encoding: .utf8)?.contains("TGC=") == true else {
+                    throw CASLoginError.invalidCredentials("WebVPN CAS 尚未建立登录凭据，请检查登录信息")
+                }
+            }
+            let cookies = cookieStorage.cookies ?? []
+            CampusSessionStore.shared.persist(cookies)
+            return cookies
         }
 
         let nextStartURL: URL?
@@ -333,17 +354,19 @@ final class CASLoginClient: @unchecked Sendable {
 
     private func loginURL() throws -> URL {
         if mode == .webVPN {
-            guard let url = URL(string: Self.webVPNRoot + Self.webVPNCASPrefix + "login?service=" + Self.service) else {
+            var parts = URLComponents(string: Self.webVPNRoot + Self.webVPNCASPrefix + "login")!
+            if !excludesAcademic { parts.queryItems = [URLQueryItem(name: "service", value: Self.service)] }
+            guard let url = parts.url else {
                 throw CASLoginError.invalidResponse
             }
             return url
         }
-        return try Self.directLoginURL()
+        return try Self.directLoginURL(includeService: !excludesAcademic)
     }
 
-    private static func directLoginURL() throws -> URL {
+    private static func directLoginURL(includeService: Bool = true) throws -> URL {
         var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
-        components.queryItems = [URLQueryItem(name: "service", value: service)]
+        if includeService { components.queryItems = [URLQueryItem(name: "service", value: service)] }
         guard let url = components.url else { throw CASLoginError.invalidResponse }
         return url
     }

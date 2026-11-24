@@ -28,6 +28,13 @@ struct CustomEvent: Identifiable, Codable, Equatable {
         return copy
     }
 
+    func countdown(at now: Date) -> String {
+        let seconds = end.timeIntervalSince(now)
+        guard seconds > 0 else { return "已截止" }
+        let hours = Int(ceil(seconds / 3600))
+        return hours < 72 ? "剩余 \(hours) 小时" : "剩余 \(Int(ceil(seconds / 86400))) 天"
+    }
+
     func appears(on date: Date, showExpired: Bool, calendar: Calendar = .current) -> Bool {
         if end < date { return showExpired }
         return true

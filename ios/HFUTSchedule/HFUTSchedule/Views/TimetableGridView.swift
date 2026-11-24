@@ -67,7 +67,13 @@ enum ScheduleCalendar {
     }
 
     static func courses(_ courses: [Course], in week: Int) -> [Course] {
+        let monday = startDate(of: week, termStart: termStart(from: courses))
+        let lower = monday.map(HolidayCalendarStore.key)
+        let upper = monday.flatMap { calendar.date(byAdding: .day, value: 7, to: $0) }.map(HolidayCalendarStore.key)
         let filtered = courses.filter { course in
+            if let dates = course.dates, !dates.isEmpty, let lower, let upper {
+                return dates.contains { $0 >= lower && $0 < upper }
+            }
             guard let weeks = course.weekIndices, !weeks.isEmpty else { return true }
             return weeks.contains(week)
         }
@@ -143,17 +149,26 @@ struct TimetableGridView: View {
     let visibleWeekdays: [Int]
     var week: Int = 1
     var termStart: Date? = nil
+    var onCreateAt: ((Int, Double) -> Void)? = nil
     let onSelect: (Course) -> Void
 
     @AppStorage("timetableShowsTimeLine") private var showsTimeLine = false
     @AppStorage(AppSettingsKey.showTeacherInSquare) private var showsTeacher = false
     @AppStorage(AppSettingsKey.mergeConflictingSquares) private var mergesConflicts = false
     @AppStorage(AppSettingsKey.backgroundBlur) private var backgroundBlur = 0.35
+    @AppStorage("calendarHourHeight") private var savedHourHeight = 68.0
+    @AppStorage("calendarTextScale") private var textScale = 1.0
+    @AppStorage("calendarPadding") private var cardPadding = 3.0
+    @AppStorage("calendarOpacity") private var cardOpacity = 0.38
+    @AppStorage("teacherDisplayMode") private var teacherMode = -1
     @State private var now = Date()
+    @State private var conflictingCourses: [Course] = []
+    @State private var showsConflicts = false
+    @State private var pinchStartHeight: Double?
 
     private var startHour: Double { min(8, courses.map { Self.decimalTime($0.startTime) }.min() ?? 8) }
     private var endHour: Double { max(22, courses.map { Self.decimalTime($0.endTime) }.max() ?? 22) }
-    private let hourHeight: CGFloat = 68
+    private var hourHeight: CGFloat { CGFloat(min(140, max(40, savedHourHeight))) }
 
     private var totalHeight: CGFloat { y(for: endHour) }
 
@@ -178,6 +193,18 @@ struct TimetableGridView: View {
             let columnWidth = proxy.size.width / CGFloat(visibleWeekdays.count)
             ZStack(alignment: .topLeading) {
                 timetableBackground
+                Color.clear.contentShape(Rectangle())
+                    .gesture(SpatialTapGesture(count: 2).onEnded { value in
+                        guard let onCreateAt, columnWidth > 0 else { return }
+                        let column = min(visibleWeekdays.count - 1, max(0, Int(value.location.x / columnWidth)))
+                        // Invert the same compressed lunchtime geometry used by cards.
+                        var low = startHour, high = endHour
+                        for _ in 0..<20 {
+                            let middle = (low + high) / 2
+                            if y(for: middle) < value.location.y { low = middle } else { high = middle }
+                        }
+                        onCreateAt(visibleWeekdays[column], (low * 4).rounded() / 4)
+                    })
 
                 TimelineGridShape(columnCount: visibleWeekdays.count)
                     .stroke(.secondary.opacity(0.22), style: StrokeStyle(lineWidth: 0.65, dash: [4, 5]))
@@ -192,19 +219,18 @@ struct TimetableGridView: View {
                     let bottom = y(for: Self.decimalTime(item.course.endTime))
 
                     Group {
-                        if item.course.source == "custom-event" {
-                            Button { onSelect(item.course) } label: {
-                                TimetableCourseCard(course: item.course, mergedCourses: item.mergedCourses, showsTeacher: showsTeacher)
-                            }
+                        if item.mergedCourses.count > 1 {
+                            Button {
+                                conflictingCourses = item.mergedCourses
+                                showsConflicts = true
+                            } label: { courseCard(item) }
+                        } else if item.course.source == "custom-event" {
+                            Button { onSelect(item.course) } label: { courseCard(item) }
                         } else {
-                            SourceAnchoredNavigationLink(
-                                sourceID: "timetable-course-\(item.course.id.uuidString)-\(item.course.weekday)"
-                            ) {
+                            SourceAnchoredNavigationLink(sourceID: "timetable-course-\(item.course.id)-\(item.course.weekday)") {
                                 if item.course.source == "exam" { TimetableExamDestination(courseID: item.course.id) }
                                 else { CourseDetailView(course: item.course) }
-                            } label: {
-                                TimetableCourseCard(course: item.course, mergedCourses: item.mergedCourses, showsTeacher: showsTeacher)
-                            }
+                            } label: { courseCard(item) }
                         }
                     }
                     .buttonStyle(.plain)
@@ -227,9 +253,25 @@ struct TimetableGridView: View {
             }
         }
         .frame(height: totalHeight)
+        .simultaneousGesture(MagnifyGesture().onChanged { value in
+            if pinchStartHeight == nil { pinchStartHeight = savedHourHeight }
+            savedHourHeight = min(140, max(40, (pinchStartHeight ?? 68) * value.magnification))
+        }.onEnded { _ in pinchStartHeight = nil })
+        .confirmationDialog("选择冲突课程", isPresented: $showsConflicts, titleVisibility: .visible) {
+            ForEach(conflictingCourses) { course in
+                Button("\(course.name) · \(course.location)") { onSelect(course) }
+            }
+            Button("取消", role: .cancel) { }
+        }
         .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { date in
             now = date
         }
+    }
+
+    private func courseCard(_ item: PositionedCourse) -> some View {
+        TimetableCourseCard(course: item.course, mergedCourses: item.mergedCourses,
+            showsTeacher: teacherMode < 0 ? showsTeacher : teacherMode == 2 || (teacherMode == 1 && (item.course.details?.teachers.count ?? (item.course.teacher.contains("、") ? 2 : 1)) > 1),
+            textScale: textScale, cardPadding: cardPadding, cardOpacity: cardOpacity)
     }
 
     private var positionedCourses: [PositionedCourse] {
@@ -327,6 +369,9 @@ private struct TimetableCourseCard: View {
     let course: Course
     var mergedCourses: [Course] = []
     var showsTeacher: Bool = false
+    var textScale = 1.0
+    var cardPadding = 3.0
+    var cardOpacity = 0.38
 
     private var tint: Color {
         if course.source == "exam" { return .red }
@@ -336,32 +381,32 @@ private struct TimetableCourseCard: View {
     var body: some View {
         VStack(spacing: 1) {
             Text(course.startTime)
-                .font(.system(size: 8, weight: .semibold, design: .rounded))
+                .font(.system(size: 8 * textScale, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer(minLength: 1)
             Text(title)
-                .font(.system(size: 10.5, weight: .semibold))
+                .font(.system(size: 10.5 * textScale, weight: .semibold))
                 .multilineTextAlignment(.center)
                 .lineLimit(5)
                 .minimumScaleFactor(0.72)
             if !course.location.isEmpty {
                 Text(simplified(course.location))
-                    .font(.system(size: 9, weight: .medium))
+                    .font(.system(size: 9 * textScale, weight: .medium))
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
             }
             Spacer(minLength: 1)
             Text(course.endTime)
-                .font(.system(size: 8, weight: .semibold, design: .rounded))
+                .font(.system(size: 8 * textScale, weight: .semibold, design: .rounded))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 3)
-        .padding(.vertical, 4)
+        .padding(.horizontal, cardPadding)
+        .padding(.vertical, cardPadding + 1)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        .adaptiveGlass(cornerRadius: 7, tint: tint.opacity(0.38), interactive: true)
+        .adaptiveGlass(cornerRadius: 7, tint: tint.opacity(cardOpacity), interactive: true)
     }
 
     private func simplified(_ place: String) -> String {
@@ -384,6 +429,7 @@ private struct TimetableCourseCard: View {
 }
 
 struct WeekStepper: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let week: Int
     let canGoBack: Bool
     let canGoForward: Bool
@@ -391,6 +437,7 @@ struct WeekStepper: View {
     let onCurrent: () -> Void
     let onForward: () -> Void
     let onChoose: () -> Void
+    @GestureState private var dragOffset: CGFloat = 0
 
     var body: some View {
         HStack(spacing: 6) {
@@ -411,25 +458,55 @@ struct WeekStepper: View {
         .frame(height: 52)
         .padding(.horizontal, 12)
         .adaptiveGlass(cornerRadius: 19, tint: AppTheme.accent.opacity(0.08), interactive: true)
+        .offset(x: reduceMotion ? 0 : dragOffset)
+        .simultaneousGesture(DragGesture(minimumDistance: 12)
+            .updating($dragOffset) { value, state, _ in
+                state = max(-60, min(60, value.translation.width * 0.6))
+            }
+            .onEnded { value in
+                guard abs(value.translation.width) > abs(value.translation.height), abs(value.translation.width) > 30 else { return }
+                if value.translation.width < 0, canGoForward { onForward() }
+                if value.translation.width > 0, canGoBack { onBack() }
+            })
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.78), value: dragOffset)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: if canGoForward { onForward() }
+            case .decrement: if canGoBack { onBack() }
+            @unknown default: break
+            }
+        }
     }
 }
 
 struct WeekPickerSheet: View {
     @Binding var selectedWeek: Int
     var maximumWeek: Int = 20
+    var courses: [Course] = []
+    var termStart: Date? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], spacing: 12) {
                     ForEach(1...maximumWeek, id: \.self) { week in
-                        Button("第 \(week) 周") {
+                        Button {
                             selectedWeek = week
                             dismiss()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(week == selectedWeek ? AppTheme.accent : .secondary.opacity(0.32))
+                        } label: {
+                            VStack(spacing: 6) {
+                                HStack {
+                                    Text("第 \(week) 周").font(.caption.weight(.semibold))
+                                    Spacer()
+                                    if week == selectedWeek { Image(systemName: "checkmark.circle.fill") }
+                                }
+                                WeekScheduleThumbnail(courses: ScheduleCalendar.courses(courses, in: week))
+                                    .frame(height: 144)
+                            }.padding(10)
+                                .background(week == selectedWeek ? AppTheme.accent.opacity(0.15) : Color.secondary.opacity(0.06),
+                                    in: RoundedRectangle(cornerRadius: 14))
+                        }.buttonStyle(.plain)
                     }
                 }
                 .padding(18)
@@ -440,11 +517,41 @@ struct WeekPickerSheet: View {
     }
 }
 
+private struct WeekScheduleThumbnail: View {
+    let courses: [Course]
+
+    var body: some View {
+        Canvas { context, size in
+            let column = size.width / 7
+            for day in 0...7 {
+                var path = Path()
+                path.move(to: CGPoint(x: CGFloat(day) * column, y: 0))
+                path.addLine(to: CGPoint(x: CGFloat(day) * column, y: size.height))
+                context.stroke(path, with: .color(.secondary.opacity(0.15)), lineWidth: 0.5)
+            }
+            for course in courses {
+                let start = minute(course.startTime), end = minute(course.endTime)
+                guard (1...7).contains(course.weekday), end > start else { continue }
+                let rect = CGRect(x: CGFloat(course.weekday - 1) * column + 1,
+                    y: CGFloat(max(0, start - 420)) / 1020 * size.height,
+                    width: max(1, column - 2), height: max(3, CGFloat(end - start) / 1020 * size.height))
+                let colors: [Color] = [AppTheme.accent, .teal, .purple, .orange, .pink]
+                context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(colors[abs(course.colorIndex) % colors.count].opacity(0.7)))
+            }
+        }.accessibilityLabel("\(courses.count)个课程时段的缩略课表")
+    }
+
+    private func minute(_ time: String) -> Int {
+        let values = time.split(separator: ":").compactMap { Int($0) }
+        return (values.first ?? 0) * 60 + (values.count > 1 ? values[1] : 0)
+    }
+}
+
 struct CourseDetailSheet: View {
     let course: Course
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             List {
                 Section("课程") {
                     LabeledContent("名称", value: course.name)

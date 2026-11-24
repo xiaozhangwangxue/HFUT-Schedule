@@ -4,6 +4,9 @@ struct OfficialCourseSearchView: View {
     @AppStorage("academicConnectionMode") private var connectionMode = AcademicConnectionMode.direct.rawValue
     @State private var courseName: String
     @State private var code: String
+    @State private var className = ""
+    @State private var semesterID = AcademicPortal.currentSemesterID
+    @State private var page = 1
     @State private var results: [OfficialCourseSearchResult] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -17,23 +20,29 @@ struct OfficialCourseSearchView: View {
     var body: some View {
         List {
             Section("官方教务开课查询") {
+                Stepper("学期代号 \(semesterID.formatted(.number.grouping(.never)))", value: $semesterID, in: 1...9999)
                 TextField("课程名称", text: $courseName)
+                TextField("教学班名称", text: $className)
                 TextField("课程代码", text: $code)
                     .textInputAutocapitalization(.characters)
                 Button("查询其他教学班", systemImage: "magnifyingglass") {
                     Task { await search() }
                 }
-                .disabled(isLoading || (courseName.trimmed.isEmpty && code.trimmed.isEmpty))
+                .disabled(isLoading || (courseName.trimmed.isEmpty && code.trimmed.isEmpty && className.trimmed.isEmpty))
             }
             resultSection
+            if !results.isEmpty {
+                AppNavigationLink { AcademicLessonIDsScheduleView(lessonIDs: results.map(\.id)) } label: { Label("查询结果课表", systemImage: "calendar") }
+            }
+            AcademicPageControls(page: $page, loading: isLoading)
         }
         .navigationTitle("开课查询")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在查询校方教务…") } }
-        .task { if !courseName.trimmed.isEmpty || !code.trimmed.isEmpty { await search() } }
+        .task(id: page) { if !courseName.trimmed.isEmpty || !code.trimmed.isEmpty || !className.trimmed.isEmpty { await search() } }
         .refreshable { await search() }
         .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
     }
 
@@ -47,7 +56,9 @@ struct OfficialCourseSearchView: View {
         } else if !results.isEmpty {
             Section("查询结果（\(results.count)）") {
                 ForEach(results) { item in
-                    VStack(alignment: .leading, spacing: 5) {
+                    AppNavigationLink {
+                        CourseDetailView(course: item.detailCourse)
+                    } label: { VStack(alignment: .leading, spacing: 5) {
                         Text(item.courseName).font(.headline)
                         Text([item.code, item.className].compactMap { $0 }.joined(separator: " · "))
                             .font(.subheadline).foregroundStyle(.secondary)
@@ -59,7 +70,7 @@ struct OfficialCourseSearchView: View {
                             Text(schedule).font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 4) }
                 }
             }
         }
@@ -74,12 +85,14 @@ struct OfficialCourseSearchView: View {
             let mode = AcademicConnectionMode(rawValue: connectionMode) ?? .direct
             let client = AcademicClient(mode: mode, cookies: HTTPCookieStorage.shared.cookies ?? [])
             results = try await client.searchCourses(
-                semesterID: AcademicPortal.currentSemesterID,
+                semesterID: semesterID,
                 courseName: courseName.trimmed,
-                code: code.trimmed
+                className: className.trimmed,
+                code: code.trimmed,
+                page: page
             )
             if results.isEmpty { errorMessage = "校方接口未查到匹配课程。" }
-        } catch {
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error);
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -92,6 +105,17 @@ struct OfficialClassmatesView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLogin = false
+    @State private var query = ""
+    @State private var selectedGroup = ""
+    private var visible: [OfficialClassmate] {
+        classmates.filter { (query.isEmpty || "\($0.nameZh) \($0.code) \($0.className)".localizedCaseInsensitiveContains(query)) && (selectedGroup.isEmpty || [$0.className, $0.gender, String($0.code.prefix(4))].contains(selectedGroup)) }
+    }
+    private var groups: [(String, Int)] {
+        let classCounts = Dictionary(grouping: classmates, by: \.className).mapValues(\.count)
+        let genderCounts = Dictionary(grouping: classmates, by: \.gender).mapValues(\.count)
+        let yearCounts = Dictionary(grouping: classmates, by: { String($0.code.prefix(4)) }).mapValues(\.count)
+        return (classCounts.map { ($0.key, $0.value) } + genderCounts.map { ($0.key, $0.value) } + yearCounts.map { ($0.key, $0.value) }).filter { !$0.0.isEmpty }.sorted { $0.0 < $1.0 }
+    }
 
     var body: some View {
         List {
@@ -103,15 +127,26 @@ struct OfficialClassmatesView: View {
                     Button("使用默认密码自动重试", systemImage: "arrow.clockwise") { Task { await load() } }
                 }
             } else {
-                ForEach(classmates) { item in
+                Section("统计（\(classmates.count)人）") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Button("全部") { selectedGroup = "" }.buttonStyle(.bordered)
+                            ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
+                                Button("\(group.0) · \(group.1)") { selectedGroup = selectedGroup == group.0 ? "" : group.0 }.buttonStyle(.bordered)
+                            }
+                        }
+                    }
+                }
+                ForEach(visible) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.nameZh).font(.headline)
-                        Text([item.code, item.className, item.gender].filter { !$0.isEmpty }.joined(separator: " · "))
+                        Text([item.code, item.className, item.gender].filter { !$0.isEmpty }.joined(separator: " · ")).textSelection(.enabled)
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
         }
+        .searchable(text: $query, prompt: "姓名、学号或班级")
         .navigationTitle("同班同学")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在读取校方名单…") } }
@@ -133,7 +168,7 @@ struct OfficialClassmatesView: View {
         do {
             classmates = try await OfficialCampusAPIClient.shared.fetchClassmates(lessonID: lessonID)
             if classmates.isEmpty { errorMessage = "校方接口返回空名单。" }
-        } catch {
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error);
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -143,115 +178,101 @@ struct OfficialClassmatesView: View {
 struct OfficialClassroomSearchView: View {
     @State private var selectedDate = Date()
     @State private var campusID = 3
-    @State private var buildingID = 0
-    @State private var floor = 0
+    @State private var buildingIDs: Set<Int> = []
+    @State private var floors: Set<Int> = []
     @State private var buildings: [OfficialBuilding] = []
     @State private var rooms: [OfficialEmptyClassroom] = []
+    @State private var namedRooms: [OfficialClassroom] = []
+    @State private var query: String
+    @State private var searchByName: Bool
+    @State private var page = 1
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showingLogin = false
-
-    init(query: String = "") {}
-
+    init(query: String = "") { _query = State(initialValue: query); _searchByName = State(initialValue: !query.isEmpty) }
     private let campuses = [("屯溪路", 2), ("翡翠湖", 3), ("宣城", 6)]
     private var filteredBuildings: [OfficialBuilding] { buildings.filter { $0.campusAssoc == campusID } }
-
     var body: some View {
         List {
-            Section("按原版列表选择") {
-                DatePicker("日期", selection: $selectedDate, displayedComponents: .date)
-                Picker("校区", selection: $campusID) {
-                    ForEach(campuses, id: \.1) { Text($0.0).tag($0.1) }
+            Picker("查询方式", selection: $searchByName) { Text("空教室").tag(false); Text("教室名称").tag(true) }.pickerStyle(.segmented)
+            Section("查询条件") {
+                if searchByName { TextField("教室名称", text: $query) }
+                else {
+                    DatePicker("日期", selection: $selectedDate, displayedComponents: .date)
+                    Picker("校区", selection: $campusID) { ForEach(campuses, id: \.1) { Text($0.0).tag($0.1) } }
+                    AppNavigationLink("教学楼（\(buildingIDs.count == 0 ? "全部" : "已选 \(buildingIDs.count)")）") {
+                        List {
+                            Button("全部教学楼") { buildingIDs = [] }
+                            ForEach(filteredBuildings) { building in
+                                Toggle(building.nameZh, isOn: Binding(get: { buildingIDs.contains(building.id) }, set: { if $0 { buildingIDs.insert(building.id) } else { buildingIDs.remove(building.id) } }))
+                            }
+                        }.navigationTitle("教学楼多选")
+                    }
+                    AppNavigationLink("楼层（\(floors.count == 0 ? "全部" : "已选 \(floors.count)")）") {
+                        List {
+                            Button("全部楼层") { floors = [] }
+                            ForEach(1...20, id: \.self) { floor in
+                                Toggle("\(floor) 层", isOn: Binding(get: { floors.contains(floor) }, set: { if $0 { floors.insert(floor) } else { floors.remove(floor) } }))
+                            }
+                        }.navigationTitle("楼层多选")
+                    }
                 }
-                Picker("教学楼", selection: $buildingID) {
-                    Text("全部教学楼").tag(0)
-                    ForEach(filteredBuildings) { Text($0.nameZh).tag($0.id) }
-                }
-                Picker("楼层", selection: $floor) {
-                    Text("全部楼层").tag(0)
-                    ForEach(1...8, id: \.self) { Text("\($0) 层").tag($0) }
-                }
-                Button("查询空教室", systemImage: "magnifyingglass") { Task { await search() } }
-                    .disabled(isLoading)
+                Button("查询", systemImage: "magnifyingglass") { page = 1; Task { await search() } }.disabled(isLoading || (searchByName && query.trimmed.isEmpty))
             }
             if let errorMessage {
                 Section {
-                    ContentUnavailableView("查询失败", systemImage: "door.left.hand.closed", description: Text(errorMessage))
-                    if OfficialCampusAPIClient.shared.requiresManualUniAppPassword {
-                        Button("输入修改后的教务密码", systemImage: "key.fill") { showingLogin = true }
-                    } else {
-                        Button("使用默认密码自动重试", systemImage: "arrow.clockwise") { Task { await prepare() } }
+                    Text(errorMessage).foregroundStyle(.red)
+                    Button("登录教务") { showingLogin = true }
+                }
+            }
+            if searchByName {
+                ForEach(namedRooms) { room in
+                    AppNavigationLink { OfficialClassroomScheduleView(roomID: room.id, name: room.nameZh) } label: {
+                        VStack(alignment: .leading, spacing: 4) { Text(room.nameZh).font(.headline); Text([room.building?.nameZh, room.floor.map { "\($0)F" }, room.roomType?.nameZh, room.seatsForLesson.map { "\($0) 人" }].compactMap { $0 }.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary) }
                     }
                 }
-            } else if !rooms.isEmpty {
-                Section("空教室（\(rooms.count)）") {
-                    ForEach(rooms) { room in
+            } else {
+                ForEach(rooms) { room in
+                    AppNavigationLink { ClassroomDayDetailView(room: room, date: selectedDate) } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(room.nameZh).font(.headline)
-                            Text(room.campusNameZh)
-                            .font(.caption).foregroundStyle(.secondary)
-                            if let occupied = room.roomOccupationInfoVms, !occupied.isEmpty {
-                                Text(occupied.map { "\($0.startTimeString)-\($0.endTimeString) \($0.activityName)" }.joined(separator: "；"))
-                                    .font(.caption2).foregroundStyle(.orange)
-                            } else {
-                                Text("所选日期暂无占用记录").font(.caption2).foregroundStyle(.green)
-                            }
+                            Text(room.campusNameZh).font(.caption).foregroundStyle(.secondary)
+                            let occupied = room.roomOccupationInfoVms ?? []
+                            Text(occupied.isEmpty ? "全天暂无占用" : "\(occupied.count) 段占用 · 查看空闲时间轴").font(.caption).foregroundStyle(occupied.isEmpty ? .green : .orange)
                         }
                     }
                 }
             }
+            AcademicPageControls(page: $page, loading: isLoading)
         }
         .navigationTitle("教室状态")
-        .navigationBarTitleDisplayMode(.inline)
-        .overlay { if isLoading { ProgressView("正在查询官方教室数据…") } }
-        .task { await prepare() }
-        .onChange(of: campusID) { _, _ in buildingID = 0 }
+        .overlay { if isLoading { ProgressView("正在查询教室…") } }
+        .task { await prepare(); if !query.trimmed.isEmpty { await search() } }
+        .onChange(of: page) { _, _ in Task { await search() } }
+        .onChange(of: campusID) { _, _ in buildingIDs = [] }
+        .onChange(of: searchByName) { _, _ in page = 1; rooms = []; namedRooms = [] }
         .refreshable { await search() }
-        .sheet(isPresented: $showingLogin) {
-            OfficialUniAppLoginView {
-                showingLogin = false
-                Task { await search() }
+        .sheet(isPresented: $showingLogin) { OfficialUniAppLoginView { showingLogin = false; Task { await prepare(); await search() } } }
+    }
+    @MainActor private func search() async {
+        guard !isLoading else { return }; isLoading = true; errorMessage = nil; defer { isLoading = false }
+        do {
+            if searchByName { namedRooms = try await OfficialCampusAPIClient.shared.searchClassrooms(name: query.trimmed, page: page) }
+            else {
+                let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.dateFormat = "yyyy-MM-dd"
+                rooms = try await OfficialCampusAPIClient.shared.fetchEmptyClassrooms(date: formatter.string(from: selectedDate), campusID: campusID, buildingIDs: buildingIDs.sorted(), floors: floors.sorted(), page: page)
             }
-        }
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); errorMessage = error.localizedDescription }
     }
-
-    @MainActor
-    private func search() async {
-        guard !isLoading else { return }
-        isLoading = true
-        errorMessage = nil
-        do {
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "yyyy-MM-dd"
-            rooms = try await OfficialCampusAPIClient.shared.fetchEmptyClassrooms(
-                date: formatter.string(from: selectedDate),
-                campusID: campusID,
-                buildingIDs: buildingID == 0 ? [] : [buildingID],
-                floors: floor == 0 ? [] : [floor]
-            )
-            if rooms.isEmpty { errorMessage = "校方接口未查到符合条件的空教室。" }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isLoading = false
-    }
-
-    @MainActor
-    private func prepare() async {
-        guard !isLoading else { return }
-        isLoading = true
-        errorMessage = nil
-        do {
-            buildings = try await OfficialCampusAPIClient.shared.fetchBuildings()
-        } catch { errorMessage = error.localizedDescription }
-        isLoading = false
+    @MainActor private func prepare() async {
+        do { buildings = try await OfficialCampusAPIClient.shared.fetchBuildings() } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); errorMessage = error.localizedDescription }
     }
 }
 
 struct OfficialFailRateView: View {
     @State private var query: String
     private let lessonCode: String?
+    @State private var page = 1
     @State private var records: [OfficialFailRateRecord] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -266,7 +287,7 @@ struct OfficialFailRateView: View {
         List {
             Section("智慧社区官方接口") {
                 TextField("课程名称", text: $query)
-                Button("查询挂科率", systemImage: "percent") { Task { await search() } }
+                Button("查询挂科率", systemImage: "percent") { page = 1; Task { await search() } }
                     .disabled(isLoading || query.trimmed.isEmpty)
             }
             if let errorMessage {
@@ -290,13 +311,15 @@ struct OfficialFailRateView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) { AcademicPageControls(page: $page, loading: isLoading).padding().background(.regularMaterial) }
+        .onChange(of: page) { _, _ in Task { await search() } }
         .navigationTitle("挂科率")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在读取智慧社区…") } }
         .task { if !query.trimmed.isEmpty { await search() } }
         .refreshable { await search() }
         .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
     }
 
@@ -306,7 +329,7 @@ struct OfficialFailRateView: View {
         isLoading = true
         errorMessage = nil
         do {
-            let fetched = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: query.trimmed)
+            let fetched = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: query.trimmed, page: page)
             if let lessonCode, !lessonCode.isEmpty {
                 let exact = fetched.filter { $0.courseCode == lessonCode }
                 records = exact.isEmpty ? fetched : exact
@@ -314,7 +337,7 @@ struct OfficialFailRateView: View {
                 records = fetched
             }
             if records.isEmpty { errorMessage = "智慧社区未返回匹配课程。" }
-        } catch {
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error);
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -330,7 +353,7 @@ struct OfficialUniAppLoginView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             Form {
                 Section {
                     TextField("学号", text: $username).keyboardType(.numberPad)
@@ -358,7 +381,7 @@ struct OfficialUniAppLoginView: View {
             _ = try await OfficialCampusAPIClient.shared.loginUniApp(username: username, password: password)
             password = ""
             onSuccess()
-        } catch {
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error);
             errorMessage = error.localizedDescription
         }
         isLoading = false
@@ -397,7 +420,7 @@ struct AcademicCourseSelectionView: View {
                     .font(.footnote).foregroundStyle(.secondary)
                 TextField("输入数字代号", text: $manualTurn).keyboardType(.numberPad)
                 if let turnID = Int(manualTurn) {
-                    NavigationLink("查看入口 \(turnID)") {
+                    AppNavigationLink("查看入口 \(turnID)") {
                         AcademicCourseSelectionDetailView(turnID: turnID, title: "入口 \(turnID)")
                     }
                 }
@@ -409,7 +432,7 @@ struct AcademicCourseSelectionView: View {
         .task { await load() }
         .refreshable { await load() }
         .sheet(isPresented: $showingLogin, onDismiss: { Task { await load() } }) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
     }
 
@@ -421,7 +444,7 @@ struct AcademicCourseSelectionView: View {
             let mode = AcademicConnectionMode(rawValue: connectionMode) ?? .direct
             turns = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
                 .fetchCourseSelectionTurns()
-        } catch { errorMessage = error.localizedDescription }
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); errorMessage = error.localizedDescription }
         isLoading = false
     }
 }
@@ -435,6 +458,11 @@ private struct AcademicCourseSelectionDetailView: View {
     @State private var query = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showingSelected = false
+    @State private var selectedIDs: Set<Int> = []
+    @State private var pendingLesson: AcademicSelectableLesson?
+    @State private var operationMessage: String?
+    @State private var submitting = false
 
     private var mode: AcademicConnectionMode { AcademicConnectionMode(rawValue: connectionMode) ?? .direct }
     private var visibleLessons: [AcademicSelectableLesson] {
@@ -443,6 +471,8 @@ private struct AcademicCourseSelectionDetailView: View {
 
     var body: some View {
         List {
+            Picker("课程范围", selection: $showingSelected) { Text("可选课程").tag(false); Text("已选课程").tag(true) }.pickerStyle(.segmented)
+            if let operationMessage { Text(operationMessage).foregroundStyle(.secondary) }
             if let errorMessage { ContentUnavailableView("课程读取失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage)) }
             ForEach(visibleLessons) { lesson in
                 VStack(alignment: .leading, spacing: 5) {
@@ -470,6 +500,12 @@ private struct AcademicCourseSelectionDetailView: View {
                     if !lesson.teachers.isEmpty { Text(lesson.teachers.joined(separator: "、")).font(.caption) }
                     if let schedule = lesson.schedule { Text(schedule).font(.caption2).foregroundStyle(.secondary) }
                     if let remark = lesson.remark, !remark.isEmpty { Text(remark).font(.caption2) }
+                    HStack {
+                        AppNavigationLink("与已选课程对照") { AcademicSelectionScheduleView(turnID: turnID, candidateID: lesson.id) }.font(.caption)
+                        Spacer()
+                        Button(selectedIDs.contains(lesson.id) ? "退课" : "选课", role: selectedIDs.contains(lesson.id) ? .destructive : nil) { pendingLesson = lesson }
+                            .buttonStyle(.bordered).disabled(submitting)
+                    }
                 }
                 .padding(.vertical, 4)
             }
@@ -477,12 +513,20 @@ private struct AcademicCourseSelectionDetailView: View {
         .navigationTitle(title)
         .searchable(text: $query, prompt: "课程、代码、教师")
         .toolbar {
-            NavigationLink("冲突预览") {
+            AppNavigationLink("冲突预览") {
                 PortalWebView(url: AcademicPortal.url("for-std/course-table", mode: mode), academicMode: mode)
+            }
+            AppNavigationLink("已选课程周课表") {
+                AcademicSelectionScheduleView(turnID: turnID)
             }
         }
         .overlay { if isLoading { ProgressView("正在读取可选课程…") } }
-        .task { await load() }
+        .task(id: showingSelected) { await load() }
+        .confirmationDialog(pendingLesson.map { "确认\(selectedIDs.contains($0.id) ? "退选" : "选择")《\($0.courseName)》？" } ?? "确认操作", isPresented: Binding(get: { pendingLesson != nil }, set: { if !$0 { pendingLesson = nil } }), titleVisibility: .visible) {
+            Button("确认提交", role: pendingLesson.map { selectedIDs.contains($0.id) } == true ? .destructive : nil) {
+                if let lesson = pendingLesson { Task { await submit(lesson) } }
+            }
+        }
         .refreshable { await load() }
     }
 
@@ -491,11 +535,23 @@ private struct AcademicCourseSelectionDetailView: View {
         isLoading = true
         errorMessage = nil
         do {
-            lessons = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
-                .fetchSelectableLessons(turnID: turnID)
+            let client = AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
+            let selected = try await client.fetchSelectedLessons(turnID: turnID)
+            selectedIDs = Set(selected.map(\.id))
+            lessons = showingSelected ? selected : try await client.fetchSelectableLessons(turnID: turnID)
             await loadStudentCounts()
-        } catch { errorMessage = error.localizedDescription }
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); errorMessage = error.localizedDescription }
         isLoading = false
+    }
+
+    @MainActor private func submit(_ lesson: AcademicSelectableLesson) async {
+        let dropping = selectedIDs.contains(lesson.id)
+        pendingLesson = nil; submitting = true; defer { submitting = false }
+        do {
+            let result = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies).submitCourseSelection(turnID: turnID, lessonID: lesson.id, dropping: dropping)
+            operationMessage = result.message
+            if result.success { await load() }
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); operationMessage = error.localizedDescription }
     }
 
     @MainActor
@@ -529,10 +585,7 @@ struct AcademicTeachingSurveyView: View {
                             Label("\(teacher.name) · 已评", systemImage: "checkmark.circle.fill").foregroundStyle(.secondary)
                         } else {
                             SourceAnchoredNavigationLink(sourceID: "survey-teacher-\(teacher.id)") {
-                                PortalWebView(
-                                    url: AcademicPortal.url("for-std/lesson-survey/start-survey/\(teacher.id)", mode: mode),
-                                    academicMode: mode
-                                )
+                                AcademicSurveyFormView(taskID: teacher.id, teacher: teacher.name)
                             } label: {
                                 Label(teacher.name, systemImage: "person.crop.circle.badge.questionmark")
                             }
@@ -547,12 +600,16 @@ struct AcademicTeachingSurveyView: View {
             }
         }
         .navigationTitle("教师评教")
+        .toolbar {
+            AppNavigationLink("全部教师评教") { AcademicBulkSurveyView(lessons: lessons) }
+                .disabled(isLoading || lessons.flatMap(\.teachers).allSatisfy(\.submitted))
+        }
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在读取评教状态…") } }
         .task { await load() }
         .refreshable { await load() }
         .sheet(isPresented: $showingLogin, onDismiss: { Task { await load() } }) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
     }
 
@@ -563,7 +620,7 @@ struct AcademicTeachingSurveyView: View {
         do {
             lessons = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies)
                 .fetchTeachingSurveys(semesterID: AcademicPortal.currentSemesterID)
-        } catch { errorMessage = error.localizedDescription }
+        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error); errorMessage = error.localizedDescription }
         isLoading = false
     }
 }

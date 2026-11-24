@@ -1,0 +1,5352 @@
+{
+  "date": "2026-11-23",
+  "iosBaseline": {
+    "version": "1.2.3 build 5",
+    "commit": "5a129136d859fb019e98de74aebd3049ba14ce11"
+  },
+  "upstreamBaseline": {
+    "branch": "dev",
+    "commit": "9670096e15dd04d561da08aded3828046228d6e3",
+    "latestFormalRelease": "4.21.4.1"
+  },
+  "counts": {
+    "parity": 53,
+    "missing": 55,
+    "partial": 64,
+    "inactive": 18,
+    "platform": 6,
+    "uncertain": 1
+  },
+  "method": "Static source and reachable call-chain comparison; no live campus account or physical re-signed device acceptance.",
+  "unpublishedChanges": "Saved campus-scoped dual electricity defaults and widget revision/retry synchronization; 208 automated tests passed; user requested no publication.",
+  "rows": [
+    {
+      "id": "C001",
+      "category": "课表",
+      "feature": "教务课表同步、周次与本地离线课表",
+      "status": "parity",
+      "upstreamBehavior": "原生获取教务课表并缓存，按周显示",
+      "iosBehavior": "原生同步保存课程、周次，持久化后离线显示",
+      "gap": "源码已有；校方会话和实时接口未在本次登录验收",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/jxglstu/JxglstuCourseTableUI.kt",
+          "line": 130
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 26
+        }
+      ],
+      "destinations": [
+        "HomeDestination.kt"
+      ]
+    },
+    {
+      "id": "C002",
+      "category": "课表",
+      "feature": "智慧社区课表作为主课表源",
+      "status": "missing",
+      "upstreamBehavior": "主课表可切换COMMUNITY并使用社区课表及作息",
+      "iosBehavior": "主课表读取ScheduleStore；社区作息仅在作息页面查询",
+      "gap": "缺智慧社区课表加载、切源、按周显示和聚焦联动",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1122
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 27
+        }
+      ],
+      "destinations": [
+        "CalendarConfigDestination.kt"
+      ]
+    },
+    {
+      "id": "C003",
+      "category": "课表",
+      "feature": "合工大教务UniApp课表源",
+      "status": "missing",
+      "upstreamBehavior": "可切换UNI_APP并显示其课表",
+      "iosBehavior": "UniApp已用于成绩、考试等；主课表同步仍是AcademicClient",
+      "gap": "缺UniApp课程数据源到主课表/聚焦的实际接线",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1134
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+          "line": 106
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C004",
+      "category": "课表",
+      "feature": "指间工大课表源",
+      "status": "missing",
+      "upstreamBehavior": "可切换ZHI_JIAN显示指间工大页面/课表",
+      "iosBehavior": "无该主课表切换项与对应显示组件",
+      "gap": "缺指间工大课表源；不是单纯缺一个设置标签",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1175
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 65
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C005",
+      "category": "课表",
+      "feature": "教务2课表视图",
+      "status": "missing",
+      "upstreamBehavior": "可切换JXGLSTU2的课表展现",
+      "iosBehavior": "仅一个主课表网格",
+      "gap": "缺第二种教务课表视图",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1163
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 65
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C006",
+      "category": "课表",
+      "feature": "好友课表申请、查看与切换",
+      "status": "missing",
+      "upstreamBehavior": "支持按学号申请好友、接受/拒绝申请、查看好友列表，并加载切换好友课表；删除好友按钮仍提示正在开发",
+      "iosBehavior": "无好友表、好友列表或好友课表入口",
+      "gap": "缺已实现的好友申请、审核、列表及课表切换链；不将原版未实现的删除功能计为缺项",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/MultiScheduleSettings.kt",
+          "line": 194
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/Friends.kt",
+          "line": 169
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/Friends.kt",
+          "line": 220
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/Friends.kt",
+          "line": 198
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleStore.swift",
+          "line": 70
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C007",
+      "category": "课表",
+      "feature": "横滑换周、任意选周、返回本周",
+      "status": "parity",
+      "upstreamBehavior": "横滑与周按钮换周，可跳任意周",
+      "iosBehavior": "横滑、前后按钮、数字周选择和返回当前周",
+      "gap": "基本能力已有",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/jxglstu/JxglstuCourseTableUI.kt",
+          "line": 171
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 187
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C008",
+      "category": "课表",
+      "feature": "所有教学周的缩略课表总览",
+      "status": "missing",
+      "upstreamBehavior": "长按周按钮/课表空白进入各周缩略图，点图跳周",
+      "iosBehavior": "只有数字WeekPickerSheet",
+      "gap": "缺可视化整学期周缩略预览",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/timetable/ui/TimeTablePreview.kt",
+          "line": 61
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 128
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C009",
+      "category": "课表",
+      "feature": "课表双指缩放与恢复高度",
+      "status": "missing",
+      "upstreamBehavior": "双指缩放纵向课表，空白点击恢复",
+      "iosBehavior": "时间网格hourHeight固定为68",
+      "gap": "缺手势缩放及恢复动作",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1112
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 156
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C010",
+      "category": "课表",
+      "feature": "周次悬浮按钮拖动切周与回弹",
+      "status": "missing",
+      "upstreamBehavior": "周次按钮左右拖动越过阈值可切换上一周/下一周，松手回弹；不是自由固定悬浮位置",
+      "iosBehavior": "周次控制固定在右下角",
+      "gap": "缺周次按钮拖动切周及回弹手势；点击切周/回本周已有",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/common/DraggableWeekButton.kt",
+          "line": 118
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 84
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C011",
+      "category": "课表",
+      "feature": "课表空白双击直接添加日程",
+      "status": "partial",
+      "upstreamBehavior": "双击网格空白进入AddEventDestination",
+      "iosBehavior": "有自建日程编辑器，但仅聚焦工具栏等入口",
+      "gap": "缺课表空白处的快捷创建手势",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/jxglstu/JxglstuCourseTableUI.kt",
+          "line": 533
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 113
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C012",
+      "category": "课表",
+      "feature": "周末自动展开和五/七日切换",
+      "status": "parity",
+      "upstreamBehavior": "存在周末课程时展开，支持五/七列",
+      "iosBehavior": "自动revealWeekendIfNeeded，工具栏可切周末",
+      "gap": "已有",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/jxglstu/JxglstuCourseTableUI.kt",
+          "line": 485
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 214
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C013",
+      "category": "课表",
+      "feature": "冲突课程合并后的逐项选择",
+      "status": "partial",
+      "upstreamBehavior": "合并方格打开多条课程/考试/日程清单，可逐项进入详情",
+      "iosBehavior": "合并显示多个课程名，但点击与上下文菜单只进入代表的第一条课程",
+      "gap": "缺合并后逐条选择与完整详情访问",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/window/TimeTableSquareWindow.kt",
+          "line": 124
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 204
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C014",
+      "category": "课表",
+      "feature": "课程详情字段与关联查询",
+      "status": "parity",
+      "upstreamBehavior": "课程类型、教师、学分、班级/代码及同班同学、开课、教室、挂科率联动",
+      "iosBehavior": "CourseDetailView展示对应字段并进入原生查询",
+      "gap": "字段与主要联动已有；上游不同数据源额外信息依赖原数据",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/totalCourse/TotalCourseUI.kt",
+          "line": 487
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CourseDetailView.swift",
+          "line": 50
+        }
+      ],
+      "destinations": [
+        "CourseDetailDestination.kt",
+        "CourseDetailApiDestination.kt"
+      ]
+    },
+    {
+      "id": "C015",
+      "category": "课表",
+      "feature": "考试同时显示在课表和聚焦",
+      "status": "parity",
+      "upstreamBehavior": "考试投影到课表、聚焦列未结束考试",
+      "iosBehavior": "已有UpcomingExamResolver与两处展示",
+      "gap": "1.2.0后已补齐，不能再列完全缺失",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/jxglstu/JxglstuCourseTableUI.kt",
+          "line": 551
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 30
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C016",
+      "category": "聚焦",
+      "feature": "重要安排与其他事项分类",
+      "status": "parity",
+      "upstreamBehavior": "区分重要/未来安排，普通日程和72小时内DDL等分类",
+      "iosBehavior": "分段选择重要/其他，按isImportant筛事件",
+      "gap": "分类框架已有，云日程与卡片内容缺口另列",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 266
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 51
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C017",
+      "category": "聚焦",
+      "feature": "当天课程结束后自动切换明日课程",
+      "status": "partial",
+      "upstreamBehavior": "最后一节课后重要安排自动改为明日课程列表",
+      "iosBehavior": "重要安排仍是todayCourses，明天需点击独立卡片查看",
+      "gap": "缺自动切换主列表的行为；并非没有明日课表",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 255
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 26
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C018",
+      "category": "聚焦",
+      "feature": "法定休息日隐藏当天课程",
+      "status": "partial",
+      "upstreamBehavior": "isHoliday时隐藏今日课程并显示休息说明",
+      "iosBehavior": "明日卡片识别休息日；当天courses仅做调休映射、星期/周过滤",
+      "gap": "缺当天法定休息日对聚焦课程列表的隐藏过滤",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 296
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+          "line": 114
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C019",
+      "category": "聚焦",
+      "feature": "明日首课状态与调休补课映射",
+      "status": "parity",
+      "upstreamBehavior": "无课/早课/调休映射提醒",
+      "iosBehavior": "TomorrowPlanView、SpecialWorkDayStore与明日卡片已实现",
+      "gap": "已有；当天休息日过滤为另一个差异",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 152
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TomorrowPlanView.swift",
+          "line": 143
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C020",
+      "category": "聚焦",
+      "feature": "电费信息卡直接显示余额",
+      "status": "partial",
+      "upstreamBehavior": "聚焦Electric组件直接展示已保存宿舍电费",
+      "iosBehavior": "聚焦仅显示“点击查询”，进入电费页才读取",
+      "gap": "缺聚焦卡片内实时余额展示；电费页本身已有查询",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 304
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 203
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C021",
+      "category": "聚焦",
+      "feature": "校园网卡直接显示实时信息",
+      "status": "partial",
+      "upstreamBehavior": "聚焦LoginWeb显示校园网余额/状态等",
+      "iosBehavior": "聚焦仅“查看状态”跳转校园网页",
+      "gap": "缺聚焦内校园网状态/余额内容",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 309
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 214
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C022",
+      "category": "聚焦",
+      "feature": "新出成绩计数提示",
+      "status": "missing",
+      "upstreamBehavior": "获取新成绩数量并在聚焦显示“新出N门”，点击成绩单",
+      "iosBehavior": "无新旧成绩条数比较或聚焦新成绩卡",
+      "gap": "缺成绩变化检测结果在聚焦的提示",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 332
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/Update.kt",
+          "line": 167
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 178
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C023",
+      "category": "聚焦",
+      "feature": "聚焦内气象预警卡",
+      "status": "partial",
+      "upstreamBehavior": "取得和风预警后直接在聚焦卡显示",
+      "iosBehavior": "天气页有入口与自有配置客户端，但聚焦无预警卡",
+      "gap": "缺默认内嵌预警流及聚焦展示；天气详情入口仍可达",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 353
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 178
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C024",
+      "category": "聚焦",
+      "feature": "下拉统一刷新课表/会话/生活信息",
+      "status": "missing",
+      "upstreamBehavior": "聚焦下拉调用initNetworkRefresh统一更新课程、会话、网费电费等",
+      "iosBehavior": "聚焦时钟刷新和一卡通刷新分离，无refreshable/统一刷新链",
+      "gap": "缺聚焦统一刷新与进度说明",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 119
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 114
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C025",
+      "category": "聚焦",
+      "feature": "公共日程与公共网课DDL读取展示",
+      "status": "missing",
+      "upstreamBehavior": "从作者配置的schedules.schedule与ddl读取并显示",
+      "iosBehavior": "CampusCloudConfig仅解码校历/实验室/通知/startDay，不解码schedules",
+      "gap": "缺公共日程/DDL模型、解码与聚焦显示；是否有在线数据另需验证",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/network/MyApiParse.kt",
+          "line": 62
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/network/MyApiParse.kt",
+          "line": 84
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 330
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/FocusUI.kt",
+          "line": 341
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CampusCloudConfig.swift",
+          "line": 62
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C026",
+      "category": "聚焦",
+      "feature": "公共网课条目直达学习平台或网页",
+      "status": "missing",
+      "upstreamBehavior": "根据学习通/U校园/雨课堂/MOOC/URL打开平台",
+      "iosBehavior": "无公共网课条目或openOperation对应映射",
+      "gap": "缺条目到学习平台的动作链",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/OpenOperation.kt",
+          "line": 11
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/FocusItems.kt",
+          "line": 231
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 159
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C027",
+      "category": "聚焦",
+      "feature": "课程进度与分钟时钟刷新",
+      "status": "parity",
+      "upstreamBehavior": "课程进行中进度与状态，时钟定期更新",
+      "iosBehavior": "有CircularProgressIcon、课程状态及60秒刷新",
+      "gap": "已有",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/FocusItems.kt",
+          "line": 759
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 314
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C028",
+      "category": "日程",
+      "feature": "普通日程/截止事项新增编辑删除克隆",
+      "status": "parity",
+      "upstreamBehavior": "普通日程与DDL增删改克隆",
+      "iosBehavior": "CustomEventsView/Editor和CustomEventStore已实现，并支持跨天普通日程",
+      "gap": "基本本地日程已有，不列为缺失",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/AddEvent.kt",
+          "line": 258
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "AddEventDestination.kt"
+      ]
+    },
+    {
+      "id": "C029",
+      "category": "日程",
+      "feature": "截止事项剩余小时与明日标识",
+      "status": "partial",
+      "upstreamBehavior": "显示DDL剩余小时/不足1h，明日安排有明日/+1标识",
+      "iosBehavior": "自建日程卡显示结束日期和地点，未显示剩余小时或明日徽记",
+      "gap": "缺日程卡的倒计时及明日标识",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/FocusItems.kt",
+          "line": 545
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 171
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C030",
+      "category": "日程",
+      "feature": "日程编辑器楼宇/学习平台快捷选择",
+      "status": "partial",
+      "upstreamBehavior": "BuildingsSelector可选择校园建筑或常用学习平台文案",
+      "iosBehavior": "地点和说明为纯文本输入",
+      "gap": "缺可查询选择的楼宇/预设平台列表",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/AddEvent.kt",
+          "line": 985
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift",
+          "line": 54
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C031",
+      "category": "日程",
+      "feature": "新建日程联动DeepSeek预设JSON提示词",
+      "status": "missing",
+      "upstreamBehavior": "新建页魔棒进入AI，带日程/DDL结构及当前时间的预设提示词",
+      "iosBehavior": "只有独立AI助手/网页摘要，新建日程无AI按钮",
+      "gap": "缺专门的日程AI提示词入口；上游也不能据此认定已自动导入JSON",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/AddEvent.kt",
+          "line": 326
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift",
+          "line": 38
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C032",
+      "category": "日程",
+      "feature": "批量多日期/重复日程",
+      "status": "inactive",
+      "upstreamBehavior": "多日期部分为注释，“添加”调用showDevelopingToast",
+      "iosBehavior": "未开放批量/重复界面",
+      "gap": "上游尚未开放，不计入iOS缺失",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/AddEvent.kt",
+          "line": 1030
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CustomEvent.swift",
+          "line": 18
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C033",
+      "category": "登录",
+      "feature": "原生CAS直连/WebVPN与本地验证码自动填写",
+      "status": "parity",
+      "upstreamBehavior": "CAS原生请求、WebVPN、同模型Tesseract自动填",
+      "iosBehavior": "1.2.3原生CAS及同模型灰度单行识别、刷新/手填保护已实现",
+      "gap": "已有；网页登录回退中的验证码仍属于校方网页",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/ocr/TesseractOCR.kt",
+          "line": 14
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CASCaptchaRecognizer.swift",
+          "line": 33
+        }
+      ],
+      "destinations": [
+        "LoginDestination.kt"
+      ]
+    },
+    {
+      "id": "C034",
+      "category": "登录",
+      "feature": "跳过教务系统登录其他校园平台",
+      "status": "missing",
+      "upstreamBehavior": "直连可excludeJxglstu用于教务封网/离校，继续其他平台认证",
+      "iosBehavior": "CASLoginClient总使用固定教务service并要求教务会话",
+      "gap": "缺不依赖教务可用性的CAS登录模式",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/login/LoginUI.kt",
+          "line": 539
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/login/LoginUI.kt",
+          "line": 182
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CASLoginClient.swift",
+          "line": 14
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C035",
+      "category": "登录",
+      "feature": "登录前展示教务网络连通状态",
+      "status": "missing",
+      "upstreamBehavior": "显示检查中/正常/封网/超时等状态与新生提示",
+      "iosBehavior": "获取登录参数失败后弹错误，没有独立连通诊断状态页",
+      "gap": "缺登录前网络诊断与对应说明",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/login/LoginUI.kt",
+          "line": 461
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+          "line": 123
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C036",
+      "category": "登录",
+      "feature": "登录模式对应的服务刷新范围说明",
+      "status": "partial",
+      "upstreamBehavior": "根据直连/WebVPN/跳过教务显示哪些平台能刷新；AssistChip是说明，onClick为空",
+      "iosBehavior": "安全登录固定依次同步学籍/课表/成绩/考试和部分平台令牌",
+      "gap": "缺登录模式对应的服务范围说明面板；原版也不能在此逐服务勾选",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/login/LoginUI.kt",
+          "line": 593
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+          "line": 84
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "C037",
+      "category": "登录",
+      "feature": "无请求动作的账号存在性查询",
+      "status": "inactive",
+      "upstreamBehavior": "CheckExistUI refreshNetwork为空，未实际查询",
+      "iosBehavior": "无该入口",
+      "gap": "上游空实现，不计入iOS缺失",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/login/LoginUI.kt",
+          "line": 894
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LoginPortalView.swift",
+          "line": 3
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "S001",
+      "category": "成绩与考试",
+      "feature": "成绩列表、学期分组、课程成绩组成",
+      "status": "parity",
+      "upstreamBehavior": "教务/UniApp成绩列表和单科明细。",
+      "iosBehavior": "有学期分组、数字成绩/绩点/学分及成绩组成明细。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/grade/grade/jxglstu/JxglstuGrade.kt",
+          "line": 787
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 287
+        }
+      ],
+      "destinations": [
+        "GradeDestination.kt",
+        "GradeDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S002",
+      "category": "成绩与考试",
+      "feature": "自选课程参与平均分与小数位设置",
+      "status": "partial",
+      "upstreamBehavior": "平均成绩页可勾选参与项目并调整小数位。",
+      "iosBehavior": "有总览和排除项，但无逐课程勾选与小数位控制。",
+      "gap": "缺自定义统计集合和显示精度。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/grade/analysis/AverageGradeScreen.kt",
+          "line": 75
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 244
+        }
+      ],
+      "destinations": [
+        "AverageGradeDestination.kt"
+      ]
+    },
+    {
+      "id": "S003",
+      "category": "成绩与考试",
+      "feature": "智慧社区成绩及班级/专业排名",
+      "status": "missing",
+      "upstreamBehavior": "智慧社区成绩展示班级、专业排名。",
+      "iosBehavior": "成绩模型和页面没有社区排名展示/请求。",
+      "gap": "缺智慧社区成绩数据源及排名。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/grade/grade/community/CommunityGrade.kt",
+          "line": 51
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 244
+        }
+      ],
+      "destinations": [
+        "GradeDestination.kt"
+      ]
+    },
+    {
+      "id": "S004",
+      "category": "成绩与考试",
+      "feature": "专业均分/均GPA对比及历次成绩排名",
+      "status": "inactive",
+      "upstreamBehavior": "AvgGrade/AllGrade仅被无外部调用的GradeCountUI引用；AnalysisScreen本身为DevelopingIcon。",
+      "iosBehavior": "仅按个人成绩本地计算均分/GPA。",
+      "gap": "此旧页未接入可达UI，不算成熟缺失；社区排名另有真实入口。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/grade/analysis/AnalysisScreen.kt",
+          "line": 21
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 244
+        }
+      ],
+      "destinations": [
+        "AverageGradeDestination.kt"
+      ]
+    },
+    {
+      "id": "S005",
+      "category": "成绩与考试",
+      "feature": "校务行独立登录与数据页",
+      "status": "missing",
+      "upstreamBehavior": "独立校务行登录、登录检查与主页面可达。",
+      "iosBehavior": "没有校务行平台客户端和页面。",
+      "gap": "缺该备用平台登录及其入口链。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/XiaoWuXingDestination.kt",
+          "line": 19
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 13
+        }
+      ],
+      "destinations": [
+        "XiaoWuXingDestination.kt",
+        "XiaoWuXingLoginDestination.kt",
+        "XiaoWuXingCheckLoginDestination.kt"
+      ]
+    },
+    {
+      "id": "S006",
+      "category": "成绩与考试",
+      "feature": "个人考试列表和考试明细",
+      "status": "parity",
+      "upstreamBehavior": "个人考试列表及详情。",
+      "iosBehavior": "有原生考试列表和详情；课程表/聚焦联动由核心审计覆盖。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/exam/Exam.kt",
+          "line": 89
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 22
+        }
+      ],
+      "destinations": [
+        "ExamDestination.kt"
+      ]
+    },
+    {
+      "id": "S007",
+      "category": "成绩与考试",
+      "feature": "教务处公共考试通知/全校考试安排",
+      "status": "missing",
+      "upstreamBehavior": "AllExam进入ExamNotificationsScreen获取教务考试通知。",
+      "iosBehavior": "仅个人考试数据；无公共考试通知栏目。",
+      "gap": "缺非个人考试安排通知列表与筛选。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/exam/ExamNotificationsScreen.kt",
+          "line": 64
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 12
+        }
+      ],
+      "destinations": [
+        "AllExamDestination.kt"
+      ]
+    },
+    {
+      "id": "S008",
+      "category": "培养方案",
+      "feature": "个人培养方案树、模块课程、搜索与总学分进度",
+      "status": "parity",
+      "upstreamBehavior": "个人方案树和总完成情况。",
+      "iosBehavior": "有方案模块、课程明细、搜索和学分进度。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/program/ProgramUI.kt",
+          "line": 302
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift",
+          "line": 4
+        }
+      ],
+      "destinations": [
+        "ProgramDestination.kt"
+      ]
+    },
+    {
+      "id": "S009",
+      "category": "培养方案",
+      "feature": "逐课程修读状态和方案外课程",
+      "status": "partial",
+      "upstreamBehavior": "方案完成详情分已修/未修/通过、方案外课程，并显示成绩等。",
+      "iosBehavior": "只有总/模块学分完成数；课程行没有对应个人修读明细。",
+      "gap": "缺逐课程修读结果、方案外课程和完成详情筛选。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/program/programPerformance.kt",
+          "line": 357
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift",
+          "line": 212
+        }
+      ],
+      "destinations": [
+        "ProgramCompetitionDestination.kt",
+        "ProgramCompetitionDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S010",
+      "category": "培养方案",
+      "feature": "全校培养方案搜索与他人方案详情",
+      "status": "missing",
+      "upstreamBehavior": "开发分支已接UniApp分页搜索和方案详情。",
+      "iosBehavior": "只能读当前学生方案，无全校方案搜索入口。",
+      "gap": "缺全校方案检索和他人方案浏览。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/program/ProgramSearch.kt",
+          "line": 89
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift",
+          "line": 4
+        }
+      ],
+      "destinations": [
+        "AllProgramsDestination.kt"
+      ]
+    },
+    {
+      "id": "S011",
+      "category": "培养方案",
+      "feature": "选课确认/学分确认结果",
+      "status": "missing",
+      "upstreamBehavior": "ProgramConfirmation页面请求并展示确认结果。",
+      "iosBehavior": "未有对应确认清单。",
+      "gap": "缺选课/学分确认结果页。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/program/ProgramConfirmationScreen.kt",
+          "line": 42
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift",
+          "line": 4
+        }
+      ],
+      "destinations": [
+        "ProgramConfirmationDestination.kt"
+      ]
+    },
+    {
+      "id": "S012",
+      "category": "培养方案",
+      "feature": "全校方案JSON分享和从文件导入",
+      "status": "inactive",
+      "upstreamBehavior": "两个按钮当前只showDevelopingToast。",
+      "iosBehavior": "无此方案导入/分享。",
+      "gap": "上游未启用，不列为可用功能缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/program/ProgramSearch.kt",
+          "line": 128
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProgramPlanViews.swift",
+          "line": 4
+        }
+      ],
+      "destinations": [
+        "AllProgramsDestination.kt"
+      ]
+    },
+    {
+      "id": "S013",
+      "category": "选课与评教",
+      "feature": "选课轮次、隐藏轮次代号、课程和人数查询",
+      "status": "parity",
+      "upstreamBehavior": "读取可见轮次，手输隐藏代号，并显示课程人数。",
+      "iosBehavior": "轮次、手动代号、课程筛选和人数进度均已有。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/selectCourse/SelectScreen.kt",
+          "line": 427
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 395
+        }
+      ],
+      "destinations": [
+        "SelectCoursesDestination.kt",
+        "SelectCoursesDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S014",
+      "category": "选课与评教",
+      "feature": "实际选课和退课提交",
+      "status": "missing",
+      "upstreamBehavior": "先取requestID再postSelect，并有退课页面。",
+      "iosBehavior": "页面只读课程和人数，无选/退课提交接口。",
+      "gap": "缺应用内选课、退课及结果反馈。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/selectCourse/SelectScreen.kt",
+          "line": 704
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 429
+        }
+      ],
+      "destinations": [
+        "DropCoursesDestination.kt"
+      ]
+    },
+    {
+      "id": "S015",
+      "category": "选课与评教",
+      "feature": "已选课程清单与官方冲突预览",
+      "status": "partial",
+      "upstreamBehavior": "原生已选课程列表提供退课；“冲突预览”按钮打开官方教务课表网页，并非原生冲突网格。",
+      "iosBehavior": "基线有选课轮次、可选课程和官方教务网页冲突预览，缺独立已选课程清单。",
+      "gap": "缺已选课程列表与退课流程；不再把原生冲突网格计作原版必备缺口。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/selectCourse/SelectScreen.kt",
+          "line": 203
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/selectCourse/SelectScreen.kt",
+          "line": 880
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 480
+        }
+      ],
+      "destinations": [
+        "SelectCoursesDetailDestination.kt",
+        "DropCoursesDestination.kt"
+      ]
+    },
+    {
+      "id": "S016",
+      "category": "选课与评教",
+      "feature": "教师评教任务、状态及提交",
+      "status": "partial",
+      "upstreamBehavior": "任务和原生问卷填写，并有全部100分功能。",
+      "iosBehavior": "任务/已评状态原生，未评任务跳官方网页。",
+      "gap": "缺原生问卷和一键全部评教；网页填写仍可达。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/survey/Survey.kt",
+          "line": 152
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 510
+        }
+      ],
+      "destinations": [
+        "SurveyDestination.kt",
+        "SurveyApiDestination.kt"
+      ]
+    },
+    {
+      "id": "S017",
+      "category": "转专业",
+      "feature": "批次、可申请专业和我的申请摘要",
+      "status": "parity",
+      "upstreamBehavior": "批次和专业列表、我的申请。",
+      "iosBehavior": "有三类列表与申请状态摘要。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/transfer/TransferListUI.kt",
+          "line": 127
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 628
+        }
+      ],
+      "destinations": [
+        "TransferMajorDestination.kt"
+      ]
+    },
+    {
+      "id": "S018",
+      "category": "转专业",
+      "feature": "隐藏批次代号及学院/专业搜索",
+      "status": "missing",
+      "upstreamBehavior": "手输隐藏批次代号，并按学院或专业搜索。",
+      "iosBehavior": "只有服务返回批次和列表，无代号输入或搜索。",
+      "gap": "缺隐藏批次访问和列表检索。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/transfer/TransferListUI.kt",
+          "line": 279
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 683
+        }
+      ],
+      "destinations": [
+        "TransferMajorDestination.kt",
+        "TransferMajorDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S019",
+      "category": "转专业",
+      "feature": "申请专业和撤销申请",
+      "status": "missing",
+      "upstreamBehavior": "取申请表cookie后postTransfer，并可cancelTransfer。",
+      "iosBehavior": "列表不可提交或撤销。",
+      "gap": "缺申请/撤销操作及手机号选择。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/transfer/MyApply.kt",
+          "line": 356
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 683
+        }
+      ],
+      "destinations": [
+        "TransferMajorDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S020",
+      "category": "转专业",
+      "feature": "笔面试安排、申请成绩及排名详情",
+      "status": "missing",
+      "upstreamBehavior": "申请详情显示笔面试、成绩和多种排名。",
+      "iosBehavior": "我的申请只显示专业、学院和状态。",
+      "gap": "缺完整申请详情。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/transfer/MyApply.kt",
+          "line": 175
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 695
+        }
+      ],
+      "destinations": [
+        "TransferMajorDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S021",
+      "category": "课程教师与教室",
+      "feature": "开课基本搜索、已同步课程详情和教学班名单",
+      "status": "parity",
+      "upstreamBehavior": "课程搜索、课程详情与教学班同学。",
+      "iosBehavior": "有官方搜索、课程详情和lessonID同学查询。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/CourseClassmatesDestination.kt",
+          "line": 28
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 89
+        }
+      ],
+      "destinations": [
+        "CourseSearchDestination.kt",
+        "CourseSearchApiDestination.kt",
+        "CourseDetailDestination.kt",
+        "CourseDetailApiDestination.kt",
+        "CourseClassmatesDestination.kt"
+      ]
+    },
+    {
+      "id": "S022",
+      "category": "课程教师与教室",
+      "feature": "开课搜索的学期/教学班条件与课表形式结果",
+      "status": "partial",
+      "upstreamBehavior": "原版可切学期、输入课程代码/名称/教学班，进入结果课表。",
+      "iosBehavior": "有文字结果列表和详情，无独立搜索结果周课表。",
+      "gap": "缺学期/教学班条件以及搜索结果课表视图。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/courseSearch/CourseSearchUI.kt",
+          "line": 87
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "CourseSearchTableDestination.kt"
+      ]
+    },
+    {
+      "id": "S023",
+      "category": "课程教师与教室",
+      "feature": "学期课程汇总的未排课/教材信息",
+      "status": "partial",
+      "upstreamBehavior": "直接读取学期课程，包含教材等汇总数据。",
+      "iosBehavior": "由已同步课表时段去重生成课程汇总。",
+      "gap": "缺不在课表时段中的课程和教材资料。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/totalCourse/TotalCourseUI.kt",
+          "line": 122
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 315
+        }
+      ],
+      "destinations": [
+        "TermCoursesDestination.kt"
+      ]
+    },
+    {
+      "id": "S024",
+      "category": "课程教师与教室",
+      "feature": "空教室筛选和当天占用时段",
+      "status": "parity",
+      "upstreamBehavior": "校区/楼栋/楼层/日期查询空教室和占用。",
+      "iosBehavior": "有列表条件、空教室和当天时段文本。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/classroom/ClassroomScreen.kt",
+          "line": 397
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 143
+        }
+      ],
+      "destinations": [
+        "ClassroomDestination.kt"
+      ]
+    },
+    {
+      "id": "S025",
+      "category": "课程教师与教室",
+      "feature": "教室全天时间轴及整学期周课表",
+      "status": "partial",
+      "upstreamBehavior": "时间轴标记空闲/下一次占用，教室可进入整学期课表。",
+      "iosBehavior": "只显示所选日期占用记录文字，没有教室学期课表。",
+      "gap": "缺可交互时间轴与教室周课表。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/classroom/ClassroomScreen.kt",
+          "line": 868
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 197
+        }
+      ],
+      "destinations": [
+        "ClassroomCourseTableDestination.kt"
+      ]
+    },
+    {
+      "id": "S026",
+      "category": "课程教师与教室",
+      "feature": "挂科率课程搜索和学期通过情况",
+      "status": "parity",
+      "upstreamBehavior": "智慧社区挂科率搜索和历学期数据。",
+      "iosBehavior": "有课程搜索、平均分、人数及挂科人数。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/failRate/FailRateUI.kt",
+          "line": 48
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 252
+        }
+      ],
+      "destinations": [
+        "FailRateDestination.kt",
+        "FailRateApiDestination.kt",
+        "FailRateDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S027",
+      "category": "课程教师与教室",
+      "feature": "挂科率结果分页与原版细节展示",
+      "status": "partial",
+      "upstreamBehavior": "原版独立详情及分页检索。",
+      "iosBehavior": "只取fetchFailRates默认第一页，页面无翻页。",
+      "gap": "缺后续搜索结果分页和完整明细布局。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/failRate/FailRateUI.kt",
+          "line": 95
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 309
+        }
+      ],
+      "destinations": [
+        "FailRateDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S028",
+      "category": "课程教师与教室",
+      "feature": "教师姓名/方向检索、照片和个人主页",
+      "status": "parity",
+      "upstreamBehavior": "按姓名和方向搜索教师并打开主页。",
+      "iosBehavior": "相同条件和个人主页入口已有。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/teacherSearch/TeachersSearch.kt",
+          "line": 87
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 522
+        }
+      ],
+      "destinations": [
+        "TeacherSearchDestination.kt",
+        "TeacherSearchApiDestination.kt"
+      ]
+    },
+    {
+      "id": "S029",
+      "category": "学籍与联系人",
+      "feature": "学籍基本信息、联系方式和教务改密入口",
+      "status": "parity",
+      "upstreamBehavior": "展示学籍与联系方式，并可修改教务密码。",
+      "iosBehavior": "有学籍字段分组、其他字段和改密页。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/person/PersonItems.kt",
+          "line": 177
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicStudentInfoView.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "PersonInfoDestination.kt"
+      ]
+    },
+    {
+      "id": "S030",
+      "category": "学籍与联系人",
+      "feature": "证件照与行政班同学通讯录",
+      "status": "missing",
+      "upstreamBehavior": "取学生照片，并有行政班同学电话/邮件列表。",
+      "iosBehavior": "个人页使用通用图标；仅有教学班同学接口。",
+      "gap": "缺学籍证件照及行政班通讯录（不是教学班同学）。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/person/ClassmatesScreen.kt",
+          "line": 58
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicStudentInfoView.swift",
+          "line": 12
+        }
+      ],
+      "destinations": [
+        "ClassmatesDestination.kt"
+      ]
+    },
+    {
+      "id": "S031",
+      "category": "校园卡与缴费",
+      "feature": "校园卡余额、未结算、卡号、限额、充值和付款码",
+      "status": "parity",
+      "upstreamBehavior": "原生卡信息及官方充值/付款码。",
+      "iosBehavior": "相应原生字段、支付宝充值和官方付款码入口均有。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/card/function/main/home.kt",
+          "line": 131
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S032",
+      "category": "校园卡与缴费",
+      "feature": "原生账单分页、详情、关键词及日期范围查询",
+      "status": "partial",
+      "upstreamBehavior": "账单原生分页、详情、关键词与日期范围检索。",
+      "iosBehavior": "无原生账单列表；有完整慧新平台网页入口。",
+      "gap": "缺原生账单查询体验，网页仍可查。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/card/function/SearchBillsUI.kt",
+          "line": 73
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 39
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt",
+        "SearchBillsDestination.kt"
+      ]
+    },
+    {
+      "id": "S033",
+      "category": "校园卡与缴费",
+      "feature": "消费统计、消费地点分析及预测",
+      "status": "partial",
+      "upstreamBehavior": "月/年统计、消费地点和预测图表。",
+      "iosBehavior": "只有余额；可进入官方平台。",
+      "gap": "缺原版原生消费统计和预测图表。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/card/count/BillAnalysisScreen.kt",
+          "line": 256
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S034",
+      "category": "校园卡与缴费",
+      "feature": "卡管理/挂失操作的原生入口",
+      "status": "inactive",
+      "upstreamBehavior": "CardLostScreen只有空Column，原生挂失/解挂未实现。",
+      "iosBehavior": "卡管理统一进入慧新网页。",
+      "gap": "上游原生功能也未启用，不列成熟能力缺失；两端可转官方平台。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/card/function/main/home.kt",
+          "line": 573
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 39
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S035",
+      "category": "校园卡与缴费",
+      "feature": "自动转账限额修改",
+      "status": "inactive",
+      "upstreamBehavior": "界面明确提示接口即使修改也无效。",
+      "iosBehavior": "展示限额但无修改。",
+      "gap": "原版无有效操作，不当作缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/card/function/CardLimit.kt",
+          "line": 90
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 27
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S036",
+      "category": "校园卡与缴费",
+      "feature": "合肥/宣城电费单电表查询和官方缴费",
+      "status": "parity",
+      "upstreamBehavior": "根据楼栋/房间/电表区域查余额。",
+      "iosBehavior": "1.2.3有楼栋房间和单电表查询、官方缴费入口。",
+      "gap": "用户新要求的自动查双电表属于后续新增，不纳入本基线。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/electric/ElectricUI.kt",
+          "line": 625
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 69
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S037",
+      "category": "校园网",
+      "feature": "校园网入口、慧新余额与流量查询",
+      "status": "parity",
+      "upstreamBehavior": "校区入口及慧新校园网余额/流量。",
+      "iosBehavior": "有两校区本地网关与原生慧新余额/流量。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/loginWeb/loginWebUI.kt",
+          "line": 119
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 184
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S038",
+      "category": "校园网",
+      "feature": "原生一键登录/注销及连通性测试",
+      "status": "partial",
+      "upstreamBehavior": "按校区发登录/注销请求并可测连通。",
+      "iosBehavior": "依赖对应网关网页交互，无原生操作按钮。",
+      "gap": "缺原生网关控制和连通性测试。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/loginWeb/loginWebUI.kt",
+          "line": 350
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 211
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S039",
+      "category": "校园网",
+      "feature": "历史月费用量及学期网络统计",
+      "status": "partial",
+      "upstreamBehavior": "登录自助平台取年/月费用量，报告可汇总学期使用。",
+      "iosBehavior": "只有自助平台网页入口，无历史解析和统计。",
+      "gap": "缺原生历史账单、时长/流量和学期汇总。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/loginWeb/SchoolNetHistoryUI.kt",
+          "line": 63
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 184
+        }
+      ],
+      "destinations": [
+        "SchoolCardDestination.kt"
+      ]
+    },
+    {
+      "id": "S040",
+      "category": "洗浴与洗衣",
+      "feature": "洗浴账户登录、个人余额及慧新洗浴缴费",
+      "status": "parity",
+      "upstreamBehavior": "呱呱/慧新平台账户和余额。",
+      "iosBehavior": "有手机号密码登录、令牌保存、账户和余额查询。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/shower/login/ShowerLogin.kt",
+          "line": 167
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 248
+        }
+      ],
+      "destinations": [
+        "GuaGuaLoginDestination.kt",
+        "GuaGuaCheckLoginDestination.kt"
+      ]
+    },
+    {
+      "id": "S041",
+      "category": "洗浴与洗衣",
+      "feature": "呱呱花洒MAC绑定/备注及启停状态",
+      "status": "missing",
+      "upstreamBehavior": "可录MAC、备注、请求启动洗浴和看状态。",
+      "iosBehavior": "只有账户信息/余额，无花洒控制。",
+      "gap": "缺原生花洒管理和启动/状态功能。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/shower/home/function/StartShowerUI.kt",
+          "line": 108
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 248
+        }
+      ],
+      "destinations": [
+        "GuaGuaDestination.kt"
+      ]
+    },
+    {
+      "id": "S042",
+      "category": "洗浴与洗衣",
+      "feature": "洗浴使用码查看/重置、账单、备用loginCode登录",
+      "status": "missing",
+      "upstreamBehavior": "有使用码及重置、洗浴账单和loginCode备用入口。",
+      "iosBehavior": "无对应服务方法或页面。",
+      "gap": "缺使用码/重置、洗浴账单和备用登录。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/shower/home/function/UseCodeUI.kt",
+          "line": 188
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 248
+        }
+      ],
+      "destinations": [
+        "GuaGuaDestination.kt",
+        "GuaGuaLoginDestination.kt"
+      ]
+    },
+    {
+      "id": "S043",
+      "category": "洗浴与洗衣",
+      "feature": "海乐洗衣/洗鞋/烘干场所、设备状态和预计结束",
+      "status": "parity",
+      "upstreamBehavior": "按校区/类别查询场所及设备。",
+      "iosBehavior": "有类别、楼层设备、空闲/离线与预计完成时间。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/HaiLeWashingDetailDestination.kt",
+          "line": 23
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 456
+        }
+      ],
+      "destinations": [
+        "HaiLeWashingDestination.kt",
+        "HaiLeWashingDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S044",
+      "category": "洗浴与洗衣",
+      "feature": "海乐支付由官方微信小程序完成",
+      "status": "parity",
+      "upstreamBehavior": "原版设备支付按钮仅toast提示使用微信小程序海乐生活。",
+      "iosBehavior": "只打开微信，提示用户自行搜索（文案还含非原版智慧笑联）。",
+      "gap": "原版并无精确直达支付能力；iOS多余智慧笑联文案属于文案差异。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/washing/HaiLe.kt",
+          "line": 351
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 401
+        }
+      ],
+      "destinations": [
+        "HaiLeWashingDestination.kt"
+      ]
+    },
+    {
+      "id": "S045",
+      "category": "图书馆",
+      "feature": "我的状态、借阅记录和两种图书检索/馆藏位置",
+      "status": "parity",
+      "upstreamBehavior": "新图书馆及智慧社区搜索，借阅与馆藏。",
+      "iosBehavior": "已有状态、借阅记录、社区/新馆搜索和馆藏位置。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/library/LibraryScreen.kt",
+          "line": 140
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LibraryServiceView.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "LibraryDestination.kt"
+      ]
+    },
+    {
+      "id": "S046",
+      "category": "图书馆",
+      "feature": "借阅记录关键词频次与聚合分析",
+      "status": "partial",
+      "upstreamBehavior": "原版借阅记录页对图书关键词进行清理和频次聚合，使用状态统计；分页本身为注释。",
+      "iosBehavior": "有借阅状态计数和记录详情，没有关键词频次聚合。",
+      "gap": "缺借阅关键词聚合分析；不将全部历史加载或分页算作差异，因为原版分页亦未启用。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/library/screen/BorrowedScreen.kt",
+          "line": 117
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LibraryServiceView.swift",
+          "line": 180
+        }
+      ],
+      "destinations": [
+        "LibraryBorrowedDestination.kt"
+      ]
+    },
+    {
+      "id": "S047",
+      "category": "图书馆",
+      "feature": "续借、图书预约、合肥座位与研讨间入口",
+      "status": "parity",
+      "upstreamBehavior": "续借/预约等本就转官方网页。",
+      "iosBehavior": "相同官方入口存在，不能当未移植原生业务。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/library/LibraryScreen.kt",
+          "line": 620
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/LibraryServiceView.swift",
+          "line": 84
+        }
+      ],
+      "destinations": [
+        "LibraryDestination.kt"
+      ]
+    },
+    {
+      "id": "S048",
+      "category": "预约",
+      "feature": "社区场地/座位列表与分页",
+      "status": "missing",
+      "upstreamBehavior": "最新dev已有两类列表和分页。",
+      "iosBehavior": "预约页仍为功能开发中。",
+      "gap": "缺社区场地和座位一级查询页面。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/appointment/AppointmentScreen.kt",
+          "line": 125
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 305
+        }
+      ],
+      "destinations": [
+        "AppointmentDestination.kt"
+      ]
+    },
+    {
+      "id": "S049",
+      "category": "预约",
+      "feature": "场地可用时段和可预约过滤",
+      "status": "missing",
+      "upstreamBehavior": "最新dev显示时间芯片，可筛选可用时段；占用详情点击后只是占位页。",
+      "iosBehavior": "预约页无数据查询。",
+      "gap": "缺时段/可用过滤；占用明细上游尚未完成，另列未启用。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/appointment/AppointmentScreen.kt",
+          "line": 150
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 305
+        }
+      ],
+      "destinations": [
+        "AppointmentDestination.kt"
+      ]
+    },
+    {
+      "id": "S050",
+      "category": "预约",
+      "feature": "指定日期切换及最终提交预约",
+      "status": "inactive",
+      "upstreamBehavior": "日期按钮TODO；场地/座位详情仍DevelopingIcon，无提交闭环。",
+      "iosBehavior": "开发中占位。",
+      "gap": "上游未开放，不列为iOS可用功能缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/AppointmentPlaceDestination.kt",
+          "line": 69
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 305
+        }
+      ],
+      "destinations": [
+        "AppointmentPlaceDestination.kt",
+        "AppointmentSeatDestination.kt"
+      ]
+    },
+    {
+      "id": "S051",
+      "category": "校园与学工",
+      "feature": "宿舍信息、成员与卫生评分",
+      "status": "parity",
+      "upstreamBehavior": "智慧社区宿舍信息和评分列表。",
+      "iosBehavior": "有信息、成员和评分接口及列表。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/DormitoryDestination.kt",
+          "line": 17
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 345
+        }
+      ],
+      "destinations": [
+        "DormitoryDestination.kt"
+      ]
+    },
+    {
+      "id": "S052",
+      "category": "校园与学工",
+      "feature": "今日校园分类服务导航",
+      "status": "parity",
+      "upstreamBehavior": "按stu.json分类打开学生事务链接。",
+      "iosBehavior": "包含同源stu.json和分类服务导航。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/StuTodayCampusDestination.kt",
+          "line": 18
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TodayCampusView.swift",
+          "line": 5
+        }
+      ],
+      "destinations": [
+        "StuTodayCampusDestination.kt"
+      ]
+    },
+    {
+      "id": "S053",
+      "category": "校园与学工",
+      "feature": "第二课堂活动分页与活动详情",
+      "status": "partial",
+      "upstreamBehavior": "原生分页活动列表及官方详细信息。",
+      "iosBehavior": "原生列表只取默认第一页，详情打开网页。",
+      "gap": "缺活动列表分页，详情主要依赖网页。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/SecondClass.kt",
+          "line": 281
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 529
+        }
+      ],
+      "destinations": [
+        "SecondClassDestination.kt"
+      ]
+    },
+    {
+      "id": "S054",
+      "category": "校园与学工",
+      "feature": "校园邮箱单点获取与打开",
+      "status": "parity",
+      "upstreamBehavior": "校方邮箱登录链接。",
+      "iosBehavior": "有原生获取邮箱链接与打开，首次激活入口。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/one/mail/Mail.kt",
+          "line": 88
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 99
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "S055",
+      "category": "校园与学工",
+      "feature": "两校区智慧后勤入口",
+      "status": "parity",
+      "upstreamBehavior": "打开对应校区官方后勤服务。",
+      "iosBehavior": "按校区提供官方网页入口。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/window/RepairWindow.kt",
+          "line": 57
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 246
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "S056",
+      "category": "校园与学工",
+      "feature": "办事大厅事项分类/搜索列表",
+      "status": "partial",
+      "upstreamBehavior": "原生办事大厅页面展示服务事项。",
+      "iosBehavior": "直接打开ehall首页。",
+      "gap": "缺原生服务目录，官方网页仍可使用。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/hall/OfficeHallScreen.kt",
+          "line": 93
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 113
+        }
+      ],
+      "destinations": [
+        "OfficeHallDestination.kt"
+      ]
+    },
+    {
+      "id": "S057",
+      "category": "校园与学工",
+      "feature": "费用欠缴查询与官方支付/二维码",
+      "status": "parity",
+      "upstreamBehavior": "查询欠费并进入官方支付。",
+      "iosBehavior": "已有欠费汇总、项目及支付页面和二维码。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/FeeDestination.kt",
+          "line": 17
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 354
+        }
+      ],
+      "destinations": [
+        "FeeDestination.kt"
+      ]
+    },
+    {
+      "id": "S058",
+      "category": "校历与出行",
+      "feature": "学期进度、作息时间、线下课程与校历",
+      "status": "parity",
+      "upstreamBehavior": "智慧社区学期进度、作息、线下课程和校历。",
+      "iosBehavior": "有相应请求和原生展示。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/community/workRest/WorkAndRest.kt",
+          "line": 59
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 186
+        }
+      ],
+      "destinations": [
+        "WorkAndRestDestination.kt"
+      ]
+    },
+    {
+      "id": "S059",
+      "category": "校历与出行",
+      "feature": "实时校车出行/全部安排及起终点筛选",
+      "status": "parity",
+      "upstreamBehavior": "自然星期、日期、站点、未发车筛选。",
+      "iosBehavior": "相应逻辑和刷新时钟已实现。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/BusDestination.kt",
+          "line": 18
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusUpdateViews.swift",
+          "line": 80
+        }
+      ],
+      "destinations": [
+        "BusDestination.kt"
+      ]
+    },
+    {
+      "id": "S060",
+      "category": "校历与出行",
+      "feature": "节假日与调休日历",
+      "status": "parity",
+      "upstreamBehavior": "国家节假日数据及调休说明。",
+      "iosBehavior": "有国家节假日、调休及相关校历入口。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/HolidayDestination.kt",
+          "line": 17
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 635
+        }
+      ],
+      "destinations": [
+        "HolidayDestination.kt"
+      ]
+    },
+    {
+      "id": "S061",
+      "category": "天气地图",
+      "feature": "实时天气及官方详情链接",
+      "status": "partial",
+      "upstreamBehavior": "使用和风天气嵌入数据。",
+      "iosBehavior": "默认Open-Meteo；有和风官方链接及可选自有配置客户端。",
+      "gap": "数据源不同，默认未启用原版和风天气链。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/life/QWeather.kt",
+          "line": 82
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 446
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S062",
+      "category": "天气地图",
+      "feature": "默认内嵌实时气象预警",
+      "status": "partial",
+      "upstreamBehavior": "原版请求并嵌入和风预警。",
+      "iosBehavior": "默认数据源无预警流，仅官方预警链接；自有QWeather配置才有内嵌可能。",
+      "gap": "缺默认可用的嵌入预警数据流，不可把未连接写作无预警。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 353
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CampusWeatherClient.swift",
+          "line": 87
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S063",
+      "category": "天气地图",
+      "feature": "校园地图图片浏览",
+      "status": "parity",
+      "upstreamBehavior": "校方地图图片列表。",
+      "iosBehavior": "有校方地图图片请求与分页浏览。",
+      "gap": "",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/life/Map.kt",
+          "line": 26
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 455
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S064",
+      "category": "资讯",
+      "feature": "校区新闻、教务公告、学院新闻分类/搜索与分页",
+      "status": "partial",
+      "upstreamBehavior": "原生校园新闻、教务/宣城/院系栏目及列表。",
+      "iosBehavior": "校园新闻只打开news.hfut.edu.cn。",
+      "gap": "缺原版原生分类/搜索/分页浏览，官网仍可达。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/news/home/NewsActivityUI.kt",
+          "line": 106
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 89
+        }
+      ],
+      "destinations": [
+        "NewsDestination.kt",
+        "NewsApiDestination.kt",
+        "DepartmentsDestination.kt"
+      ]
+    },
+    {
+      "id": "S065",
+      "category": "资讯",
+      "feature": "就业招聘/宣讲等搜索、类别和分页",
+      "status": "partial",
+      "upstreamBehavior": "原生WorkScreen按校区、类型、关键词分页。",
+      "iosBehavior": "提供四个就业官方网页入口。",
+      "gap": "缺原生招聘/宣讲检索及列表，官网功能可用。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/work/Work.kt",
+          "line": 119
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusUpdateViews.swift",
+          "line": 25
+        }
+      ],
+      "destinations": [
+        "WorkDestination.kt"
+      ]
+    },
+    {
+      "id": "S066",
+      "category": "资讯",
+      "feature": "本科招生地区/年份计划与录取分数线",
+      "status": "partial",
+      "upstreamBehavior": "原生招生列表、地区详情、分数及选科要求。",
+      "iosBehavior": "只有本科招生官网链接。",
+      "gap": "缺原生历年计划/分数查询。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/admission/AdmissionScreen.kt",
+          "line": 181
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 111
+        }
+      ],
+      "destinations": [
+        "AdmissionDestination.kt",
+        "AdmissionDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "S067",
+      "category": "资讯",
+      "feature": "校友平台官方网页入口",
+      "status": "parity",
+      "upstreamBehavior": "最新dev校友改为直接打开官方平台。",
+      "iosBehavior": "已有xypt官方网页入口。",
+      "gap": "旧微信校友功能在最新上游已移除，不能继续列缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/alumni/Alumni.kt",
+          "line": 26
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 104
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "S068",
+      "category": "资讯",
+      "feature": "事务跟踪提案板、状态流程和筛选",
+      "status": "partial",
+      "upstreamBehavior": "原生GitHub issue列表、标签状态流程图。",
+      "iosBehavior": "直接打开GitHub Issues网页。",
+      "gap": "缺原生提案列表及状态可视化。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/Track.kt",
+          "line": 141
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 118
+        }
+      ],
+      "destinations": [
+        "TrackDestination.kt"
+      ]
+    },
+    {
+      "id": "S069",
+      "category": "资讯",
+      "feature": "开发者通知收件箱、已读计数/红点",
+      "status": "missing",
+      "upstreamBehavior": "云通知列表和读状态记录。",
+      "iosBehavior": "通知入口实际为系统课程提醒授权页；云通知虽解析但无列表消费者。",
+      "gap": "缺通知内容列表及未读/已读状态。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/my/notification/NotificationItems.kt",
+          "line": 68
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 758
+        }
+      ],
+      "destinations": [
+        "NotificationsDestination.kt",
+        "NotificationBoxDestination.kt"
+      ]
+    },
+    {
+      "id": "S070",
+      "category": "学期报告",
+      "feature": "学业/考试/成绩趋势与排名报告",
+      "status": "partial",
+      "upstreamBehavior": "报告按学期/全学段汇总学业、考试、排名和图表。",
+      "iosBehavior": "报告只有本地课程/地点数量和学籍。",
+      "gap": "缺原版学业统计、图表、排名等报告内容。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/report/AcademicAnalysisSection.kt",
+          "line": 142
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 536
+        }
+      ],
+      "destinations": [
+        "TermReportDestination.kt"
+      ]
+    },
+    {
+      "id": "S071",
+      "category": "学期报告",
+      "feature": "消费预测、餐饮/地点统计报告",
+      "status": "missing",
+      "upstreamBehavior": "报告可取卡账单/预测并分析消费。",
+      "iosBehavior": "本地简报不读取卡账单。",
+      "gap": "缺消费报告系列。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/report/ExpenseAnalysisSection.kt",
+          "line": 66
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 536
+        }
+      ],
+      "destinations": [
+        "TermReportDestination.kt"
+      ]
+    },
+    {
+      "id": "S072",
+      "category": "学期报告",
+      "feature": "图书馆、宿舍评分、校园网生活报告",
+      "status": "missing",
+      "upstreamBehavior": "报告汇总借阅、宿舍评分和学期网络使用。",
+      "iosBehavior": "简报没有这些数据。",
+      "gap": "缺生活/图书馆/校园网报告。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/report/LifeReportSection.kt",
+          "line": 46
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 536
+        }
+      ],
+      "destinations": [
+        "TermReportDestination.kt"
+      ]
+    },
+    {
+      "id": "S073",
+      "category": "学期报告",
+      "feature": "报告准备、学期范围、全选与图片导出分享",
+      "status": "missing",
+      "upstreamBehavior": "准备数据、选学期，生成图片并保存/分享。",
+      "iosBehavior": "固定本地简报，不能选范围或生成报告图片。",
+      "gap": "缺完整报告生成与导出流程。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/report/TermReportExporter.kt",
+          "line": 117
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 536
+        }
+      ],
+      "destinations": [
+        "TermReportDestination.kt"
+      ]
+    },
+    {
+      "id": "S074",
+      "category": "信息共建",
+      "feature": "云日程浏览/搜索/排序/下载到本地",
+      "status": "missing",
+      "upstreamBehavior": "Supabase首页请求云日程，支持检索/排序/下载或覆盖本地。",
+      "iosBehavior": "信息共建入口只指向community校站，无Supabase客户端。",
+      "gap": "缺云日程消费和本地联动；当前服务是否在线未验收。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/supabase/home/SupabaseHomeScreen.kt",
+          "line": 92
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 109
+        }
+      ],
+      "destinations": [
+        "SupabaseDestination.kt"
+      ]
+    },
+    {
+      "id": "S075",
+      "category": "信息共建",
+      "feature": "校园邮箱注册/登录、云贡献及我的管理",
+      "status": "missing",
+      "upstreamBehavior": "有校园邮箱账号、上传/我的事件、删除等流程。",
+      "iosBehavior": "无相应账户/提交/管理实现。",
+      "gap": "缺云账号、贡献和已贡献管理；服务在线状态另验。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/supabase/manage/SupabaseMeScreen.kt",
+          "line": 98
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 109
+        }
+      ],
+      "destinations": [
+        "SupabaseDestination.kt",
+        "SupabaseLoginDestination.kt"
+      ]
+    },
+    {
+      "id": "S076",
+      "category": "信息共建",
+      "feature": "已下载云日程管理与适用范围过滤",
+      "status": "missing",
+      "upstreamBehavior": "本地下载库和校区/班级过滤。",
+      "iosBehavior": "普通自建日程没有云来源/下载同步。",
+      "gap": "缺云事件下载管理与适用范围过滤。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/supabase/focus/SupabaseStroageScreen.kt",
+          "line": 50
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CustomEventViews.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "SupabaseDestination.kt"
+      ]
+    },
+    {
+      "id": "S077",
+      "category": "信息共建",
+      "feature": "云网址导航子页",
+      "status": "inactive",
+      "upstreamBehavior": "Supabase首页右tab仍DevelopingIcon。",
+      "iosBehavior": "没有对应云网址共建。",
+      "gap": "上游该子页未启用，不能列为成熟能力缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/supabase/home/SupabaseHomeScreen.kt",
+          "line": 132
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 109
+        }
+      ],
+      "destinations": [
+        "SupabaseDestination.kt"
+      ]
+    },
+    {
+      "id": "S078",
+      "category": "第三方入口",
+      "feature": "第三方常用应用完整快捷集合",
+      "status": "partial",
+      "upstreamBehavior": "新生指南、支付宝、热水机、乐跑、今日校园、雨课堂、学习通等入口。",
+      "iosBehavior": "第三方页仅指南、取件码、校园卡四类；查询中心另有部分官方页。",
+      "gap": "缺原版完整的常用App/小程序快捷集合。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/life/QWeather.kt",
+          "line": 118
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 620
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S079",
+      "category": "第三方入口",
+      "feature": "快递身份码、学信网、创新创业等官方入口",
+      "status": "parity",
+      "upstreamBehavior": "此类服务本就打开官方网页/其他应用。",
+      "iosBehavior": "已有官方入口或明确外部打开。",
+      "gap": "不能仅因iOS没有独立原生页而记缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/life/Express.kt",
+          "line": 22
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Models/CampusFeature.swift",
+          "line": 98
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "S080",
+      "category": "课程教师与教室",
+      "feature": "教学班同学姓名/学号搜索与分组统计",
+      "status": "partial",
+      "upstreamBehavior": "原版可搜索学号/班级/姓名，并按班级/性别/年级聚合。",
+      "iosBehavior": "只有完整姓名、学号、班级、性别列表，没有检索和统计控件。",
+      "gap": "缺教学班同学检索和人数分类统计。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/totalCourse/TotalCourseUI.kt",
+          "line": 751
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 89
+        }
+      ],
+      "destinations": [
+        "CourseClassmatesDestination.kt"
+      ]
+    },
+    {
+      "id": "S081",
+      "category": "课程教师与教室",
+      "feature": "教室名称检索与课程地点预填",
+      "status": "partial",
+      "upstreamBehavior": "原版有教室名称搜索及课程详情跳转传入地点。",
+      "iosBehavior": "OfficialClassroomSearchView的init(query:)为空；无名称输入框，已有client搜索函数无UI调用。",
+      "gap": "缺名称搜索和从课程详情带入地点。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/classroom/ClassroomScreen.kt",
+          "line": 352
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 154
+        }
+      ],
+      "destinations": [
+        "ClassroomDestination.kt"
+      ]
+    },
+    {
+      "id": "S082",
+      "category": "课程教师与教室",
+      "feature": "空教室多楼栋/多楼层选择和分页",
+      "status": "partial",
+      "upstreamBehavior": "请求selectedBuildings/selectedFloors数组，列表有page控制。",
+      "iosBehavior": "只支持单楼栋、单楼层，界面无翻页。",
+      "gap": "缺组合多选和后续结果页。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/classroom/ClassroomScreen.kt",
+          "line": 445
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 170
+        }
+      ],
+      "destinations": [
+        "ClassroomDestination.kt"
+      ]
+    },
+    {
+      "id": "S083",
+      "category": "课程教师与教室",
+      "feature": "搜索所得教学班的完整课程资料",
+      "status": "partial",
+      "upstreamBehavior": "搜索结果复用DetailItems，可展开完整课程资料。",
+      "iosBehavior": "开课搜索结果只是VStack文本，没有详情跳转；已同步自身课程另有CourseDetailView。",
+      "gap": "缺从开课搜索结果查看完整课程资料的链路。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/courseSearch/CourseSearchUI.kt",
+          "line": 351
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/OfficialCampusViews.swift",
+          "line": 41
+        }
+      ],
+      "destinations": [
+        "CourseSearchDestination.kt"
+      ]
+    },
+    {
+      "id": "S084",
+      "category": "学籍与联系人",
+      "feature": "学号点击复制和敏感字段显隐",
+      "status": "partial",
+      "upstreamBehavior": "原版学籍页学号可复制，私人/密码字段有显隐控制。",
+      "iosBehavior": "字段使用普通LabeledContent；个人页无点击复制/显隐控件。",
+      "gap": "缺对应字段交互；设置中的密码编辑器是另一功能。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/person/PersonItems.kt",
+          "line": 244
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicStudentInfoView.swift",
+          "line": 54
+        }
+      ],
+      "destinations": [
+        "PersonInfoDestination.kt"
+      ]
+    },
+    {
+      "id": "S085",
+      "category": "洗浴与洗衣",
+      "feature": "合肥慧新洗衣缴费专用入口",
+      "status": "partial",
+      "upstreamBehavior": "合肥洗衣页带登录token打开慧新feeitem26专用缴费页。",
+      "iosBehavior": "洗衣页只做海乐设备，未直达慧新合肥洗衣项目；可从通用慧新平台找项目。",
+      "gap": "缺合肥洗衣专用缴费入口，非独立原生余额接口缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/washing/Washing.kt",
+          "line": 142
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusServiceViews.swift",
+          "line": 376
+        }
+      ],
+      "destinations": [
+        "HaiLeWashingDestination.kt"
+      ]
+    },
+    {
+      "id": "S086",
+      "category": "天气地图",
+      "feature": "楼层图片正确资源路径与教室编号高亮",
+      "status": "partial",
+      "upstreamBehavior": "原版为相对image_url补building/detail前缀，并解析XML供教室编号选择/区域高亮。",
+      "iosBehavior": "楼层UI仅AsyncImage，直接把相对文件名转URL，无前缀；无XML教室选择/高亮。",
+      "gap": "楼层图片地址处理不完整；缺教室编号定位高亮。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/window/FloorMapWindow.kt",
+          "line": 86
+        },
+        {
+          "path": "src/source/building/list.json",
+          "line": 12
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 599
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S087",
+      "category": "天气地图",
+      "feature": "按课程地点自动进入教室导向",
+      "status": "inactive",
+      "upstreamBehavior": "FloorMapApiWindow.Content仍只有TODO。",
+      "iosBehavior": "无对应自动教室定位。",
+      "gap": "原版未启用，不能当可用功能缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/window/FloorMapApiWindow.kt",
+          "line": 18
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 577
+        }
+      ],
+      "destinations": [
+        "LifeDestination.kt"
+      ]
+    },
+    {
+      "id": "S088",
+      "category": "预约",
+      "feature": "场地占用详情窗口",
+      "status": "inactive",
+      "upstreamBehavior": "PlaceAppointmentOccupiedDetailWindow仅TODO和DevelopingIcon，没有明细请求。",
+      "iosBehavior": "无对应窗口。",
+      "gap": "上游尚未实现，不能因点击能打开窗口就算可用功能。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/window/PlaceAppointmentOccupiedDetailWindow.kt",
+          "line": 78
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/FeatureDetailView.swift",
+          "line": 305
+        }
+      ],
+      "destinations": [
+        "AppointmentDestination.kt"
+      ]
+    },
+    {
+      "id": "T001",
+      "category": "外观",
+      "feature": "跟随系统、浅色、深色模式",
+      "status": "parity",
+      "upstreamBehavior": "提供主题模式选择。",
+      "iosBehavior": "AppAppearance控制WindowGroup的preferredColorScheme。",
+      "gap": "源码能力已有。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 263
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/HFUTScheduleApp.swift",
+          "line": 30
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T002",
+      "category": "外观",
+      "feature": "手动自定义主题色和色彩调节",
+      "status": "partial",
+      "upstreamBehavior": "支持自定义颜色、色相取色与多种ColorStyle。",
+      "iosBehavior": "有ColorPicker、十六进制颜色存储和鲜艳度调节。",
+      "gap": "手动取色已有；未提供原版整套ColorStyle方案和色相带配置。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 268
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 113
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T003",
+      "category": "外观",
+      "feature": "由照片或系统壁纸提取主题色",
+      "status": "missing",
+      "upstreamBehavior": "选择照片或读取壁纸，提取主题色。",
+      "iosBehavior": "只有手动ColorPicker，没有照片取色流程。",
+      "gap": "照片取色缺失；系统壁纸读取本身还涉及平台API差异。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 536
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 118
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T004",
+      "category": "外观",
+      "feature": "纯黑深色背景开关实际生效",
+      "status": "partial",
+      "upstreamBehavior": "enablePureDark进入主题渲染，纯黑背景可开关。",
+      "iosBehavior": "纯黑开关可保存，但AppTheme.background固定系统色渐变，没有读取pureBlack。",
+      "gap": "设置有UI和存储，缺实际背景消费。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 259
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 75
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/AppTheme.swift",
+          "line": 38
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T005",
+      "category": "外观",
+      "feature": "液态玻璃和层级模糊可独立关闭",
+      "status": "partial",
+      "upstreamBehavior": "有enableLiquidGlass、enableHazeBlur等实际渲染开关。",
+      "iosBehavior": "有系统Material/Glass降级，但appLiquidGlassEnabled仅在设置和备份出现。",
+      "gap": "缺应用开关对实际材质的控制；有材质不等于开关已接入。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 270
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 256
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 79
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T006",
+      "category": "外观",
+      "feature": "转场级别、速率、默认动画和容器形变配置",
+      "status": "missing",
+      "upstreamBehavior": "可调transitionLevel、sharedNavSpeedRadio、默认转场、填充策略、倾斜、二次形变、双重扩展和闪屏。",
+      "iosBehavior": "使用固定SwiftUI导航缩放/系统动画并跟随减少动态效果。",
+      "gap": "缺上述用户可调参数；不是说iOS完全没有动效。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 261
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 274
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+          "line": 88
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt",
+        "SettingsScreenCornerDestination.kt"
+      ]
+    },
+    {
+      "id": "T007",
+      "category": "外观",
+      "feature": "运动模糊及相机实时材质渲染",
+      "status": "platform",
+      "upstreamBehavior": "Android支持条件下可启用motionBlur和相机动态记录渲染。",
+      "iosBehavior": "没有同名渲染管线。",
+      "gap": "属于平台专属图形实现；iOS现有系统玻璃不能等同于原版这两项效果。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 260
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 271
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+          "line": 3
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T008",
+      "category": "外观",
+      "feature": "底栏标签显示策略开关",
+      "status": "partial",
+      "upstreamBehavior": "showBottomBarLabel影响底栏是否总显示标签。",
+      "iosBehavior": "开关可保存，RootView四个tabItem总是带Label。",
+      "gap": "缺设置对底栏显示的实际作用。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 269
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 83
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/RootView.swift",
+          "line": 11
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T009",
+      "category": "外观",
+      "feature": "新版悬浮底栏样式与安全边距配置",
+      "status": "missing",
+      "upstreamBehavior": "可选择新底栏并调整底部安全边距；MainUI实际消费。",
+      "iosBehavior": "只有系统TabView及固定布局，没有样式/安全边距偏好。",
+      "gap": "缺原版可选择的新底栏配置；iOS系统安全区适配本身已有。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 931
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 973
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/RootView.swift",
+          "line": 7
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt",
+        "SettingsLabDestination.kt"
+      ]
+    },
+    {
+      "id": "T010",
+      "category": "课表外观",
+      "feature": "课表方格高度、文字大小、内边距和透明度调节",
+      "status": "missing",
+      "upstreamBehavior": "CalendarUISettings调整方格高度、字号、文字padding及alpha。",
+      "iosBehavior": "hourHeight和卡片字号/圆角等大部分为固定值。",
+      "gap": "缺用户可调的方格视觉参数。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 1119
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 1120
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 156
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 344
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T011",
+      "category": "课表外观",
+      "feature": "课表背景图片与前景模糊",
+      "status": "parity",
+      "upstreamBehavior": "可选课表背景并调整模糊。",
+      "iosBehavior": "PhotosPicker保存背景，网格加载并读取backgroundBlur。",
+      "gap": "已有相应功能，渲染效果按平台适配。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 1122
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppearanceSettingsScreen.kt",
+          "line": 1124
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 156
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 272
+        }
+      ],
+      "destinations": [
+        "SettingsAppearanceDestination.kt"
+      ]
+    },
+    {
+      "id": "T012",
+      "category": "课表外观",
+      "feature": "方格教师显示的条件模式",
+      "status": "partial",
+      "upstreamBehavior": "ShowTeacherConfig可区分不显示/仅多课程/总显示等策略。",
+      "iosBehavior": "一个布尔值控制每个方格是否加教师。",
+      "gap": "缺原版多档条件策略。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 590
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 80
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/TimetableGridView.swift",
+          "line": 379
+        }
+      ],
+      "destinations": [
+        "SettingsCalendarDestination.kt"
+      ]
+    },
+    {
+      "id": "T013",
+      "category": "课表偏好",
+      "feature": "默认课表来源设置的实际切换",
+      "status": "partial",
+      "upstreamBehavior": "defaultCalendar实际选择教务、智慧社区、UniApp等课程来源。",
+      "iosBehavior": "默认课程表选项能保存，但ScheduleView/聚焦不读取该设置选择来源。",
+      "gap": "设置为占位；实际多源课表缺口另见core矩阵。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 587
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 215
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 26
+        }
+      ],
+      "destinations": [
+        "SettingsCalendarDestination.kt"
+      ]
+    },
+    {
+      "id": "T014",
+      "category": "课表偏好",
+      "feature": "自动学期、手动semesterID与手动开始日期",
+      "status": "partial",
+      "upstreamBehavior": "自动判断学期，关闭后通过customTermValue加减20切换semesterID，开学日期另可设。",
+      "iosBehavior": "有自动开学日/手动开始日并用于周数；偏好页没有同等手动semesterID管理。",
+      "gap": "手动开始日已有；缺偏好页的学期编号切换配置，不能把改开学日期等同于改业务semesterID；按学期缓存和实际来源切换另见core。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 586
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 595
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 216
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScheduleView.swift",
+          "line": 18
+        }
+      ],
+      "destinations": [
+        "SettingsCalendarDestination.kt"
+      ]
+    },
+    {
+      "id": "T015",
+      "category": "偏好",
+      "feature": "无限滚轮",
+      "status": "inactive",
+      "upstreamBehavior": "该设置UI整段位于TODO延缓发布的块注释内，其collect也已注释。",
+      "iosBehavior": "没有独立循环滚轮设置。",
+      "gap": "原版未开放的设置，不计入缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 276
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 237
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T016",
+      "category": "偏好",
+      "feature": "应用语言设置",
+      "status": "inactive",
+      "upstreamBehavior": "语言选择控件disabled并提示正在开发。",
+      "iosBehavior": "没有独立应用内语言选择。",
+      "gap": "原版未开放，不计为已可用功能缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 234
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 209
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T017",
+      "category": "聚焦设置",
+      "feature": "聚焦首卡各数据项显示开关",
+      "status": "missing",
+      "upstreamBehavior": "可单独显示/隐藏今日、一卡通、电费、校园网及天气预警，设置进入FocusCard。",
+      "iosBehavior": "只有校园卡快捷动作与已完成/过期内容设置，没有每个首卡独立显示开关。",
+      "gap": "缺首卡项目显隐控制；首卡具体数据缺口见core。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusCardSettings.kt",
+          "line": 109
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 274
+        }
+      ],
+      "destinations": [
+        "SettingsFocusCardDestination.kt"
+      ]
+    },
+    {
+      "id": "T018",
+      "category": "聚焦设置",
+      "feature": "显示已结束课程和过期日程",
+      "status": "parity",
+      "upstreamBehavior": "结束课程显示开关已使用；旧过期日程独立设置部分注释。",
+      "iosBehavior": "有showFinishedToday/showExpiredEvents并由Dashboard过滤。",
+      "gap": "已有结束/过期内容的过滤能力；聚焦结束后自动切到明日属于core单独差异，不重复计入本项。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 98
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 218
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/DashboardView.swift",
+          "line": 12
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T019",
+      "category": "成绩设置",
+      "feature": "允许被排除成绩参与平均成绩计算",
+      "status": "parity",
+      "upstreamBehavior": "enableIgnoreUnjoinedGradeItems控制平均值排除。",
+      "iosBehavior": "有设置并由本地成绩统计读取。",
+      "gap": "已有对应能力。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 246
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 222
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AcademicRecordsView.swift",
+          "line": 214
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T020",
+      "category": "网络设置",
+      "feature": "校园网流量配额设置实际生效",
+      "status": "partial",
+      "upstreamBehavior": "maxFreeFlow用于宣城免费流量额度和剩余流量显示。",
+      "iosBehavior": "额度能保存，未被校园网查询/统计逻辑消费。",
+      "gap": "设置占位，不会改变实际流量计算。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 350
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/loginWeb/loginWeb.kt",
+          "line": 41
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 221
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/AppSettingsStore.swift",
+          "line": 19
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T021",
+      "category": "网络设置",
+      "feature": "通用请求范围/分页数量设置",
+      "status": "inactive",
+      "upstreamBehavior": "原版DEFAULT_PAGE_SIZE是固定常量30，并无用户可调requestRange设置。",
+      "iosBehavior": "iOS额外有pageSize设置，但只被设置、备份与开发信息展示读取。",
+      "gap": "不计为缺原版能力；iOS额外开关没有业务消费者。",
+      "upstreamEvidence": [
+        {
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/model/Constant.kt",
+          "line": 7
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 456
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NovemberSupportViews.swift",
+          "line": 40
+        }
+      ],
+      "destinations": [
+        "SettingsNetworkDestination.kt"
+      ]
+    },
+    {
+      "id": "T022",
+      "category": "网络设置",
+      "feature": "使用默认一卡通密码开关实际生效",
+      "status": "partial",
+      "upstreamBehavior": "使用默认密码选项影响默认与用户录入的密码选择。",
+      "iosBehavior": "useDefaultCardPassword只保存；实际客户端不读取这个布尔值。",
+      "gap": "缺开关对应的密码选择分支，不等于客户端完全不能认证。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/EditPasswordScreen.kt",
+          "line": 79
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/huiXin/loginWeb/getWeb.kt",
+          "line": 38
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 453
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/AppSettingsStore.swift",
+          "line": 26
+        }
+      ],
+      "destinations": [
+        "SettingsHuiXinPasswordDestination.kt"
+      ]
+    },
+    {
+      "id": "T023",
+      "category": "网络设置",
+      "feature": "录入和刷新教务密码、改密入口",
+      "status": "parity",
+      "upstreamBehavior": "可设置教务密码并获取/进入教务账户修改。",
+      "iosBehavior": "Keychain保存，手动刷新获取最新密码，官方改密入口均存在。",
+      "gap": "实际校方接口仍需账号验收。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/EditPasswordScreen.kt",
+          "line": 45
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 553
+        }
+      ],
+      "destinations": [
+        "SettingsJxglstuPasswordDestination.kt"
+      ]
+    },
+    {
+      "id": "T024",
+      "category": "网络设置",
+      "feature": "自动刷新登录状态",
+      "status": "inactive",
+      "upstreamBehavior": "该开关固定false且disabled，点击仅提示开发中。",
+      "iosBehavior": "iOS开关能存储，但没有冷启动认证消费者。",
+      "gap": "两端均没有已完成的此自动认证能力；iOS设置文案额外存在未接线问题。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/NetworkSettingsScreen.kt",
+          "line": 132
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 454
+        }
+      ],
+      "destinations": [
+        "SettingsNetworkDestination.kt"
+      ]
+    },
+    {
+      "id": "T025",
+      "category": "网络设置",
+      "feature": "刷新登录状态覆盖范围",
+      "status": "partial",
+      "upstreamBehavior": "refreshLogin打开/执行完整重新登录流程以刷新多平台。",
+      "iosBehavior": "网络设置和个人页仅调用refreshOnePortalToken。",
+      "gap": "刷新信息门户令牌不能等同于刷新CAS/教务、社区等全部会话。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/NetworkSettingsScreen.kt",
+          "line": 184
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProfileView.swift",
+          "line": 178
+        }
+      ],
+      "destinations": [
+        "SettingsNetworkDestination.kt"
+      ]
+    },
+    {
+      "id": "T026",
+      "category": "网络设置",
+      "feature": "数据上报设置与实际实现",
+      "status": "partial",
+      "upstreamBehavior": "enableUserTrack被采集链使用，可控制原版统计上报。",
+      "iosBehavior": "dataReporting仅有偏好存储，没有对应上报客户端。",
+      "gap": "iOS不会因此上传统计；设置文案与功能未连接，不应误称为已有上报系统。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/NetworkSettingsScreen.kt",
+          "line": 66
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/activity/MainActivity.kt",
+          "line": 144
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 455
+        }
+      ],
+      "destinations": [
+        "SettingsNetworkDestination.kt"
+      ]
+    },
+    {
+      "id": "T027",
+      "category": "备份",
+      "feature": "本地课表、日程和偏好备份恢复",
+      "status": "parity",
+      "upstreamBehavior": "提供本地备份与恢复入口。",
+      "iosBehavior": "JSON v2保存课程、日程和白名单偏好，支持旧课程数组及恢复前安全备份。",
+      "gap": "核心本地备份存在，但不是Android格式；格式与范围差异另列。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/BackupScreen.kt",
+          "line": 55
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleBackupPayload.swift",
+          "line": 4
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 424
+        }
+      ],
+      "destinations": [
+        "SettingsBackupDestination.kt"
+      ]
+    },
+    {
+      "id": "T028",
+      "category": "备份",
+      "feature": "Android ZIP备份兼容及完整应用数据范围",
+      "status": "partial",
+      "upstreamBehavior": "导出应用数据目录到ZIP，恢复ZIP覆盖应用数据。",
+      "iosBehavior": "只解码iOS课程数组/JSON v2；不含原生收藏、学籍/成绩缓存、背景文件和全部设置。",
+      "gap": "不能直接导入原Android ZIP；缺同等广度的数据备份。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/BackupScreen.kt",
+          "line": 124
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleBackupPayload.swift",
+          "line": 6
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleBackupPayload.swift",
+          "line": 10
+        }
+      ],
+      "destinations": [
+        "SettingsBackupDestination.kt"
+      ]
+    },
+    {
+      "id": "T029",
+      "category": "备份",
+      "feature": "下载导入游客预设数据源",
+      "status": "missing",
+      "upstreamBehavior": "备份页提供开发者guest_data.zip下载入口。",
+      "iosBehavior": "没有预设包下载/兼容导入。",
+      "gap": "缺原版游客预设体验流程。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/BackupScreen.kt",
+          "line": 165
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 415
+        }
+      ],
+      "destinations": [
+        "SettingsBackupDestination.kt"
+      ]
+    },
+    {
+      "id": "T030",
+      "category": "维护",
+      "feature": "缓存清理范围",
+      "status": "partial",
+      "upstreamBehavior": "可清理原版文件/网络缓存。",
+      "iosBehavior": "清理URLCache与WKWebsiteDataStore的磁盘/内存缓存。",
+      "gap": "网页缓存清理已有；没有原版针对全部Android文件缓存的对应管理。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 506
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 404
+        }
+      ],
+      "destinations": [
+        "SettingsConfigurationDestination.kt"
+      ]
+    },
+    {
+      "id": "T031",
+      "category": "设置检索",
+      "feature": "设置项搜索",
+      "status": "inactive",
+      "upstreamBehavior": "当前SettingsSearchDestination只渲染DevelopingIcon。",
+      "iosBehavior": "SettingsSearchView已有搜索和设置页跳转。",
+      "gap": "不能把原版尚未实现的搜索算iOS缺失，iOS此项反而已经提供。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/SettingsSearchDestination.kt",
+          "line": 65
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/SettingsScreens.swift",
+          "line": 706
+        }
+      ],
+      "destinations": [
+        "SettingsSearchDestination.kt"
+      ]
+    },
+    {
+      "id": "T032",
+      "category": "维护",
+      "feature": "版本检查和更新说明",
+      "status": "partial",
+      "upstreamBehavior": "获取仓库版本、展示更新信息和更新记录。",
+      "iosBehavior": "个人页文字恒为“已是最新版本”，只给Releases链接，没有请求远端版本进行比较。",
+      "gap": "缺真实在线版本检测与应用内原版更新历史展示；安装机制另属系统差异。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/update/UpdateUI.kt",
+          "line": 99
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProfileView.swift",
+          "line": 126
+        }
+      ],
+      "destinations": [
+        "UpdateHistoryDestination.kt",
+        "VersionInfoDestination.kt",
+        "UpdateSuccessfullyDestination.kt"
+      ]
+    },
+    {
+      "id": "T033",
+      "category": "维护",
+      "feature": "开发诊断与运行环境",
+      "status": "partial",
+      "upstreamBehavior": "开发页包含SDK、内存、CPU、电池、各会话/接口数据和可保存诊断内容。",
+      "iosBehavior": "DeveloperInfoView只展示App/系统/设备等少量信息，不含完整诊断浏览/保存。",
+      "gap": "缺原版完整运行状态诊断与信息导出；不会把展示凭据视为iOS应默认泄露。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/DeveloperScreen.kt",
+          "line": 141
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NovemberSupportViews.swift",
+          "line": 30
+        }
+      ],
+      "destinations": [
+        "SettingsDeveloperDestination.kt",
+        "SettingsAboutDeveloperDestination.kt"
+      ]
+    },
+    {
+      "id": "T034",
+      "category": "维护",
+      "feature": "反馈、项目与开源入口",
+      "status": "parity",
+      "upstreamBehavior": "提供反馈、源码、关于开发者和许可证入口。",
+      "iosBehavior": "About/Profile有GitHub反馈、项目、开源与环境入口，OCR附许可。",
+      "gap": "入口级能力已提供；原版开发者履历展示并非业务缺口。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AboutSettingsScreen.kt",
+          "line": 78
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProfileView.swift",
+          "line": 247
+        }
+      ],
+      "destinations": [
+        "SettingsAboutDestination.kt",
+        "SettingsAboutDeveloperDestination.kt",
+        "AgreementDestination.kt",
+        "TipsDestination.kt"
+      ]
+    },
+    {
+      "id": "T035",
+      "category": "AI",
+      "feature": "DeepSeek用户Key、连续对话、复制与清空",
+      "status": "parity",
+      "upstreamBehavior": "使用用户Key进行多轮对话，长按复制并可清空。",
+      "iosBehavior": "Keychain Key、多轮消息、选择复制、清空和停止请求。",
+      "gap": "核心聊天已实现；页面离开后不保留历史。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/AI.kt",
+          "line": 164
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift",
+          "line": 3
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift",
+          "line": 96
+        }
+      ],
+      "destinations": [
+        "AiDestination.kt",
+        "SettingsAiApiKeyDestination.kt"
+      ]
+    },
+    {
+      "id": "T036",
+      "category": "AI",
+      "feature": "网页正文注入与摘要发送步骤",
+      "status": "partial",
+      "upstreamBehavior": "网页工具提取正文并带上下文进入AI，预填后可自动请求。",
+      "iosBehavior": "提取当前正文，允许查看，需用户再次发送才请求。",
+      "gap": "核心摘要已有，触发步骤与原版不同。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 261
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 78
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift",
+          "line": 40
+        }
+      ],
+      "destinations": [
+        "AiDestination.kt",
+        "WebViewDestination.kt"
+      ]
+    },
+    {
+      "id": "T037",
+      "category": "AI",
+      "feature": "token统计、保存聊天、编辑重发与模型切换按钮",
+      "status": "inactive",
+      "upstreamBehavior": "这些按钮代码为TODO/showDevelopingToast。",
+      "iosBehavior": "iOS没有前三项，但已经支持Flash/Pro模型选择。",
+      "gap": "原版未完成功能不计入iOS缺失；iOS模型选择是额外实现。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/AI.kt",
+          "line": 224
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/AI.kt",
+          "line": 238
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/AI.kt",
+          "line": 428
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/other/AI.kt",
+          "line": 290
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/AIAssistantView.swift",
+          "line": 21
+        }
+      ],
+      "destinations": [
+        "AiDestination.kt"
+      ]
+    },
+    {
+      "id": "T038",
+      "category": "浏览器",
+      "feature": "网页会话复用、前后导航与深色样式",
+      "status": "parity",
+      "upstreamBehavior": "内置WebView复用Cookie，支持返回和深色注入。",
+      "iosBehavior": "WKWebView复用会话、手势前后导航，appForceWebDarkMode参与样式注入。",
+      "gap": "基本浏览器能力有平台等价实现。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 433
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 584
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 139
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 125
+        }
+      ],
+      "destinations": [
+        "WebViewDestination.kt"
+      ]
+    },
+    {
+      "id": "T039",
+      "category": "浏览器",
+      "feature": "当前网页刷新",
+      "status": "missing",
+      "upstreamBehavior": "工具栏reload当前WebView。",
+      "iosBehavior": "工具栏只有AI摘要，没有刷新动作。",
+      "gap": "缺刷新按钮。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 246
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 54
+        }
+      ],
+      "destinations": [
+        "WebViewDestination.kt"
+      ]
+    },
+    {
+      "id": "T040",
+      "category": "浏览器",
+      "feature": "页面内查找与上/下一匹配",
+      "status": "missing",
+      "upstreamBehavior": "输入搜索词，findAllAsync并跳转匹配位置。",
+      "iosBehavior": "没有find交互或JS查找。",
+      "gap": "缺页内搜索。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 413
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 54
+        }
+      ],
+      "destinations": [
+        "WebViewDestination.kt"
+      ]
+    },
+    {
+      "id": "T041",
+      "category": "浏览器",
+      "feature": "复制/分享当前URL或初始URL",
+      "status": "missing",
+      "upstreamBehavior": "可从已导航URL与初始URL中选择并复制/分享。",
+      "iosBehavior": "PortalWebView没有链接操作；导航主页收藏列表的复制分享不作用于当前页。",
+      "gap": "缺当前页URL工具及原始/当前二选一。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 189
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 54
+        }
+      ],
+      "destinations": [
+        "WebViewDestination.kt"
+      ]
+    },
+    {
+      "id": "T042",
+      "category": "浏览器",
+      "feature": "从当前网页直接加入收藏",
+      "status": "missing",
+      "upstreamBehavior": "WebView工具可把当前地址加入原版收藏。",
+      "iosBehavior": "只能返回网址导航，再手动输入添加收藏。",
+      "gap": "缺从当前页带入标题/地址的收藏入口。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/util/WebViewFactory.kt",
+          "line": 149
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 859
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/PortalWebView.swift",
+          "line": 54
+        }
+      ],
+      "destinations": [
+        "WebViewDestination.kt",
+        "WebFolderDestination.kt"
+      ]
+    },
+    {
+      "id": "T043",
+      "category": "网址导航",
+      "feature": "手动输入网址、收藏增删、复制分享和二维码",
+      "status": "parity",
+      "upstreamBehavior": "浏览器输入、收藏管理和链接复制/分享。",
+      "iosBehavior": "CloudWebNavigationView可输入URL、添加删除收藏、复制分享及二维码。",
+      "gap": "已有导航页能力，不因当前页工具缺失而一并否定。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/my/webLab/WebUI.kt",
+          "line": 349
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 764
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 830
+        }
+      ],
+      "destinations": [
+        "WebFolderDestination.kt"
+      ]
+    },
+    {
+      "id": "T044",
+      "category": "网址导航",
+      "feature": "网址工具自定义Cookie输入",
+      "status": "missing",
+      "upstreamBehavior": "WebUI可输入可选Cookie并随打开的网页传入。",
+      "iosBehavior": "没有对应输入，只有统一已有会话复用。",
+      "gap": "缺手动临时Cookie浏览功能。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/my/webLab/WebUI.kt",
+          "line": 308
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 764
+        }
+      ],
+      "destinations": [
+        "WebFolderDestination.kt"
+      ]
+    },
+    {
+      "id": "T045",
+      "category": "网址导航",
+      "feature": "远端实验室网页列表",
+      "status": "parity",
+      "upstreamBehavior": "LabUI读取远端Labs并打开item.info链接。",
+      "iosBehavior": "加载同源Labs并打开其URL。",
+      "gap": "普通远端网页列表已有；原版LabUI也没有按type分派，不误列缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/my/webLab/LabUI.kt",
+          "line": 25
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/CampusExtraViews.swift",
+          "line": 939
+        }
+      ],
+      "destinations": [
+        "WebFolderDestination.kt"
+      ]
+    },
+    {
+      "id": "T046",
+      "category": "WebVPN",
+      "feature": "双向网址转换、示例、复制打开清除及本次全局转换",
+      "status": "parity",
+      "upstreamBehavior": "提供转换/还原及登录后的进程内全局WebVPN。",
+      "iosBehavior": "1.2.2已补齐双向、示例、离线转换、结果动作、会话门槛和进程内开关。",
+      "gap": "已有能力，不列为缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/webvpn/WebVpnScreen.kt",
+          "line": 1
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/WebVPNView.swift",
+          "line": 5
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/WebVPNURLConverter.swift",
+          "line": 37
+        }
+      ],
+      "destinations": [
+        "WebVpnDestination.kt"
+      ]
+    },
+    {
+      "id": "T047",
+      "category": "验证码",
+      "feature": "图片验证码本地自动填充",
+      "status": "parity",
+      "upstreamBehavior": "Tesseract灰度单行识别，填入CAS当前图片对应输入。",
+      "iosBehavior": "1.2.3内置同一模型，支持开关、刷新、手动编辑优先和失败手填。",
+      "gap": "该功能已经完成，不应再按旧版本列缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/ocr/TesseractOCR.kt",
+          "line": 14
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CASCaptchaRecognizer.swift",
+          "line": 33
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NativeCASLoginView.swift",
+          "line": 84
+        }
+      ],
+      "destinations": [
+        "SettingsOcrDestination.kt",
+        "LoginDestination.kt"
+      ]
+    },
+    {
+      "id": "T048",
+      "category": "验证码",
+      "feature": "OCR模型下载、外部模型导入与删除",
+      "status": "partial",
+      "upstreamBehavior": "模型可下载、从Download导入，并长按删除。",
+      "iosBehavior": "模型固定随App内置，不提供用户替换/删除界面。",
+      "gap": "自动识别无需再下载；但自由模型管理能力没有移植。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/DownloadMLUI.kt",
+          "line": 136
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/DownloadMLUI.kt",
+          "line": 111
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CASCaptchaRecognizer.swift",
+          "line": 14
+        }
+      ],
+      "destinations": [
+        "SettingsOcrDestination.kt"
+      ]
+    },
+    {
+      "id": "P001",
+      "category": "系统集成与平台",
+      "feature": "扫描CAS二维码并确认网页登录",
+      "status": "missing",
+      "upstreamBehavior": "识别CAS二维码后，使用指间工大通道的认证令牌（getWxAuth）执行扫码登录和确认登录。",
+      "iosBehavior": "实时扫码只把识别文字显示在页面底部。",
+      "gap": "缺CAS扫码授权、确认及结果反馈，不是没有摄像头扫码。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/scan/ScanScreen.kt",
+          "line": 153
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+          "line": 82
+        }
+      ],
+      "destinations": [
+        "ScanQrCodeDestination.kt"
+      ]
+    },
+    {
+      "id": "P002",
+      "category": "系统集成与平台",
+      "feature": "从相册识别二维码",
+      "status": "missing",
+      "upstreamBehavior": "支持选择相册图片并解析二维码。",
+      "iosBehavior": "仅有实时摄像头识别，未提供相册选择和识别。",
+      "gap": "缺相册二维码解析。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/scan/ScanScreen.kt",
+          "line": 278
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+          "line": 11
+        }
+      ],
+      "destinations": [
+        "ScanQrCodeDestination.kt"
+      ]
+    },
+    {
+      "id": "P003",
+      "category": "系统集成与平台",
+      "feature": "扫码结果复制、打开网页和Wi-Fi辅助操作",
+      "status": "partial",
+      "upstreamBehavior": "网页结果可复制/打开/隐藏；Wi-Fi码解析密码、复制并打开系统Wi-Fi设置，非无感自动连接。",
+      "iosBehavior": "识别结果作为Text显示，无后续动作按钮。",
+      "gap": "缺扫码结果的动作链。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/school/scan/ScanScreen.kt",
+          "line": 243
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ScannerView.swift",
+          "line": 17
+        }
+      ],
+      "destinations": [
+        "ScanQrCodeDestination.kt"
+      ]
+    },
+    {
+      "id": "P004",
+      "category": "系统集成与平台",
+      "feature": "今日/明日聚焦课程列表桌面组件",
+      "status": "missing",
+      "upstreamBehavior": "Glance聚焦组件按时间展示今日或明日课程、进行中/结束状态、调休和节假日，并适应单/双列。",
+      "iosBehavior": "只有systemLarge周课表组件；不是原版聚焦列表组件。",
+      "gap": "缺聚焦列表式组件及今日结束后切换明日的行为。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/receiver/widget/focus/FocusWidgetReceiver.kt",
+          "line": 236
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTScheduleWidget/WeeklyScheduleWidget.swift",
+          "line": 111
+        }
+      ],
+      "destinations": [
+        "SettingsFocusWidgetDestination.kt"
+      ]
+    },
+    {
+      "id": "P005",
+      "category": "系统集成与平台",
+      "feature": "聚焦组件字号配置与组件内刷新按钮",
+      "status": "missing",
+      "upstreamBehavior": "聚焦组件可调整文字比例，并有RefreshWidgetAction直接刷新组件。",
+      "iosBehavior": "周课表组件没有字号设置和组件内交互刷新按钮，可点击打开App。",
+      "gap": "缺原版组件字号和独立刷新动作。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/receiver/widget/focus/FocusWidgetReceiver.kt",
+          "line": 117
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/FocusWidgetSettingsScreen.kt",
+          "line": 129
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTScheduleWidget/WeeklyScheduleWidget.swift",
+          "line": 100
+        }
+      ],
+      "destinations": [
+        "SettingsFocusWidgetDestination.kt"
+      ]
+    },
+    {
+      "id": "P006",
+      "category": "系统集成与平台",
+      "feature": "组件周期刷新机制",
+      "status": "platform",
+      "upstreamBehavior": "Android WorkManager周期工作，默认30分钟刷新；也通过Glance更新组件。",
+      "iosBehavior": "WidgetKit时间线和共享快照，系统调度刷新。",
+      "gap": "平台机制不同，不能在iOS照搬常驻/周期Android Worker，也不能承诺系统瞬时重绘。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/receiver/widget/focus/RefreshFocusWidgetWorker.kt",
+          "line": 47
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTScheduleWidget/WeeklyScheduleWidget.swift",
+          "line": 33
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P007",
+      "category": "系统集成与平台",
+      "feature": "课表更新后的组件内容一致性",
+      "status": "uncertain",
+      "upstreamBehavior": "聚焦组件从原版课表缓存读取数据，经Glance updateAll更新；可达刷新入口包括启动App、组件内操作及周期Worker。源码不提供绕过系统调度的即时重绘保证。",
+      "iosBehavior": "基线已在成功保存课表后写入共享快照并请求WidgetCenter刷新，具有该能力；相同内容重发复用revision，预览读取也会写ACK。侧载共享权限与实际桌面效果需设备验收。",
+      "gap": "本项不作为“没有刷新功能”统计；需确认实际重签权限、时间线读取与桌面更新。1.2.4的新修订号、有限重试和后台补发仅在本地，未发布，不能计入1.2.3基线。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/receiver/widget/focus/FocusWidgetReceiver.kt",
+          "line": 144
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/activity/MainActivity.kt",
+          "line": 128
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTScheduleWidget/WeeklyScheduleWidget.swift",
+          "line": 41
+        },
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/ScheduleStore.swift",
+          "line": 113
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P008",
+      "category": "系统集成与平台",
+      "feature": "课程和考试的实时活动/持续进度通知",
+      "status": "missing",
+      "upstreamBehavior": "原版支持Android16 Live Update课程/考试的持续进度通知和结束撤销；课程通知可进入课程详情，考试通知点击启动App。从课表设置可开启，独立旧设置页仍占位。",
+      "iosBehavior": "只有普通本地课程通知，没有ActivityKit实时活动。",
+      "gap": "缺对应iOS实时活动、锁屏/灵动岛进度和考试活动；不是iOS不能实现。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/sys/CourseLiveUpdateScheduler.kt",
+          "line": 239
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/MultiScheduleSettings.kt",
+          "line": 415
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CourseNotificationManager.swift",
+          "line": 67
+        }
+      ],
+      "destinations": [
+        "CourseLiveUpdateDetailDestination.kt"
+      ]
+    },
+    {
+      "id": "P009",
+      "category": "系统集成与平台",
+      "feature": "课程提醒按真实日期、教学周及考试安排",
+      "status": "partial",
+      "upstreamBehavior": "按每次课程和考试的实际日期时间建立提醒。",
+      "iosBehavior": "普通课程通知按weekday/hour/minute每周重复，未按weekIndices、实际课程日期过滤，也未独立为考试建立日期提醒。",
+      "gap": "缺逐次日期、非上课周/停课过滤和独立考试提醒；可能产生非上课周重复通知。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/sys/CourseLiveUpdateScheduler.kt",
+          "line": 239
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CourseNotificationManager.swift",
+          "line": 75
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P010",
+      "category": "系统集成与平台",
+      "feature": "点击课程系统提醒直达对应课程详情",
+      "status": "partial",
+      "upstreamBehavior": "课程通知PendingIntent携带route=CourseLiveUpdateDetailDestination及课程名、地点、开始时间。考试另建PendingIntent，但没有route参数，只能据源码确认启动App，不能声称已直达考试详情。",
+      "iosBehavior": "通知内容带courseID，但没有实现通知接收代理把该ID路由到详情。",
+      "gap": "缺课程系统通知点击到具体详情的接线；考试详情直达在上游也没有完整route，不算成熟缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/sys/CourseLiveUpdateScheduler.kt",
+          "line": 300
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/activity/MainActivity.kt",
+          "line": 37
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CourseNotificationManager.swift",
+          "line": 73
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P011",
+      "category": "系统集成与平台",
+      "feature": "按整学期实际排课日期导出系统日历",
+      "status": "partial",
+      "upstreamBehavior": "从实际scheduleList日期生成学期课程日历。",
+      "iosBehavior": "导出所有本地课程时，以当前周起点和weekday生成一次事件，未按课程实际日期/教学周展开。",
+      "gap": "缺整学期准确日期导出，现有入口不等于完整学期导出。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/logic/util/sys/CalendarUtils.kt",
+          "line": 401
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+          "line": 27
+        }
+      ],
+      "destinations": [
+        "SettingsCalendarDestination.kt"
+      ]
+    },
+    {
+      "id": "P012",
+      "category": "系统集成与平台",
+      "feature": "选择系统日历账号及更新/清除已导出的学期课程",
+      "status": "missing",
+      "upstreamBehavior": "选择目标日历；可删除已导出课程后重新更新，或清除该学期课程。",
+      "iosBehavior": "固定使用系统默认新建日历，没有导出课程标识管理、更新或清除按钮。",
+      "gap": "缺目标日历选择和已导出课程管理；多次导出可能重复。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/calendar/multi/MultiScheduleSettings.kt",
+          "line": 460
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/CalendarSettingsScreen.kt",
+          "line": 79
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+          "line": 22
+        }
+      ],
+      "destinations": [
+        "SettingsCalendarDestination.kt"
+      ]
+    },
+    {
+      "id": "P013",
+      "category": "系统集成与平台",
+      "feature": "考试、聚焦日程和云日程单项加入系统日历",
+      "status": "missing",
+      "upstreamBehavior": "考试详情、聚焦事项和下载的云日程有单项添加日历动作。",
+      "iosBehavior": "只有课表整批导出入口；没有这些单项按实际起止日期导出动作。",
+      "gap": "缺单项添加与对应提醒；即使考试作为课表方格存在，也不等于按考试日期正确导出。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/search/function/jxglstu/exam/Exam.kt",
+          "line": 300
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/supabase/focus/SupabaseStroageScreen.kt",
+          "line": 150
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/focus/funiction/FocusItems.kt",
+          "line": 155
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/CalendarExporter.swift",
+          "line": 19
+        }
+      ],
+      "destinations": [
+        "ExamDestination.kt"
+      ]
+    },
+    {
+      "id": "P014",
+      "category": "系统集成与平台",
+      "feature": "系统快捷指令覆盖范围和后台执行",
+      "status": "partial",
+      "upstreamBehavior": "原版含校园网登录磁贴以及充值、扫码、一卡通、热水、快递码、付款码等快捷启动能力。",
+      "iosBehavior": "AppIntents已有课表、校园服务、校园网、图书馆、付款码5项，均打开App执行导航。",
+      "gap": "缺其余专用动作以及可直接执行的校园网登录等；已有5项不能写成完全没有快捷指令。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/AndroidManifest.xml",
+          "line": 136
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/AppShortcuts.swift",
+          "line": 65
+        }
+      ],
+      "destinations": [
+        "SettingsShortcutEditDestination.kt"
+      ]
+    },
+    {
+      "id": "P015",
+      "category": "系统集成与平台",
+      "feature": "Android系统磁贴/开机广播/前台服务",
+      "status": "platform",
+      "upstreamBehavior": "Android控制中心磁贴、广播和前台服务用于快捷操作及恢复提醒。",
+      "iosBehavior": "使用AppIntents、WidgetKit和本地通知，未提供ControlWidget等同类独立控制。",
+      "gap": "Android API不能直接移植；可移植的用户动作另列于快捷指令和实时活动缺口。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/AndroidManifest.xml",
+          "line": 108
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/AppShortcuts.swift",
+          "line": 7
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P016",
+      "category": "系统集成与平台",
+      "feature": "兼容原版深链目标和查询参数",
+      "status": "partial",
+      "upstreamBehavior": "hfut_schedule://已注册多个destination key，以及新闻keyword、教师name、挂科率course_name/lesson_code、同班lesson_id、首页page及AI keyword参数。",
+      "iosBehavior": "支持两个URL scheme、4个主Tab、feature数字ID、登录和直连/WebVPN参数，但没有逐个兼容原目标/查询。",
+      "gap": "缺已注册深链目标及参数的完整兼容和说明/示例页；上游仍注释的评教、转专业和参数化开课查询深链不算成熟缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/DeepLink.kt",
+          "line": 177
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/AppState.swift",
+          "line": 50
+        }
+      ],
+      "destinations": [
+        "SettingsDeepLinkDestination.kt"
+      ]
+    },
+    {
+      "id": "P017",
+      "category": "系统集成与平台",
+      "feature": "应用内启动台/返回栈切换与快捷外观面板",
+      "status": "missing",
+      "upstreamBehavior": "ControlCenter能查看返回栈并跳回页面，嵌入外观面板；搜索子页代码仍被注释。",
+      "iosBehavior": "各主Tab使用独立NavigationStack，没有返回栈启动台和快捷外观控制面板。",
+      "gap": "缺返回栈查看/切换和快捷面板，不把未启用搜索算成熟缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/util/ControlCenterScreen.kt",
+          "line": 320
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/RootView.swift",
+          "line": 8
+        }
+      ],
+      "destinations": [
+        "ControlCenterDestination.kt"
+      ]
+    },
+    {
+      "id": "P018",
+      "category": "系统集成与平台",
+      "feature": "Android预测返回与自定义共享转场框架",
+      "status": "platform",
+      "upstreamBehavior": "使用Android预测返回和自定义共享容器/返回栈动效。",
+      "iosBehavior": "iOS原生导航手势及iOS18+来源缩放转场，支持减弱动态效果降级。",
+      "gap": "属于平台和视觉行为差异；具体可配置效果由外观条目列明。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/screen/AppSettingsScreen.kt",
+          "line": 145
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Components/GlassSurface.swift",
+          "line": 65
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P019",
+      "category": "系统集成与平台",
+      "feature": "Android APK下载、增量包与包内安装更新",
+      "status": "platform",
+      "upstreamBehavior": "原版有APK版本检查、包下载及Android安装更新流程。",
+      "iosBehavior": "iOS跳GitHub Release，IPA须重签安装，不使用Android APK安装器。",
+      "gap": "安装机制不同；原APK热更新不能直接套到重签IPA。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/cube/sub/update/getUpdate.kt",
+          "line": 15
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ProfileView.swift",
+          "line": 132
+        }
+      ],
+      "destinations": [
+        "UpdateSuccessfullyDestination.kt"
+      ]
+    },
+    {
+      "id": "P020",
+      "category": "系统集成与平台",
+      "feature": "异常详情诊断界面",
+      "status": "partial",
+      "upstreamBehavior": "统一ExceptionDestination显示关键异常和完整堆栈。",
+      "iosBehavior": "各业务页显示局部错误信息，没有对应的异常详情页。",
+      "gap": "缺可查看的统一诊断详情；这不代表当前没有任何错误提示。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/util/ExceptionScreen.kt",
+          "line": 59
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NovemberSupportViews.swift",
+          "line": 30
+        }
+      ],
+      "destinations": [
+        "ExceptionDestination.kt"
+      ]
+    },
+    {
+      "id": "P021",
+      "category": "系统集成与平台",
+      "feature": "按Android版本说明功能可用性支持",
+      "status": "platform",
+      "upstreamBehavior": "功能可用性页根据Android版本介绍预测返回、实时更新、界面特效等支持情况。",
+      "iosBehavior": "提供iOS系统/设备基本信息，未提供相同的Android功能支持表。",
+      "gap": "原表为Android专属；iOS如增加说明应使用自身系统能力条件。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/SettingsAvailableDestination.kt",
+          "line": 62
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NovemberSupportViews.swift",
+          "line": 35
+        }
+      ],
+      "destinations": [
+        "SettingsAvailableDestination.kt"
+      ]
+    },
+    {
+      "id": "P022",
+      "category": "系统集成与平台",
+      "feature": "AIDL向其他应用返回教务课表",
+      "status": "inactive",
+      "upstreamBehavior": "虽注册导出的RemoteService，binder实现实际返回emptyList，真实方法调用被注释。",
+      "iosBehavior": "无Android AIDL接口。",
+      "gap": "上游没有返回真实课表，不列为成熟缺失；AIDL也属于Android机制。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/service/aidl/RemoteService.kt",
+          "line": 32
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Services/AppShortcuts.swift",
+          "line": 1
+        }
+      ],
+      "destinations": []
+    },
+    {
+      "id": "P023",
+      "category": "系统集成与平台",
+      "feature": "独立实时更新设置页、日志页和测试原型",
+      "status": "inactive",
+      "upstreamBehavior": "SettingsLiveUpdateDestination为DevelopingIcon；LogDestination空object；TestDestination是开发原型。实际实时提醒开关在课表设置另有可达入口。",
+      "iosBehavior": "无对应占位/开发原型页。",
+      "gap": "不将空页或测试原型算作成熟功能缺失。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/SettingsLiveUpdateDestination.kt",
+          "line": 58
+        },
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/nav/destination/LogDestination.kt",
+          "line": 3
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/NovemberSupportViews.swift",
+          "line": 30
+        }
+      ],
+      "destinations": [
+        "SettingsLiveUpdateDestination.kt",
+        "LogDestination.kt",
+        "TestDestination.kt"
+      ]
+    },
+    {
+      "id": "P024",
+      "category": "导航与平台",
+      "feature": "查询中心搜索、拖动排序与恢复默认",
+      "status": "parity",
+      "upstreamBehavior": "搜索服务并在编辑界面拖动调整功能顺序，支持恢复默认。",
+      "iosBehavior": "查询中心有搜索、拖动排序和恢复默认，还可调整服务显隐。",
+      "gap": "主要能力已有；具体入口集合差异按各业务条目核对。",
+      "upstreamEvidence": [
+        {
+          "path": "app/src/main/java/com/hfut/schedule/ui/screen/home/MainUI.kt",
+          "line": 1311
+        }
+      ],
+      "iosEvidence": [
+        {
+          "path": "ios/HFUTSchedule/HFUTSchedule/Views/ServicesView.swift",
+          "line": 63
+        }
+      ],
+      "destinations": [
+        "FunctionsSortDestination.kt"
+      ]
+    }
+  ],
+  "destinationCoverage": {
+    "AddEventDestination.kt": [
+      "C028"
+    ],
+    "AdmissionDestination.kt": [
+      "S066"
+    ],
+    "AdmissionDetailDestination.kt": [
+      "S066"
+    ],
+    "AgreementDestination.kt": [
+      "T034"
+    ],
+    "AiDestination.kt": [
+      "T035",
+      "T036",
+      "T037"
+    ],
+    "AllExamDestination.kt": [
+      "S007"
+    ],
+    "AllProgramsDestination.kt": [
+      "S010",
+      "S012"
+    ],
+    "AppointmentDestination.kt": [
+      "S048",
+      "S049",
+      "S088"
+    ],
+    "AppointmentPlaceDestination.kt": [
+      "S050"
+    ],
+    "AppointmentSeatDestination.kt": [
+      "S050"
+    ],
+    "AverageGradeDestination.kt": [
+      "S002",
+      "S004"
+    ],
+    "BusDestination.kt": [
+      "S059"
+    ],
+    "CalendarConfigDestination.kt": [
+      "C002"
+    ],
+    "ClassmatesDestination.kt": [
+      "S030"
+    ],
+    "ClassroomCourseTableDestination.kt": [
+      "S025"
+    ],
+    "ClassroomDestination.kt": [
+      "S024",
+      "S081",
+      "S082"
+    ],
+    "ControlCenterDestination.kt": [
+      "P017"
+    ],
+    "CourseClassmatesDestination.kt": [
+      "S021",
+      "S080"
+    ],
+    "CourseDetailApiDestination.kt": [
+      "C014",
+      "S021"
+    ],
+    "CourseDetailDestination.kt": [
+      "C014",
+      "S021"
+    ],
+    "CourseLiveUpdateDetailDestination.kt": [
+      "P008"
+    ],
+    "CourseSearchApiDestination.kt": [
+      "S021"
+    ],
+    "CourseSearchDestination.kt": [
+      "S021",
+      "S083"
+    ],
+    "CourseSearchTableDestination.kt": [
+      "S022"
+    ],
+    "DepartmentsDestination.kt": [
+      "S064"
+    ],
+    "DormitoryDestination.kt": [
+      "S051"
+    ],
+    "DropCoursesDestination.kt": [
+      "S014",
+      "S015"
+    ],
+    "ExamDestination.kt": [
+      "S006",
+      "P013"
+    ],
+    "ExceptionDestination.kt": [
+      "P020"
+    ],
+    "FailRateApiDestination.kt": [
+      "S026"
+    ],
+    "FailRateDestination.kt": [
+      "S026"
+    ],
+    "FailRateDetailDestination.kt": [
+      "S026",
+      "S027"
+    ],
+    "FeeDestination.kt": [
+      "S057"
+    ],
+    "FunctionsSortDestination.kt": [
+      "P024"
+    ],
+    "GradeDestination.kt": [
+      "S001",
+      "S003"
+    ],
+    "GradeDetailDestination.kt": [
+      "S001"
+    ],
+    "GuaGuaCheckLoginDestination.kt": [
+      "S040"
+    ],
+    "GuaGuaDestination.kt": [
+      "S041",
+      "S042"
+    ],
+    "GuaGuaLoginDestination.kt": [
+      "S040",
+      "S042"
+    ],
+    "HaiLeWashingDestination.kt": [
+      "S043",
+      "S044",
+      "S085"
+    ],
+    "HaiLeWashingDetailDestination.kt": [
+      "S043"
+    ],
+    "HolidayDestination.kt": [
+      "S060"
+    ],
+    "HomeDestination.kt": [
+      "C001"
+    ],
+    "LibraryBorrowedDestination.kt": [
+      "S046"
+    ],
+    "LibraryDestination.kt": [
+      "S045",
+      "S047"
+    ],
+    "LifeDestination.kt": [
+      "S061",
+      "S062",
+      "S063",
+      "S078",
+      "S086",
+      "S087"
+    ],
+    "LogDestination.kt": [
+      "P023"
+    ],
+    "LoginDestination.kt": [
+      "C033",
+      "T047"
+    ],
+    "NewsApiDestination.kt": [
+      "S064"
+    ],
+    "NewsDestination.kt": [
+      "S064"
+    ],
+    "NotificationBoxDestination.kt": [
+      "S069"
+    ],
+    "NotificationsDestination.kt": [
+      "S069"
+    ],
+    "OfficeHallDestination.kt": [
+      "S056"
+    ],
+    "PersonInfoDestination.kt": [
+      "S029",
+      "S084"
+    ],
+    "ProgramCompetitionDestination.kt": [
+      "S009"
+    ],
+    "ProgramCompetitionDetailDestination.kt": [
+      "S009"
+    ],
+    "ProgramConfirmationDestination.kt": [
+      "S011"
+    ],
+    "ProgramDestination.kt": [
+      "S008"
+    ],
+    "ScanQrCodeDestination.kt": [
+      "P001",
+      "P002",
+      "P003"
+    ],
+    "SchoolCardDestination.kt": [
+      "S031",
+      "S032",
+      "S033",
+      "S034",
+      "S035",
+      "S036",
+      "S037",
+      "S038",
+      "S039"
+    ],
+    "SearchBillsDestination.kt": [
+      "S032"
+    ],
+    "SecondClassDestination.kt": [
+      "S053"
+    ],
+    "SelectCoursesDestination.kt": [
+      "S013"
+    ],
+    "SelectCoursesDetailDestination.kt": [
+      "S013",
+      "S015"
+    ],
+    "SettingsAboutDestination.kt": [
+      "T034"
+    ],
+    "SettingsAboutDeveloperDestination.kt": [
+      "T033",
+      "T034"
+    ],
+    "SettingsAiApiKeyDestination.kt": [
+      "T035"
+    ],
+    "SettingsAppearanceDestination.kt": [
+      "T001",
+      "T002",
+      "T003",
+      "T004",
+      "T005",
+      "T006",
+      "T007",
+      "T008",
+      "T009",
+      "T010",
+      "T011"
+    ],
+    "SettingsAvailableDestination.kt": [
+      "P021"
+    ],
+    "SettingsBackupDestination.kt": [
+      "T027",
+      "T028",
+      "T029"
+    ],
+    "SettingsCalendarDestination.kt": [
+      "T012",
+      "T013",
+      "T014",
+      "P011",
+      "P012"
+    ],
+    "SettingsConfigurationDestination.kt": [
+      "T015",
+      "T016",
+      "T018",
+      "T019",
+      "T020",
+      "T030"
+    ],
+    "SettingsDeepLinkDestination.kt": [
+      "P016"
+    ],
+    "SettingsDeveloperDestination.kt": [
+      "T033"
+    ],
+    "SettingsFocusCardDestination.kt": [
+      "T017"
+    ],
+    "SettingsFocusWidgetDestination.kt": [
+      "P004",
+      "P005"
+    ],
+    "SettingsHuiXinPasswordDestination.kt": [
+      "T022"
+    ],
+    "SettingsJxglstuPasswordDestination.kt": [
+      "T023"
+    ],
+    "SettingsLabDestination.kt": [
+      "T009"
+    ],
+    "SettingsLiveUpdateDestination.kt": [
+      "P023"
+    ],
+    "SettingsNetworkDestination.kt": [
+      "T021",
+      "T024",
+      "T025",
+      "T026"
+    ],
+    "SettingsOcrDestination.kt": [
+      "T047",
+      "T048"
+    ],
+    "SettingsScreenCornerDestination.kt": [
+      "T006"
+    ],
+    "SettingsSearchDestination.kt": [
+      "T031"
+    ],
+    "SettingsShortcutEditDestination.kt": [
+      "P014"
+    ],
+    "StuTodayCampusDestination.kt": [
+      "S052"
+    ],
+    "SupabaseDestination.kt": [
+      "S074",
+      "S075",
+      "S076",
+      "S077"
+    ],
+    "SupabaseLoginDestination.kt": [
+      "S075"
+    ],
+    "SurveyApiDestination.kt": [
+      "S016"
+    ],
+    "SurveyDestination.kt": [
+      "S016"
+    ],
+    "TeacherSearchApiDestination.kt": [
+      "S028"
+    ],
+    "TeacherSearchDestination.kt": [
+      "S028"
+    ],
+    "TermCoursesDestination.kt": [
+      "S023"
+    ],
+    "TermReportDestination.kt": [
+      "S070",
+      "S071",
+      "S072",
+      "S073"
+    ],
+    "TestDestination.kt": [
+      "P023"
+    ],
+    "TipsDestination.kt": [
+      "T034"
+    ],
+    "TrackDestination.kt": [
+      "S068"
+    ],
+    "TransferMajorDestination.kt": [
+      "S017",
+      "S018"
+    ],
+    "TransferMajorDetailDestination.kt": [
+      "S018",
+      "S019",
+      "S020"
+    ],
+    "UpdateHistoryDestination.kt": [
+      "T032"
+    ],
+    "UpdateSuccessfullyDestination.kt": [
+      "T032",
+      "P019"
+    ],
+    "VersionInfoDestination.kt": [
+      "T032"
+    ],
+    "WebFolderDestination.kt": [
+      "T042",
+      "T043",
+      "T044",
+      "T045"
+    ],
+    "WebViewDestination.kt": [
+      "T036",
+      "T038",
+      "T039",
+      "T040",
+      "T041",
+      "T042"
+    ],
+    "WebVpnDestination.kt": [
+      "T046"
+    ],
+    "WorkAndRestDestination.kt": [
+      "S058"
+    ],
+    "WorkDestination.kt": [
+      "S065"
+    ],
+    "XiaoWuXingCheckLoginDestination.kt": [
+      "S005"
+    ],
+    "XiaoWuXingDestination.kt": [
+      "S005"
+    ],
+    "XiaoWuXingLoginDestination.kt": [
+      "S005"
+    ]
+  },
+  "uncoveredDestinationFiles": [],
+  "archivedBaselineNotice": "Historical comparison as of 2026-11-23; implementation after this audit is recorded in parity-implementation.json and parity-acceptance.md."
+}

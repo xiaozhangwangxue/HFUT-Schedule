@@ -1,10 +1,18 @@
 import SwiftUI
 
 struct LibraryServiceView: View {
-    @State private var selection = 0
+    @State private var selection: Int
+    private let opensBorrowed: Bool
+
+    init(initialSection: Int = 0) {
+        _selection = State(initialValue: initialSection == 1 ? 1 : 0)
+        opensBorrowed = initialSection == 2
+    }
 
     var body: some View {
-        TabView(selection: $selection) {
+        Group {
+        if opensBorrowed { LibraryBorrowedEntryView() }
+        else { TabView(selection: $selection) {
             LibraryMineView(openSearch: { selection = 1 })
                 .tag(0)
                 .tabItem { Label("我", systemImage: selection == 0 ? "person.fill" : "person") }
@@ -12,6 +20,43 @@ struct LibraryServiceView: View {
                 .tag(1)
                 .tabItem { Label("搜索", systemImage: "magnifyingglass") }
         }
+        }
+        }
+    }
+}
+
+private struct LibraryBorrowedEntryView: View {
+    @State private var records: [LibraryBorrowRecord] = []
+    @State private var page = 0
+    @State private var loading = false
+    @State private var hasMore = true
+    @State private var error: String?
+    var body: some View {
+        Group {
+            if !records.isEmpty { LibraryBorrowedView(records: records) }
+            else if loading { ProgressView("正在读取借阅记录…") }
+            else { ContentUnavailableView("暂无借阅记录", systemImage: "books.vertical", description: Text(error ?? "可下拉刷新或稍后重试。")) }
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 5) {
+                if let error { Text(error).font(.footnote).foregroundStyle(.secondary) }
+                if hasMore { Button(loading ? "正在读取…" : "读取更多借阅记录") { Task { await load() } }.disabled(loading).padding(8) }
+            }.background(.regularMaterial)
+        }
+        .task { if page == 0 { await load() } }
+        .refreshable { page = 0; hasMore = true; await load(replacing: true) }
+        .navigationTitle("借阅图书")
+    }
+    @MainActor private func load(replacing: Bool = false) async {
+        guard !loading else { return }
+        loading = true; error = nil
+        defer { loading = false }
+        do {
+            let fetched = try await CampusServiceClient.shared.fetchLibraryBorrowRecords(page: page + 1, pageSize: 30)
+            records = replacing ? fetched : records + fetched
+            page += 1
+            hasMore = fetched.count == 30
+        } catch { self.error = error.localizedDescription }
     }
 }
 
@@ -59,7 +104,7 @@ private struct LibraryMineView: View {
                 .adaptiveGlass(cornerRadius: 24)
 
                 if !records.isEmpty {
-                    NavigationLink {
+                    AppNavigationLink {
                         LibraryBorrowedView(records: records)
                     } label: {
                         HStack {
@@ -166,7 +211,7 @@ private struct LibraryPortalLink: View {
     let mode: AcademicConnectionMode
     var body: some View {
         if let original = URL(string: url) {
-            NavigationLink {
+            AppNavigationLink {
                 PortalWebView(url: WebVPNURLConverter.convertedIfNeeded(original, mode: mode))
                     .navigationTitle(title)
                     .navigationBarTitleDisplayMode(.inline)
@@ -182,6 +227,7 @@ private struct LibraryBorrowedView: View {
 
     var body: some View {
         List {
+            AppNavigationLink("关键词与借阅分析") { LibraryKeywordAnalysisView(records: records) }
             Section {
                 HStack {
                     LibraryCount(title: "总计", value: records.count)
@@ -349,7 +395,7 @@ private struct CommunityBookDetail: View {
     @State private var positions: [CommunityLibraryPosition] = []
     @State private var errorMessage: String?
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             List {
                 Section("索书号 \(book.callNumber)") {
                     ForEach(positions) { position in LabeledContent(position.place, value: position.status) }
@@ -371,7 +417,7 @@ private struct DiscoveryBookDetail: View {
     let book: OfficialLibraryBook
     @Environment(\.dismiss) private var dismiss
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             List {
                 Section("图书信息") {
                     LabeledContent("作者", value: book.author.joined(separator: "、"))

@@ -15,6 +15,11 @@ final class AppState: ObservableObject {
     @Published var selectedTab: AppTab = .home
     @Published var pendingFeatureID: Int?
     @Published var shouldPresentLogin = false
+    @Published var pendingOccurrence: PlatformOccurrenceDestination?
+    @Published var pendingPlatformLink: PlatformDeepLinkRequest?
+    @Published var pendingShortcut: CampusShortcutTarget?
+    @Published var navigationHistory: [PlatformNavigationEntry] = []
+    @Published var navigationReturnRequest: UUID?
     @Published var prefersHaptics: Bool {
         didSet { UserDefaults.standard.set(prefersHaptics, forKey: "prefersHaptics") }
     }
@@ -26,7 +31,16 @@ final class AppState: ObservableObject {
         consumePendingDestination()
     }
 
+    func requestNavigationReturn(to id: UUID) {
+        guard navigationHistory.contains(where: { $0.id == id }) else { return }
+        navigationReturnRequest = id
+    }
+
     func consumePendingDestination() {
+        if let value = UserDefaults.standard.string(forKey: "pendingPlatformURL"), let url = URL(string: value) {
+            UserDefaults.standard.removeObject(forKey: "pendingPlatformURL")
+            open(url)
+        }
         let featureID = UserDefaults.standard.integer(forKey: "pendingFeatureID")
         if featureID > 0 {
             pendingFeatureID = featureID
@@ -47,8 +61,32 @@ final class AppState: ObservableObject {
         return FeatureCatalog.all.first { $0.id == pendingFeatureID }
     }
 
+    @discardableResult
+    func open(_ rawValue: String) -> Bool {
+        guard let url = PlatformDeepLinkURL.url(from: rawValue) else { return false }
+        open(url)
+        return true
+    }
+
     func open(_ url: URL) {
         guard ["hfut-schedule", "hfut_schedule"].contains(url.scheme?.lowercased() ?? "") else { return }
+        if let occurrence = PlatformOccurrenceDestination(url: url) {
+            pendingOccurrence = occurrence
+            selectedTab = occurrence.kind == .course ? .schedule : .home
+            UserDefaults.standard.removeObject(forKey: "pendingPlatformURL")
+            return
+        }
+        if url.host?.lowercased() == "shortcut", let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+           let value = components.queryItems?.first(where: { $0.name == "target" })?.value,
+           let target = CampusShortcutTarget(rawValue: value) {
+            UserDefaults.standard.removeObject(forKey: "pendingPlatformURL")
+            switch target {
+            case .schedule: selectedTab = .schedule
+            case .services: selectedTab = .services
+            default: pendingShortcut = target
+            }
+            return
+        }
 
         if let mode = URLComponents(url: url, resolvingAgainstBaseURL: false)?
             .queryItems?.first(where: { $0.name == "mode" })?.value?.lowercased(),
@@ -72,6 +110,18 @@ final class AppState: ObservableObject {
         let destination = [url.host, url.pathComponents.dropFirst().first]
             .compactMap { $0?.lowercased() }
             .first { !$0.isEmpty }
+
+        if let request = PlatformDeepLinkRequest(url: url) {
+            if request.target == "home" {
+                switch request.arguments["page"]?.uppercased() {
+                case "CALENDAR": selectedTab = .schedule
+                case "FUNCTIONS": selectedTab = .services
+                case "SETTINGS": selectedTab = .me
+                default: selectedTab = .home
+                }
+            } else { pendingPlatformLink = request }
+            return
+        }
 
         switch destination {
         case "schedule", "timetable", "课程表":

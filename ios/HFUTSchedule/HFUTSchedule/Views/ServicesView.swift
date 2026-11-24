@@ -47,7 +47,7 @@ struct ServicesView: View {
             Button("编辑", systemImage: "pencil") { showingEditor = true }
         }
         .sheet(isPresented: $showingEditor, onDismiss: persistServiceLayout) {
-            NavigationStack {
+            AppNavigationStack {
                 List {
                     ForEach(orderedFeatures) { feature in
                         HStack(spacing: 12) {

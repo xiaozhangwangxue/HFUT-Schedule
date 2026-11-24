@@ -11,7 +11,10 @@ struct UpcomingExamDetailView: View {
                 LabeledContent("地点", value: item.location)
             }
             Section {
-                NavigationLink("查看全部考试与同步") { AcademicRecordsView(kind: .exams) }
+                SingleCalendarExportButton(occurrence: PlatformScheduleOccurrence(id: "exam|\(item.id.uuidString)",
+                    sourceID: item.id.uuidString, kind: .exam, title: item.exam.name, location: item.location,
+                    detail: item.exam.dateTime, start: item.start, end: item.end))
+                AppNavigationLink("查看全部考试与同步") { AcademicRecordsView(kind: .exams) }
             }
         }
         .navigationTitle("考试详情")

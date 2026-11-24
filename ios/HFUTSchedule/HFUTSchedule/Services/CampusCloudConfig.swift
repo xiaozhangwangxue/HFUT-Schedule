@@ -28,6 +28,7 @@ final class CampusCloudConfigStore: @unchecked Sendable {
     private(set) var laboratories: [CampusCloudLab] = []
     private(set) var notifications: [CampusCloudNotification] = []
     private(set) var termStartDate: String = ""
+    private(set) var publicEvents: [PublicCampusEvent] = []
 
     private var lastLoaded: Date?
     private let session: URLSession
@@ -62,6 +63,9 @@ final class CampusCloudConfigStore: @unchecked Sendable {
     private func apply(_ root: [String: Any]) {
         calendarURLString = (root["SchoolCalendar"] as? String) ?? calendarURLString
         termStartDate = (root["startDay"] as? String) ?? termStartDate
+        let lessons = root["Lessons"] as? [String: Any] ?? [:]
+        publicEvents = PublicCampusEvent.decode(lessons["Schedule"], deadline: false)
+            + PublicCampusEvent.decode(lessons["MyList"], deadline: true)
         laboratories = (root["Labs"] as? [[String: Any]] ?? []).compactMap { item in
             guard let title = item["title"] as? String, let info = item["info"] as? String else { return nil }
             return CampusCloudLab(title: title, info: info, type: (item["type"] as? String) ?? "WEB")

@@ -28,7 +28,7 @@ struct ProfileView: View {
         .navigationTitle("选项")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
+                AppNavigationLink {
                     SettingsSearchView()
                 } label: {
                     Image(systemName: "magnifyingglass")
@@ -37,7 +37,7 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $showingLogin) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
         .alert("提示", isPresented: Binding(
             get: { refreshMessage != nil },
@@ -123,7 +123,7 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("当前版本 \(AppInfo.version)")
                         .font(.subheadline.weight(.semibold))
-                    Text("已是最新版本，更新说明见项目 Releases")
+                    Text("检查远端版本与更新说明")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -135,6 +135,8 @@ struct ProfileView: View {
                         .font(.footnote)
                 }
             }
+            AppNavigationLink("版本检查与维护") { MaintenanceSettingsView() }
+            AppNavigationLink("小组件与实时活动") { PlatformWidgetsSettingsView() }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,7 +219,7 @@ struct ProfileView: View {
 
             Divider().padding(.leading, 56)
 
-            NavigationLink {
+            AppNavigationLink {
                 AboutView()
             } label: {
                 HStack(spacing: 12) {
@@ -244,7 +246,7 @@ enum AppInfo {
     }
 }
 
-private struct AboutView: View {
+struct AboutView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -255,7 +257,7 @@ private struct AboutView: View {
                 LabeledContent("界面", value: "SwiftUI + Liquid Glass")
             }
             Section("维护") {
-                NavigationLink("开发者选项") { DeveloperInfoView() }
+                AppNavigationLink("开发者选项") { DeveloperInfoView() }
                 Button {
                     openURL(URL(string: "https://github.com/xiaozhangwangxue/HFUT-Schedule/issues/new")!)
                 } label: {

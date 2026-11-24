@@ -1,15 +1,13 @@
 # 聚在工大 iOS 工程
 
-当前版本 **1.2.3 build 5**（2026-11-22），运行于 iOS 17.0 及以上，发布构建使用 **iOS 27.2 SDK**。使用 SwiftUI；支持相应系统能力时采用 Liquid Glass，较低版本使用 Material 降级样式。
-
-1.2.3 补齐 CAS 直连和 WebVPN 原生登录页的本地验证码自动填写，范围和验证见 [当前更新说明](../../docs/ios/1.2.3.md)。本次仅核对上游 `b50f498f0e65cf3828749af28bc68a1943b9817b` 的验证码相关源码，不包含该提交的其他功能更新。完整同步范围仍沿用 1.2.0 的 2026-10-01 至 2026-11-14：正式版 4.21.4.1，加开发分支 `b3cb252e44f024720f6f8fb6216ad076550ee119`。完整记录见 [上游审计](../../docs/ios/upstream-audit-2026-11-14.md)，历史见 [1.2.0](../../docs/ios/1.2.0.md)、[1.2.1](../../docs/ios/1.2.1.md) 和 [1.2.2 WebVPN 更新](../../docs/ios/1.2.2.md)。
+当前版本 **1.3.0 build 7**（2026-11-24），最低 iOS 17.0，发布使用 **iOS 27.2 SDK**。见 [更新与验收](../../docs/ios/1.3.0.md)、[逐项功能清单](../../docs/ios/parity-acceptance.md)。
 
 ## 工程组成
 
 | 位置 | 内容 |
 | --- | --- |
 | `HFUTSchedule/` | 四栏 SwiftUI 应用、教务 / 校园接口、个人日程与备份 |
-| `HFUTScheduleWidget/` | 大号周课表 WidgetKit 扩展 |
+| `HFUTScheduleWidget/` | 周课表、聚焦小组件及实时活动扩展 |
 | `Shared/` | 周课表共享模型、存储通道与小组件视图 |
 | `HFUTScheduleTests/` | 解析、时间规则、存储、校车、AI 与天气回归测试 |
 | `HFUTSchedule/Resources/tessdata/` | 原生登录验证码识别使用的公开 Tesseract 模型 |
@@ -41,7 +39,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
 ```
 
-产物位于 `dist/HFUTSchedule-iOS-1.2.3-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.2.3-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
+产物位于 `dist/HFUTSchedule-iOS-1.3.0-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.3.0-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
 
 模拟器测试使用本机已有目标。先执行 `xcrun simctl list devices available`，再从工程目录运行：
 
@@ -54,7 +52,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 
 目标名称按本机可用模拟器调整。`HFUTSchedule` 共享 scheme 关联 `HFUTScheduleTests`。测试使用构造样例、临时目录和注入传输；DeepSeek 与 QWeather 测试不访问真实 API，也不消耗用户额度。
 
-本次最终命令、测试数量、构建与资源核验结果统一见 [1.2.3 更新说明的验证章节](../../docs/ios/1.2.3.md#验证)。
+本次最终命令、测试数量、构建与资源核验结果统一见 [1.3.0 更新说明的验证章节](../../docs/ios/1.3.0.md#安装与验证)。
 
 ## 原生登录验证码自动填写
 
@@ -77,7 +75,7 @@ WebVPN 结果在本机保存的会话票据可用后打开；没有可用会话�
 - 教务登录成功后尝试从官方账户页获取教务密码，使用钥匙串保存。网络设置提供刷新与官方修改密码页面入口；不会在备份中导出密码。
 - 考试仍保留原生详情列表，并联动课程表与聚焦；按日期与结束时间判断显示，考试不使用个人截止事项的 72 小时规则。
 - 个人日程、课程使用原子文件写入。文件损坏时显示恢复提示并保留原文件；失败的保存不应先替换内存数据。
-- v2 备份包含课程、个人日程和白名单偏好。旧课程数组仍能导入；Cookie、密码、API Key、学生身份信息不在备份内。
+- v3 备份包含课程、日程、成绩、考试、学籍、收藏、来源缓存和兼容偏好；可导入旧 JSON 及 Android ZIP。备份可能包含个人信息，Cookie、密码和 API Key 不导出。
 
 ## DeepSeek
 
@@ -87,7 +85,7 @@ AI 助手使用用户在「选项 → 网络 → DeepSeek」配置的 Key，保�
 
 ## 天气
 
-普通构建默认使用无密钥的 Open-Meteo 实时天气。天气卡片打开和风天气官方详情，预警区提供合肥或宣城的官方预警链接。
+普通构建默认解析和风天气官方公开实时天气及预警页面；失败时回退 Open-Meteo 与官方预警链接。解析失败不会显示为暂无预警。
 
 `CampusWeatherClient` 支持由集成方显式传入自己的 `QWeatherConfiguration`，按上游解析 `weather/now`、`warning/now` 和 `fxLink`。本仓库未配置该账户，也不从机器寻找凭据；没有复制上游作者的 JWT 签名配置。只有成功的空预警响应才表示暂无预警，未配置或失败均指引查看官方页面。
 

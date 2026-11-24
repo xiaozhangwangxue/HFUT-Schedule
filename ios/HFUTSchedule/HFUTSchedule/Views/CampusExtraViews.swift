@@ -59,7 +59,7 @@ struct HuiXinPortalView: View {
             get: { payCodeURL.map(PayCodeLink.init) },
             set: { if $0 == nil { payCodeURL = nil } }
         )) { link in
-            NavigationStack {
+            AppNavigationStack {
                 PortalWebView(url: link.url)
                     .navigationTitle("付款码")
                     .navigationBarTitleDisplayMode(.inline)
@@ -119,7 +119,7 @@ struct CampusMailPageView: View {
 
             Section("登录邮箱") {
                 if let mailboxURL {
-                    NavigationLink {
+                    AppNavigationLink {
                         PortalWebView(url: mailboxURL)
                     } label: {
                         Label("进入邮箱", systemImage: "envelope.open.fill")
@@ -215,7 +215,7 @@ struct WorkRestView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if let calendarURL {
-                    NavigationLink {
+                    AppNavigationLink {
                         PortalWebView(url: calendarURL)
                     } label: {
                         Text("校历")
@@ -520,12 +520,14 @@ struct CampusMapImagesView: View {
 
 /// 对应 Android 版 school/teacherSearch：姓名 + 研究方向检索教师主页。
 struct TeacherSearchView: View {
-    @State private var name = ""
+    @State private var name: String
     @State private var direction = ""
     @State private var teachers: [CampusTeacher] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var hasSearched = false
+
+    init(name: String = "") { _name = State(initialValue: name) }
 
     var body: some View {
         List {
@@ -556,7 +558,7 @@ struct TeacherSearchView: View {
                 Section("查询结果（\(teachers.count)）") {
                     ForEach(teachers) { teacher in
                         if let pageURL = CampusExtraAPIClient.teacherPageURL(teacher) {
-                            NavigationLink {
+                            AppNavigationLink {
                                 PortalWebView(url: pageURL)
                             } label: {
                                 TeacherRow(teacher: teacher)
@@ -645,7 +647,7 @@ struct TransferMajorView: View {
             }
 
             ForEach(batches) { batch in
-                NavigationLink {
+                AppNavigationLink {
                     TransferBatchDetailView(batch: batch)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
@@ -866,7 +868,7 @@ struct CloudWebNavigationView: View {
             PortalWebView(url: url)
         }
         .sheet(isPresented: $showsAddFavorite) {
-            NavigationStack {
+            AppNavigationStack {
                 Form {
                     TextField("名称", text: $newName)
                     TextField("链接", text: $newURL)
@@ -945,100 +947,5 @@ struct CloudWebNavigationView: View {
 
 /// 学期报告：学业 / 成绩 / 生活 / 图书馆四段式，对应 Android 版 TermReportScreen。
 struct TermReportView: View {
-    @EnvironmentObject private var scheduleStore: ScheduleStore
-    @EnvironmentObject private var recordsStore: AcademicRecordsStore
-    @EnvironmentObject private var studentStore: AcademicStudentStore
-
-    @State private var cardBalance: Double?
-    @State private var borrowCount: Int?
-    @State private var isLoading = true
-
-    private var courseNames: [String] {
-        Array(Set(scheduleStore.courses.map(\.name))).sorted()
-    }
-
-    private var credits: Double {
-        scheduleStore.courses.compactMap { $0.details?.credits }.reduce(0, +)
-    }
-
-    private var currentGrades: [AcademicGrade] {
-        recordsStore.gradeTerms.max { $0.term < $1.term }?.grades ?? []
-    }
-
-    private var numericScores: [(AcademicGrade, Double)] {
-        currentGrades.compactMap { grade in
-            guard let value = Double(grade.score.filter { "0123456789.".contains($0) }) else { return nil }
-            return (grade, value)
-        }
-    }
-
-    var body: some View {
-        List {
-            Section("学业报告") {
-                LabeledContent("本学期课程", value: "\(courseNames.count) 门")
-                LabeledContent("课程安排", value: "\(scheduleStore.courses.count) 条")
-                LabeledContent("上课地点", value: "\(Set(scheduleStore.courses.map(\.location).filter { !$0.isEmpty }).count) 处")
-                if credits > 0 { LabeledContent("已同步学分", value: credits.formatted()) }
-            }
-
-            Section("成绩分析") {
-                if numericScores.isEmpty {
-                    Text("暂无成绩数据，可在“成绩”页面同步后再查看。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    let average = numericScores.map(\.1).reduce(0, +) / Double(numericScores.count)
-                    LabeledContent("平均分", value: String(format: "%.2f", average))
-                    LabeledContent("课程数", value: "\(numericScores.count) 门")
-                    if let best = numericScores.max(by: { $0.1 < $1.1 }) {
-                        LabeledContent("最高分", value: "\(best.0.courseName) \(best.0.score)")
-                    }
-                    let failed = numericScores.filter { $0.1 < 60 }
-                    LabeledContent("挂科门数", value: "\(failed.count) 门")
-                }
-            }
-
-            Section("生活报告") {
-                LabeledContent("一卡通余额", value: cardBalance.map { String(format: "￥%.2f", $0) } ?? "—")
-                LabeledContent("图书馆在借", value: borrowCount.map { "\($0) 本" } ?? "—")
-                LabeledContent("校区", value: studentStore.info?.campus.isEmpty == false ? studentStore.info!.campus : "—")
-            }
-
-            Section("学生信息") {
-                if let info = studentStore.info {
-                    LabeledContent("姓名", value: info.name)
-                    LabeledContent("学号", value: info.studentID)
-                    LabeledContent("学院", value: info.department.isEmpty ? "—" : info.department)
-                    LabeledContent("专业", value: info.major.isEmpty ? "—" : info.major)
-                    LabeledContent("班级", value: info.className.isEmpty ? "—" : info.className)
-                } else {
-                    Text("尚未同步学籍信息。").font(.footnote).foregroundStyle(.secondary)
-                }
-            }
-
-            Section {
-                Text("报告使用本机已同步的课表、成绩与校园服务数据生成，不会上传个人数据。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .navigationTitle("学期报告")
-        .overlay { if isLoading { ProgressView().controlSize(.small) } }
-        .task { await load() }
-        .refreshable { await load() }
-    }
-
-    @MainActor
-    private func load() async {
-        isLoading = true
-        if let cards = try? await CampusServiceClient.shared.fetchCampusCards(), let first = cards.first {
-            cardBalance = first.balance
-        } else if let cached = CampusServiceClient.shared.cachedCampusCardBalance {
-            cardBalance = cached
-        }
-        if let records = try? await CampusServiceClient.shared.fetchLibraryBorrowRecords() {
-            borrowCount = records.count
-        }
-        isLoading = false
-    }
+    var body: some View { ExtendedTermReportView() }
 }

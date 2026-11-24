@@ -163,7 +163,7 @@ struct LibraryBorrowRecord: Decodable, Identifiable, Hashable {
     }
 }
 
-enum HuiXinFeeKind {
+enum HuiXinFeeKind: Sendable {
     case electricHefei(building: String, room: String)
     case electricXuancheng(room: String)
     case networkXuancheng
@@ -686,6 +686,61 @@ final class CampusServiceClient: @unchecked Sendable {
         return try JSONDecoder().decode(LaundryDeviceEnvelope.self, from: data).data.items
     }
 
+    /// Shared native HuiXin API transport. The token is retried only after an
+    /// authentication failure, never after an ambiguous successful mutation.
+    func huiXinAuthorizedData(path: String, retry: Bool = true) async throws -> Data {
+        let token = try await huiXinToken(forceRefresh: false)
+        let url = URL(string: path, relativeTo: URL(string: "http://121.251.19.62/")!)!.absoluteURL
+        var request = URLRequest(url: url)
+        request.setValue(token, forHTTPHeaderField: "synjones-auth")
+        let (data, response) = try await self.data(for: request)
+        let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        if [401, 403].contains(response.statusCode) || root.map(Self.isAuthenticationFailure) == true {
+            guard retry else { throw CampusServiceError.authenticationRequired("一卡通") }
+            CampusCredentialStore.delete(huiXinTokenKey)
+            _ = try await refreshHuiXinToken()
+            return try await huiXinAuthorizedData(path: path, retry: false)
+        }
+        guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
+        return data
+    }
+
+    func loginHuiXinWithConfiguredPassword() async throws {
+        let credentials = try LifeCredentialPolicy.cardCredentials()
+        var request = URLRequest(url: URL(string: "http://121.251.19.62/berserker-auth/oauth/token")!)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("Basic " + Data("mobile_service_platform:mobile_service_platform_secret".utf8).base64EncodedString(), forHTTPHeaderField: "Authorization")
+        request.httpBody = Self.formBody([("username", credentials.username), ("password", credentials.password), ("grant_type", "password"), ("logintype", "sno")])
+        let (data, response) = try await self.data(for: request)
+        guard (200..<300).contains(response.statusCode), let root = try JSONSerialization.jsonObject(with: data) as? [String: Any], let token = root["access_token"] as? String, !token.isEmpty else { throw CampusServiceError.invalidData("一卡通密码登录失败，请核对偏好设置中的密码") }
+        try CampusCredentialStore.write(token, account: huiXinTokenKey)
+    }
+
+    func showerAuthorizedData(path: String, method: String = "GET", fields: [(String, String)] = []) async throws -> Data {
+        guard let phone = CampusCredentialStore.read(showerPhoneKey), let code = CampusCredentialStore.read(showerCodeKey) else { throw CampusServiceError.authenticationRequired("呱呱物联") }
+        let values = [("telPhone", phone), ("loginCode", code)] + fields
+        var components = URLComponents(url: URL(string: path, relativeTo: URL(string: "https://bathing.hfut.edu.cn/")!)!.absoluteURL, resolvingAgainstBaseURL: false)!
+        if method == "GET" { components.queryItems = values.map { URLQueryItem(name: $0.0, value: $0.1) } }
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = method
+        if method != "GET" { request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type"); request.httpBody = Self.formBody(values) }
+        let (data, response) = try await self.data(for: request)
+        guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
+        return data
+    }
+
+    func loginShowerWithCode(phone: String, loginCode: String) async throws -> ShowerProfile {
+        var components = URLComponents(string: "https://bathing.hfut.edu.cn/user/info")!
+        components.queryItems = [URLQueryItem(name: "telPhone", value: phone), URLQueryItem(name: "loginCode", value: loginCode)]
+        let (data, response) = try await self.data(for: URLRequest(url: components.url!))
+        guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
+        let profile = try Self.parseShowerProfile(data, fallbackPhone: phone, fallbackCode: loginCode)
+        try CampusCredentialStore.write(phone, account: showerPhoneKey)
+        try CampusCredentialStore.write(loginCode, account: showerCodeKey)
+        return profile
+    }
+
     private func huiXinToken(forceRefresh: Bool) async throws -> String {
         if !forceRefresh, let token = CampusCredentialStore.read(huiXinTokenKey), !token.isEmpty { return token }
         return try await refreshHuiXinToken()
@@ -829,6 +884,9 @@ final class CampusServiceClient: @unchecked Sendable {
               let object = root["data"] as? [String: Any] else {
             let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             throw CampusServiceError.invalidData(string(root?["message"]) ?? "洗浴平台未返回用户信息")
+        }
+        guard object["accountMoney"] != nil, object["accountGivenMoney"] != nil else {
+            throw CampusServiceError.invalidData(string(root["message"]) ?? "洗浴账户没有返回余额数据")
         }
         let phone = string(object["telPhone"]) ?? fallbackPhone ?? ""
         let code = string(object["loginCode"]) ?? fallbackCode ?? ""

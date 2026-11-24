@@ -12,15 +12,23 @@ protocol CASCaptchaRecognizing: Sendable {
 actor CASCaptchaRecognizer: CASCaptchaRecognizing {
     static let shared = CASCaptchaRecognizer()
     private let modelDirectory: URL?
+    private let usesManagedModel: Bool
 
-    init(modelDirectory: URL? = Bundle.main.url(forResource: "tessdata", withExtension: nil)) {
+    init() {
+        self.modelDirectory = nil
+        self.usesManagedModel = true
+    }
+
+    /// Explicit injection, including nil, always takes precedence over the managed/bundled model.
+    init(modelDirectory: URL?) {
         self.modelDirectory = modelDirectory
+        self.usesManagedModel = false
     }
 
     func recognize(_ imageData: Data) async throws -> String {
         try Task.checkCancellation()
         let image = try Self.grayscaleImage(imageData)
-        guard let modelDirectory,
+        guard let modelDirectory = usesManagedModel ? CaptchaModelStore.effectiveDirectory : modelDirectory,
               FileManager.default.fileExists(atPath: modelDirectory.appendingPathComponent("captcha.traineddata").path)
         else { throw RecognitionError.missingModel }
         guard let engine = TessBaseAPICreate() else { throw RecognitionError.initializationFailed }

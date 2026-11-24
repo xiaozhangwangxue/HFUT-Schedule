@@ -36,6 +36,15 @@ enum AcademicPortal {
     }
 
     static var currentSemesterID: Int {
+        if UserDefaults.standard.object(forKey: AppSettingsKey.autoTermStart) != nil,
+           !UserDefaults.standard.bool(forKey: AppSettingsKey.autoTermStart) {
+            let manual = UserDefaults.standard.integer(forKey: "appManualSemesterID")
+            if manual > 0 { return manual }
+        }
+        return automaticSemesterID
+    }
+
+    static var automaticSemesterID: Int {
         let components = Calendar.current.dateComponents([.year, .month], from: Date())
         let year = components.year ?? 2026
         let month = components.month ?? 9

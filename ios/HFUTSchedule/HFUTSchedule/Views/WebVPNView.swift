@@ -50,7 +50,7 @@ struct NativeWebVPNView: View {
         .onChange(of: model.input) { _, _ in copied = false }
         .onChange(of: model.direction) { _, _ in copied = false }
         .sheet(isPresented: $showingLogin, onDismiss: refreshStatus) {
-            NavigationStack { LoginPortalView() }
+            AppNavigationStack { LoginPortalView() }
         }
         .navigationDestination(item: $openedResult) { link in
             if #available(iOS 18.0, *), !reduceMotion {

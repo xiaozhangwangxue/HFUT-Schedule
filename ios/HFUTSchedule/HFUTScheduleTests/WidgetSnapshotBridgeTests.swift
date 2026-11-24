@@ -183,6 +183,45 @@ final class WidgetSnapshotBridgeTests: XCTestCase {
         XCTAssertFalse(WidgetSnapshotStore.acknowledged(try XCTUnwrap(memory.publication), transport: transport))
     }
 
+    func testForcedResyncOfIdenticalCoursesRequiresFreshTimelineReceipt() throws {
+        let memory = MemoryStorage()
+        let transport = memory.transport()
+        let courses = [course()]
+        XCTAssertTrue(WidgetSnapshotStore.store(courses, transport: transport))
+        _ = WidgetSnapshotStore.loadResult(acknowledge: true, transport: transport)
+        let first = try XCTUnwrap(memory.publication)
+        XCTAssertTrue(WidgetSnapshotStore.store(courses, transport: transport, forceNewRevision: true))
+        let next = try XCTUnwrap(memory.publication)
+        XCTAssertNotEqual(first.revision, next.revision)
+        XCTAssertFalse(WidgetSnapshotStore.acknowledged(next, transport: transport))
+        _ = WidgetSnapshotStore.loadResult(acknowledge: true, transport: transport)
+        XCTAssertTrue(WidgetSnapshotStore.acknowledged(next, transport: transport))
+    }
+
+    func testPreviewReadingNewDataDoesNotAcknowledgeTimelineUpdate() throws {
+        let memory = MemoryStorage()
+        let transport = memory.transport()
+        let courses = [course()]
+        XCTAssertTrue(WidgetSnapshotStore.store(courses, transport: transport))
+        XCTAssertEqual(WidgetSnapshotStore.loadResult(acknowledge: false, transport: transport).snapshot?.courses, courses)
+        XCTAssertFalse(WidgetSnapshotStore.acknowledged(try XCTUnwrap(memory.publication), transport: transport))
+    }
+
+    func testEditingCourseWithSameIdentifierPublishesNewVisibleContent() throws {
+        let memory = MemoryStorage()
+        let transport = memory.transport()
+        var value = course()
+        XCTAssertTrue(WidgetSnapshotStore.store([value], transport: transport))
+        _ = WidgetSnapshotStore.loadResult(acknowledge: true, transport: transport)
+        value.name = "已更新课程"
+        value.startTime = "10:00"
+        XCTAssertTrue(WidgetSnapshotStore.store([value], transport: transport, forceNewRevision: true))
+        let loaded = WidgetSnapshotStore.loadResult(transport: transport)
+        XCTAssertEqual(loaded.snapshot?.courses.first?.name, "已更新课程")
+        XCTAssertEqual(loaded.snapshot?.courses.first?.startTime, "10:00")
+        XCTAssertFalse(WidgetSnapshotStore.acknowledged(try XCTUnwrap(memory.publication), transport: transport))
+    }
+
     func testBundledFallbackNeverSendsExtensionReadReceipt() {
         let memory = MemoryStorage()
         memory.bundled = WidgetSnapshotStore.encode([course()])

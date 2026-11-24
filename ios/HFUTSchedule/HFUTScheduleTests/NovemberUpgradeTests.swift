@@ -79,8 +79,14 @@ final class NovemberUpgradeTests: XCTestCase {
         ])
         XCTAssertEqual(result.count, 3)
         XCTAssertEqual(result[AppSettingsKey.focusCardAction], .number(2))
-        XCTAssertEqual(result[AppSettingsKey.xuanchengQuota], .number(5))
+        XCTAssertEqual(result[AppSettingsKey.xuanchengQuota], .number(10))
         XCTAssertEqual(result[AppSettingsKey.showFinishedToday], .bool(false))
+    }
+
+    func testNetworkQuotaMatchesUpstreamDefaultAndSupportedRange() {
+        XCTAssertEqual(AppSettingsDefaults.xuanchengQuota, 200)
+        XCTAssertEqual(BackupPreferences.normalized([AppSettingsKey.xuanchengQuota: .number(999)])[AppSettingsKey.xuanchengQuota], .number(500))
+        XCTAssertEqual(BackupPreferences.normalized([AppSettingsKey.xuanchengQuota: .number(200)])[AppSettingsKey.xuanchengQuota], .number(200))
     }
 
     func testManualTermStartRespectsAutomaticSwitch() {

@@ -122,10 +122,11 @@ enum WidgetSnapshotStore {
 
     @discardableResult
     static func store(_ courses: [WidgetCourseSnapshot], termStart: Date? = nil,
-                      transport: WidgetSnapshotTransport = .live, now: Date = .now) -> Bool {
+                      transport: WidgetSnapshotTransport = .live, now: Date = .now,
+                      forceNewRevision: Bool = false) -> Bool {
         let previous = loadSnapshot(transport: transport)
         let sameContent = previous?.formatVersion == 2 && previous?.courses == courses && previous?.termStart == termStart
-        let revision = sameContent ? previous!.revision : UUID()
+        let revision = sameContent && !forceNewRevision ? previous!.revision : UUID()
         let publicationDate = orderedDate(now: now, after: previous?.updatedAt)
         let snapshot = WidgetScheduleSnapshot(revision: revision, updatedAt: publicationDate, termStart: termStart, courses: courses)
         guard let data = try? JSONEncoder().encode(snapshot) else { return false }

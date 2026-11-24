@@ -1,0 +1,371 @@
+{
+  "upstreamCommit": "9670096e15dd04d561da08aded3828046228d6e3",
+  "iosBaseCommit": "5a129136d859fb019e98de74aebd3049ba14ce11",
+  "owner": "academic-services",
+  "batches": [
+    {
+      "batch": 1,
+      "ids": [
+        "S002",
+        "S003",
+        "S005",
+        "S007"
+      ],
+      "status": "implemented-build-passed-pending-live-account",
+      "changes": [
+        "Grade analysis arbitrary course selection and 0...8 decimals",
+        "Community scoreselect semester query and GPA/class/major ranks",
+        "XiaoWuXing school discovery, native independent login, Keychain session, functions, document preview/export",
+        "Two-campus public examination notices with original news search and XC category1178 pagination"
+      ],
+      "files": [
+        "Views/AcademicRecordsView.swift",
+        "Views/AcademicParityViews.swift",
+        "Services/AcademicParityAPI.swift"
+      ],
+      "checks": [
+        "Integrated build passed",
+        "Original five academic tests passed",
+        "Root fulltests7 reports nine academic/life tests passed",
+        "Fifteen targeted academic/life cases passed; no failures"
+      ],
+      "limitations": [
+        "Live school account not used",
+        "XiaoWuXing server reachability not live-verified"
+      ]
+    },
+    {
+      "batch": 2,
+      "ids": [
+        "S009",
+        "S010",
+        "S011",
+        "S014",
+        "S015",
+        "S016",
+        "S018",
+        "S019",
+        "S020",
+        "C022"
+      ],
+      "status": "implemented-build-passed-pending-live-account",
+      "changes": [
+        "Native selection add/drop request and result chain, selected list, datum conflict timetable",
+        "Survey task token, native radios/comments, explicit confirmed submit",
+        "Per-course program status and outside courses; global program search/detail; course confirmation",
+        "Native transfer hidden batch, search, multipart application, cancellation, interview/exam/score details",
+        "Persistent unread grade baseline and count"
+      ],
+      "files": [
+        "Services/AcademicOperations.swift",
+        "Views/AcademicOperationsViews.swift",
+        "Services/AcademicRecordsStore.swift",
+        "Views/OfficialCampusViews.swift",
+        "Views/ProgramPlanViews.swift",
+        "HFUTScheduleTests/AcademicParityTests.swift"
+      ],
+      "checks": [
+        "Integrated build passed",
+        "Original five academic tests passed",
+        "Root fulltests7 reports nine academic/life tests passed",
+        "Fifteen targeted academic/life cases passed; no failures"
+      ],
+      "limitations": [
+        "Live school account not used"
+      ]
+    },
+    {
+      "batch": 3,
+      "ids": [
+        "S022",
+        "S023",
+        "S025",
+        "S027",
+        "S081",
+        "S082",
+        "S083"
+      ],
+      "status": "implemented-build-passed-pending-live-account",
+      "files": [
+        "Services/AcademicSearchAPI.swift",
+        "Views/AcademicSearchViews.swift",
+        "Views/OfficialCampusViews.swift",
+        "Services/OfficialCampusAPIClient.swift",
+        "Services/AcademicClient.swift"
+      ],
+      "checks": [
+        "Integrated build passed",
+        "Original five academic tests passed",
+        "Root fulltests7 reports nine academic/life tests passed",
+        "Fifteen targeted academic/life cases passed; no failures"
+      ],
+      "limitations": [
+        "Live school account not used"
+      ]
+    },
+    {
+      "batch": 4,
+      "ids": [
+        "S030",
+        "S080",
+        "S084"
+      ],
+      "status": "implemented-build-passed-pending-live-account",
+      "files": [
+        "Services/AcademicContactsAPI.swift",
+        "Views/AcademicContactsView.swift",
+        "Views/AcademicStudentInfoView.swift",
+        "Views/OfficialCampusViews.swift"
+      ],
+      "changes": [
+        "Authenticated student photo and explicit refresh",
+        "Administrative class contacts use shared ZhiJian bearer profile orgId and original200/page endpoint",
+        "Teaching-class keyword search and class/gender/year aggregation",
+        "Copy student number and sensitive fields visibility"
+      ],
+      "checks": [
+        "Integrated build passed",
+        "Original five academic tests passed",
+        "Root fulltests7 reports nine academic/life tests passed",
+        "Fifteen targeted academic/life cases passed; no failures"
+      ],
+      "limitations": [
+        "Live school account not used"
+      ]
+    }
+  ],
+  "remainingBatches": [],
+  "validation": {
+    "xcodebuild": "test -only-testing:HFUTScheduleTests/AcademicParityTests",
+    "destination": "iPhone 18 Pro iOS27.2 simulator",
+    "result": "passed",
+    "testCount": 15,
+    "log": "/tmp/HFUTAcademicParityTests.log",
+    "liveSchoolAccount": "not-tested",
+    "previousTargetedTestCount": 5,
+    "rootReportedIntegratedAcademicLifeTestCount": 9,
+    "rootReportedIntegratedResult": "passed",
+    "latestTargeted": {
+      "testCount": 15,
+      "result": "passed",
+      "log": "/tmp/HFUTAcademicParityTests.log",
+      "developerDirectory": "default Xcode 27.1 per root inspection; not release SDK evidence",
+      "releaseValidationOwner": "root will run complete suite under Xcode27.2 explicitly",
+      "failureCount": 0,
+      "completedAt": "2026-11-24T12:26:22+08:00",
+      "simulatorReleased": true
+    }
+  },
+  "extraImplemented": [
+    {
+      "id": "C005",
+      "api": "AcademicClient.lessonScheduleCourses(semesterID:)",
+      "source": "term.lessons.scheduleText and real timetable-layout",
+      "parser": "AcademicLessonTextParser",
+      "rootIntegration": "wired to distinct academicCompact source and cache; root confirmed"
+    }
+  ],
+  "lifeServicesBatch": {
+    "ids": [
+      "S032",
+      "S033",
+      "S038",
+      "S039",
+      "S041",
+      "S042",
+      "S053",
+      "S085",
+      "T020",
+      "T022"
+    ],
+    "status": "implemented-build-and-fifteen-tests-passed-pending-live-account",
+    "files": [
+      "Services/LifeServicesClient.swift",
+      "Views/LifeServicesViews.swift",
+      "Services/CampusServiceClient.swift",
+      "Views/CampusServiceViews.swift"
+    ],
+    "changes": [
+      "Native card bills keyword/page/detail/range totals; all-record spending/merchant/day/month linear forecast",
+      "Gateway login/logout/status/connectivity and native monthly usage self-service MD5/checkcode/cookie flow",
+      "Shower saved MAC labels and explicit start, usecode read/reset, native bill pages and secure alternate loginCode login",
+      "SecondClass page control and native activity metadata detail; original feeitem26 dedicated laundry charge route",
+      "Actual default/custom card+network credential policies and quota progress consumers",
+      "Shower QR uses shared DataScannerRepresentable, exact KLCXKJ-Water field3 parser, canonical12hex MAC, persisted labels",
+      "Native gateway login delegates to shared CampusNetworkLoginClient; same password policy is used by shortcuts",
+      "Network quota default and consumer share AppSettingsDefaults200GiB; original slider10...500 step10 preserved"
+    ],
+    "checks": [
+      "Root integrated build and nine AcademicParityTests passed",
+      "Fifteen targeted business/MAC/bulk tests passed; no failures; not release SDK evidence"
+    ],
+    "limitations": [
+      "Live school account and campus network not used",
+      "School self-service CAPTCHA requires official page validation after three attempts, same as upstream",
+      "No remote stop/status shower endpoint exists in upstream; displays actual start command response only"
+    ]
+  },
+  "updatedAt": "2026-11-24",
+  "businessHardening": [
+    {
+      "id": "S019",
+      "changes": [
+        "Removed unsupported attachment picker and fixed multipart file field",
+        "get-my-applies malformed envelope/record throws, never implies empty success",
+        "Cancellation checks actual application ID absence; failed refresh displays unconfirmed outcome"
+      ]
+    },
+    {
+      "id": "S016",
+      "changes": [
+        "Single-task submit re-reads this task submitted flag before completion",
+        "Unconfirmed single submission preserves selected answers/comments and offers read-only confirmation refresh",
+        "Confirmed bulk highest-score flow obtains and submits each task sequentially and verifies its own submitted flag",
+        "Per-task confirmed/failed/unconfirmed/waiting outcomes persist; stopped/ambiguous requests are not silently resubmitted"
+      ]
+    },
+    {
+      "id": "S015",
+      "changes": [
+        "Original upstream conflict preview is official WebView; source audit corrected",
+        "Official preview restored as primary toolbar entry; new native schedule preview remains secondary extra capability"
+      ]
+    }
+  ],
+  "publicMethods": {
+    "card": [
+      "CampusServiceClient.fetchCampusCardBills(page:size:keyword:) -> CampusCardBillPage",
+      "CampusServiceClient.fetchAllCampusCardBills() -> [CampusCardBill]",
+      "CampusServiceClient.fetchCampusCardMonthlyAmounts(month:) -> [String:Double] in yuan",
+      "CampusServiceClient.fetchCampusCardRange(from:to:) -> CampusCardRangeTotal in yuan",
+      "CampusCardAnalysis.forecast(_:) -> CampusCardForecast with day/month/merchant amounts, estimates and R2"
+    ],
+    "network": [
+      "SchoolNetworkClient.shared.status(xuancheng:) -> SchoolNetworkStatus",
+      "SchoolNetworkClient.shared.history(year:xuancheng:) -> [SchoolNetworkMonthRecord]",
+      "SchoolNetworkClient.shared.history(from:to:xuancheng:) -> multi-year filtered records",
+      "SchoolNetworkClient.shared.login(xuancheng:), logout(xuancheng:), connectivity()",
+      "LifeCredentialPolicy.cardCredentials(defaults:), networkCredentials(xuancheng:defaults:)"
+    ],
+    "shower": [
+      "CampusServiceClient.showerUseCode()",
+      "CampusServiceClient.resetShowerUseCode(password:securityCode:)",
+      "CampusServiceClient.startShower(deviceCode:)",
+      "CampusServiceClient.showerBills(page:from:to:)",
+      "CampusServiceClient.loginShowerWithCode(phone:loginCode:)",
+      "ShowerDeviceCode.normalized(_:), fromQRCode(_:)"
+    ],
+    "academic": [
+      "AcademicClient.lessonScheduleCourses(semesterID:) -> alternate text-source timetable",
+      "AcademicClient.confirmSurveySubmission(taskID:) -> confirms actual submitted flag",
+      "AcademicClient.parseMyTransferApplications(_:) -> fail-closed parser",
+      "AcademicClient.requireTransferCancelled(applicationID:applications:)",
+      "AcademicProgramProgressView() is the correct program_competition deep-link target"
+    ]
+  },
+  "requestContractReview": [
+    {
+      "operation": "Select/add or drop",
+      "method": "POST form then POST form",
+      "fields1": [
+        "studentAssoc",
+        "lessonAssoc",
+        "courseSelectTurnAssoc"
+      ],
+      "fields2": [
+        "studentId",
+        "requestId"
+      ]
+    },
+    {
+      "operation": "Transfer application",
+      "method": "GET new form to acquire cookie then POST multipart",
+      "fields": [
+        "stdAlterReasonAssoc=1286",
+        "applyRemark",
+        "telephone",
+        "email",
+        "REDIRECT_URL",
+        "changeMajorBatchAssoc",
+        "studentAssoc",
+        "changeMajorSubmitAssoc"
+      ],
+      "attachment": "Removed because not used by reachable upstream UI"
+    },
+    {
+      "operation": "Cancel transfer",
+      "method": "POST form then GET get-my-applies verification",
+      "fields": [
+        "batchId",
+        "studentId",
+        "applyId",
+        "REDIRECT_URL"
+      ]
+    },
+    {
+      "operation": "Submit survey",
+      "method": "GET task token and questions then POST JSON then GET search to verify",
+      "fields": [
+        "surveyAssoc",
+        "lessonSurveyTaskAssoc",
+        "radioQuestionAnswers(questionId,optionName)",
+        "blankQuestionAnswers(questionId,content)"
+      ]
+    },
+    {
+      "operation": "Gateway login",
+      "method": "POST form through shared client",
+      "fields": [
+        "DDDDD",
+        "upass",
+        "0MKKey"
+      ]
+    },
+    {
+      "operation": "Shower start",
+      "method": "POST form",
+      "fields": [
+        "telPhone",
+        "loginCode",
+        "deviceSncode",
+        "appId=10010"
+      ]
+    },
+    {
+      "operation": "Reset shower usecode",
+      "method": "POST form",
+      "fields": [
+        "telPhone",
+        "loginCode",
+        "password(MD5 uppercase suffix10)",
+        "securityCode(5digits)",
+        "appId=10010"
+      ]
+    }
+  ],
+  "sourceCorrections": [
+    {
+      "id": "S015",
+      "path": "/Users/xiaozhangwangxue/Projects/HFUT-Schedule-iOS/audits/2026-11-22-feature-parity/services.json",
+      "reason": "Upstream actual reachable conflict preview is official web, not native grid",
+      "statusCountChanged": false
+    }
+  ],
+  "diagnostics": "Major academic/life view catches pass only context+Error to PlatformDiagnosticsStore; no request/response/cookie/token/password arguments",
+  "finalIntegrationNotes": [
+    "Root owns all global feature/deep-link wiring and final explicit Xcode27.2 validation",
+    "program_competition means program-completion and opens AcademicProgramProgressView; it is not innovation/competition credits",
+    "S015 official web conflict preview remains primary; native datum preview is additional",
+    "No unverified transfer attachment feature is present",
+    "No real school account or physical re-signed device was used in this agent task"
+  ],
+  "finalRootIntegration": {
+    "date": "2026-11-24",
+    "sdk": "iOS 27.2",
+    "tests": 288,
+    "failures": 0,
+    "deviceReleaseBuild": "BUILD SUCCEEDED",
+    "liveAccount": false,
+    "physicalDevice": false
+  }
+}

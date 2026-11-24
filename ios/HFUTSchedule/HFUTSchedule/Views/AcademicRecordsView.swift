@@ -36,11 +36,23 @@ struct AcademicRecordsView: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
+                Menu("更多", systemImage: "ellipsis.circle") {
+                    if kind == .grades {
+                        AppNavigationLink("智慧社区成绩与排名") { CommunityGradesView() }
+                        AppNavigationLink("校务行") { XiaoWuXingView() }
+                    } else {
+                        AppNavigationLink("公共考试通知") { PublicExamNoticesView() }
+                    }
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button("同步", systemImage: "arrow.triangle.2.circlepath") {
                     showingSync = true
                 }
             }
         }
+        .onAppear { if kind == .grades { store.markGradesRead() } }
+        .onChange(of: store.gradeTerms) { _, _ in if kind == .grades { store.markGradesRead() } }
         .sheet(isPresented: $showingSync) {
             AcademicRecordsSyncView(kind: kind)
                 .environmentObject(store)
@@ -201,7 +213,7 @@ private struct GradeRow: View {
     }
 }
 
-private enum GradeStatistics {
+enum GradeStatistics {
     /// 被排除计算的项目：无绩点（免修、未参加等），或通过但绩点为 0。
     static func isExcluded(_ grade: AcademicGrade) -> Bool {
         guard let gpa = Double(grade.gpa.replacingOccurrences(of: " ", with: "")) else { return true }
@@ -241,16 +253,38 @@ private enum GradeStatistics {
     }
 }
 
-private struct GradeAnalysisView: View {
+struct GradeAnalysisView: View {
     let grades: [AcademicGrade]
+    @State private var excludedIDs: Set<String> = []
+    @AppStorage("gradeStatisticsDecimalPlaces") private var decimalPlaces = 2
+    private var chosenGrades: [AcademicGrade] { grades.filter { !excludedIDs.contains($0.id) } }
+    private var precision: Int { min(8, max(0, decimalPlaces)) }
 
     var body: some View {
         List {
+            Section("统计设置") {
+                Stepper("小数位数：\(precision)", value: $decimalPlaces, in: 0...8)
+                Button(excludedIDs.isEmpty ? "取消全选" : "全部参与") {
+                    excludedIDs = excludedIDs.isEmpty ? Set(grades.map(\.id)) : []
+                }
+            }
+            Section("参与计算的课程") {
+                ForEach(grades) { grade in
+                    Toggle(isOn: Binding(get: { !excludedIDs.contains(grade.id) }, set: { selected in
+                        if selected { excludedIDs.remove(grade.id) } else { excludedIDs.insert(grade.id) }
+                    })) {
+                        VStack(alignment: .leading) {
+                            Text(grade.courseName)
+                            Text("\(grade.score) · \(grade.credits) 学分").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
             Section("总览") {
                 LabeledContent("课程数", value: "\(grades.count) 门")
-                LabeledContent("总学分", value: GradeStatistics.totalCredits(grades).formatted(.number.precision(.fractionLength(0...2))))
-                LabeledContent("平均成绩", value: GradeStatistics.weightedScore(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
-                LabeledContent("平均绩点", value: GradeStatistics.weightedGPA(grades)?.formatted(.number.precision(.fractionLength(2))) ?? "--")
+                LabeledContent("总学分", value: GradeStatistics.totalCredits(chosenGrades).formatted(.number.precision(.fractionLength(0...2))))
+                LabeledContent("平均成绩", value: GradeStatistics.weightedScore(chosenGrades)?.formatted(.number.precision(.fractionLength(precision))) ?? "--")
+                LabeledContent("平均绩点", value: GradeStatistics.weightedGPA(chosenGrades)?.formatted(.number.precision(.fractionLength(precision))) ?? "--")
                 LabeledContent("未通过", value: "\(grades.filter { (Double($0.score) ?? 100) < 60 }.count) 门")
                 if !GradeStatistics.ignoresExclusion {
                     LabeledContent("已排除", value: "\(grades.filter(GradeStatistics.isExcluded).count) 门")
@@ -319,7 +353,7 @@ private struct GradeRemarkView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             List {
                 Section("数据来源") {
                     Text("成绩页优先使用合工大教务 API，安全登录后会自动同步，并将最近一次结果保存在本机。")
@@ -352,7 +386,7 @@ private struct AcademicRecordsSyncView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             ZStack(alignment: .bottom) {
                 AcademicRecordsWebView(
                     kind: kind,
@@ -475,7 +509,7 @@ private struct AcademicRecordsWebView: UIViewRepresentable {
                         payload = AcademicRecordsPayload(grades: [], exams: try await client.fetchExams())
                     }
                     await MainActor.run { onResult(.success(payload)) }
-                } catch {
+                } catch { AcademicServiceDiagnostics.record(context: "成绩与考试同步", error: error);
                     await MainActor.run { onResult(.failure(error)) }
                 }
             }

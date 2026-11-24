@@ -26,6 +26,39 @@ enum AppSettingsKey {
     static let useDefaultCardPassword = "useDefaultCardPassword" // 使用默认一卡通密码
     static let ignoreExcludedGrades = "ignoreUnjoinedGradeItems" // 忽略平均成绩的排除计算
     static let focusCardAction = "focusSchoolCardQuickButton"
+    static let manualSemesterID = "appManualSemesterID"
+    static let calendarHourHeight = "calendarHourHeight"
+    static let calendarTextScale = "calendarTextScale"
+    static let calendarPadding = "calendarPadding"
+    static let calendarOpacity = "calendarOpacity"
+    static let teacherDisplayMode = "teacherDisplayMode"
+    static let colorStyle = "appColorStyle"
+    static let layerBlur = "appLayerBlurEnabled"
+    static let transitionLevel = "appTransitionLevel"
+    static let transitionSpeed = "appTransitionSpeed"
+    static let transitionEffect = "appTransitionEffect"
+    static let sharedContainer = "appSharedContainerEnabled"
+    static let containerClips = "appContainerClips"
+    static let bottomBarStyle = "appBottomBarStyle"
+    static let bottomBarInset = "appBottomBarInset"
+    static let focusShowsCard = "focusShowsCard"
+    static let focusShowsElectric = "focusShowsElectric"
+    static let focusShowsNetwork = "focusShowsNetwork"
+    static let focusShowsTomorrow = "focusShowsTomorrow"
+    static let focusShowsWeather = "focusShowsWeather"
+
+    static func migrateLegacyPreferences(in defaults: UserDefaults = .standard) {
+        if defaults.object(forKey: teacherDisplayMode) == nil,
+           defaults.object(forKey: showTeacherInSquare) != nil {
+            defaults.set(defaults.bool(forKey: showTeacherInSquare) ? 2 : 0, forKey: teacherDisplayMode)
+        }
+    }
+}
+
+enum AppSettingsDefaults {
+    // Upstream MyApplication.DEFAULT_MAX_FREE_FLOW and AppSettingsScreen slider bounds.
+    static let xuanchengQuota = 200.0
+    static let xuanchengQuotaRange: ClosedRange<Double> = 10...500
 }
 
 enum FocusCardAction: Int, CaseIterable, Identifiable {

@@ -11,6 +11,7 @@ struct OfficialCourseSearchResult: Identifiable, Hashable {
     let credits: Double?
     let weeks: String?
     let schedule: String?
+    var lessonDetails: CourseDetails? = nil
 }
 
 struct OfficialClassmate: Decodable, Identifiable, Hashable {
@@ -88,7 +89,7 @@ struct OfficialEmptyClassroom: Decodable, Identifiable, Hashable {
         let startTimeString: String
         let endTimeString: String
         let activityType: String
-        let activityName: String
+        let activityName: String?
         let teacherName: String?
     }
 }
@@ -547,19 +548,33 @@ final class OfficialCampusAPIClient: @unchecked Sendable {
     }
 
     /// 供查询中心其它页面复用的智慧社区鉴权请求。
-    func communityAuthorizedData(path: String) async throws -> Data {
-        try await communityData(path: path)
+    func communityAuthorizedData(path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        let url = URL(string: path, relativeTo: URL(string: "https://community.hfut.edu.cn/")!)!.absoluteURL
+        return try await communityData(url: url, method: method, body: body)
     }
 
-    private func communityData(url: URL) async throws -> Data {
+    func uniAppAuthorizedData(path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        try await uniAppData(path: path, method: method, body: body)
+    }
+
+    private func communityData(url: URL, method: String = "GET", body: Data? = nil, retry: Bool = true) async throws -> Data {
         let token: String
         if let saved = SecureTokenStore.read(communityTokenAccount) { token = saved }
         else { token = try await refreshCommunityToken() }
         var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.httpBody = body
+        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         request.setValue(token, forHTTPHeaderField: "X-Access-Token")
         let (data, response) = try await self.data(for: request)
-        if response.statusCode == 401 || response.statusCode == 403 {
+        let envelope = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let code = String(describing: envelope?["code"] ?? "")
+        if response.statusCode == 401 || response.statusCode == 403 || ["401", "403"].contains(code) {
             SecureTokenStore.delete(communityTokenAccount)
+            if retry {
+                _ = try await refreshCommunityToken()
+                return try await communityData(url: url, method: method, body: body, retry: false)
+            }
             throw OfficialCampusAPIError.communityAuthenticationRequired
         }
         guard (200..<300).contains(response.statusCode) else { throw OfficialCampusAPIError.http(response.statusCode) }

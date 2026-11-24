@@ -102,6 +102,7 @@ enum FocusPlanResolver {
 
     /// 调休日按设置的日期上课。
     static func effectiveDate(for date: Date) -> Date {
+        if UserDefaults.standard.string(forKey: AppSettingsKey.defaultCourseSource) == "community" { return date }
         if HolidayCalendarStore.shared.isMakeUpWorkDay(date),
            let target = SpecialWorkDayStore.shared.targetDate(for: date),
            let parsed = Self.date(fromKey: target) {
@@ -112,6 +113,7 @@ enum FocusPlanResolver {
 
     @MainActor
     static func courses(on date: Date, store: ScheduleStore) -> [Course] {
+        guard !HolidayCalendarStore.shared.isOffDay(date) else { return [] }
         let effective = effectiveDate(for: date)
         let weekday = self.weekday(for: effective)
         let termStart = ScheduleCalendar.termStart(from: store.courses)
@@ -119,6 +121,9 @@ enum FocusPlanResolver {
         return store.courses
             .filter { $0.weekday == weekday }
             .filter { course in
+                if let dates = course.dates, !dates.isEmpty {
+                    return dates.contains(HolidayCalendarStore.key(for: effective))
+                }
                 guard let weeks = course.weekIndices, !weeks.isEmpty else { return true }
                 return weeks.contains(week)
             }
@@ -129,7 +134,22 @@ enum FocusPlanResolver {
         guard let termStart else { return 1 }
         let days = calendar.dateComponents([.day], from: termStart, to: calendar.startOfDay(for: date)).day ?? 0
         guard days >= 0 else { return 1 }
-        return min(20, max(1, days / 7 + 1))
+        return max(1, days / 7 + 1)
+    }
+
+    /// Match the original focus list: after today's final lesson, show tomorrow.
+    /// Determine the day before filtering ended lessons so an empty filtered list
+    /// never makes an ongoing lesson disappear or moves the list prematurely.
+    static func showsTomorrow(today: [Course], now: Date, calendar: Calendar = FocusPlanResolver.calendar) -> Bool {
+        guard let last = today.map(\.endTime).max(), let end = minutes(last) else { return true }
+        let clock = calendar.dateComponents([.hour, .minute], from: now)
+        return (clock.hour ?? 0) * 60 + (clock.minute ?? 0) >= end
+    }
+
+    private static func minutes(_ time: String) -> Int? {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count == 2 else { return nil }
+        return parts[0] * 60 + parts[1]
     }
 
     @MainActor
@@ -267,7 +287,7 @@ struct SpecialWorkDaySettingView: View {
     private var originKey: String { HolidayCalendarStore.key(for: originDate) }
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             Form {
                 Section("调休日期") {
                     Text("\(originKey)（\(FocusPlanResolver.weekdayName(for: originDate))）")
@@ -284,7 +304,7 @@ struct SpecialWorkDaySettingView: View {
                 }
 
                 Section {
-                    NavigationLink {
+                    AppNavigationLink {
                         FeatureDetailView(feature: FeatureCatalog.all.first { $0.id == 38 } ?? FeatureCatalog.all[0])
                     } label: {
                         Label("查询学校调休安排", systemImage: "newspaper")

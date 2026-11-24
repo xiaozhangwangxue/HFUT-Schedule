@@ -5,5 +5,7 @@ import WidgetKit
 struct HFUTScheduleWidgetBundle: WidgetBundle {
     var body: some Widget {
         WeeklyScheduleWidget()
+        FocusScheduleWidget()
+        CourseLiveActivityWidget()
     }
 }

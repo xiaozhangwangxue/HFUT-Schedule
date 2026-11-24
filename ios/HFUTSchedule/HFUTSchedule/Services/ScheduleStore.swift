@@ -10,8 +10,9 @@ final class ScheduleStore: ObservableObject {
     @Published private(set) var widgetSyncMessage: String?
 
     private let fileURL: URL
+    private let isMainStore: Bool
     private let syncWidgets: Bool
-    private let snapshotPublisher: ([WidgetCourseSnapshot], Date?) -> Bool
+    private let snapshotPublisher: ([WidgetCourseSnapshot], Date?, Bool) -> Bool
     private let timelineReloader: () -> Void
     private let termStartResolver: ([Course]) -> Date?
     private var hasValidLocalSnapshot = false
@@ -19,17 +20,18 @@ final class ScheduleStore: ObservableObject {
     init(
         fileURL: URL? = nil,
         syncWidgets: Bool = true,
-        snapshotPublisher: (([WidgetCourseSnapshot], Date?) -> Bool)? = nil,
+        snapshotPublisher: (([WidgetCourseSnapshot], Date?, Bool) -> Bool)? = nil,
         timelineReloader: (() -> Void)? = nil,
         termStartResolver: (([Course]) -> Date?)? = nil
     ) {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let directory = base.appendingPathComponent("HFUTSchedule", isDirectory: true)
         self.fileURL = fileURL ?? directory.appendingPathComponent("courses.json")
+        isMainStore = fileURL == nil
         self.syncWidgets = syncWidgets
-        self.snapshotPublisher = snapshotPublisher ?? { WidgetSnapshotStore.store($0, termStart: $1) }
+        self.snapshotPublisher = snapshotPublisher ?? { WidgetSnapshotStore.store($0, termStart: $1, forceNewRevision: $2) }
         self.timelineReloader = timelineReloader ?? {
-            WidgetCenter.shared.reloadTimelines(ofKind: WidgetScheduleBridge.widgetKind)
+            WidgetRefreshCoordinator.shared.requestReload()
         }
         self.termStartResolver = termStartResolver ?? { ScheduleCalendar.termStart(from: $0) }
         load()
@@ -69,6 +71,11 @@ final class ScheduleStore: ObservableObject {
     @discardableResult
     func replaceAcademicCourses(with syncedCourses: [Course]) -> Bool {
         guard !requiresRecovery else { return false }
+        if isMainStore {
+            ScheduleSourceCoordinator.shared.cacheAcademic(syncedCourses)
+            let source = ScheduleSource(rawValue: UserDefaults.standard.string(forKey: AppSettingsKey.defaultCourseSource) ?? "academic") ?? .academic
+            if source != .academic { return true }
+        }
         let localCourses = courses.filter { $0.source != "academic" }
         return persist(localCourses + syncedCourses)
     }
@@ -110,7 +117,7 @@ final class ScheduleStore: ObservableObject {
             requiresRecovery = false
             storageError = nil
             hasValidLocalSnapshot = true
-            if publishWidget { refreshWidgetSnapshot() }
+            if publishWidget { refreshWidgetSnapshot(forceNewRevision: true) }
             return true
         } catch {
             // A transient write failure is retryable. Do not publish data that
@@ -124,7 +131,7 @@ final class ScheduleStore: ObservableObject {
     /// another network sync or a course edit. Safe for foreground transitions
     /// and the explicit widget-refresh action in settings.
     @discardableResult
-    func refreshWidgetSnapshot() -> Bool {
+    func refreshWidgetSnapshot(forceNewRevision: Bool = false) -> Bool {
         guard syncWidgets else {
             widgetSyncMessage = "小组件同步已关闭。"
             return false
@@ -137,7 +144,7 @@ final class ScheduleStore: ObservableObject {
             widgetSyncMessage = "尚无可同步的本地课表，请先同步或添加课程。"
             return false
         }
-        guard snapshotPublisher(courses.map(WidgetCourseSnapshot.init), termStartResolver(courses)) else {
+        guard snapshotPublisher(courses.map(WidgetCourseSnapshot.init), termStartResolver(courses), forceNewRevision) else {
             widgetSyncMessage = "未能写入小组件共享数据，请稍后重试。"
             return false
         }

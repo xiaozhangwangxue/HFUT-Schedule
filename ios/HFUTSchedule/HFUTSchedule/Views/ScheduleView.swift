@@ -14,6 +14,10 @@ struct ScheduleView: View {
     @State private var editingEvent: CustomEvent?
     @State private var selectedExam: ResolvedAcademicExam?
     @State private var exportMessage: String?
+    @StateObject private var sources = ScheduleSourceCoordinator.shared
+    @AppStorage(AppSettingsKey.defaultCourseSource) private var sourceID = "academic"
+    @State private var showingSources = false
+    @State private var showingCalendar = false
     @AppStorage("scheduleShowsWeekend") private var showsWeekend = false
     @AppStorage(AppSettingsKey.autoTermStart) private var autoTermStart = true
     @AppStorage(AppSettingsKey.manualTermStart) private var manualTermStart = 0.0
@@ -54,26 +58,25 @@ struct ScheduleView: View {
                 VStack(spacing: 10) {
                     ScheduleWeekHeader(week: selectedWeek, termStart: termStart, visibleWeekdays: visibleWeekdays)
 
-                    if visibleCourses.isEmpty {
-                        ContentUnavailableView(
-                            emptyTitle,
-                            systemImage: "calendar.badge.checkmark",
-                            description: Text(emptyDescription)
-                        )
-                        .frame(minHeight: 520)
-                    } else {
                         TimetableGridView(
                             courses: visibleCourses,
                             visibleWeekdays: visibleWeekdays,
                             week: selectedWeek,
-                            termStart: termStart
+                            termStart: termStart,
+                            onCreateAt: createEvent
                         ) { course in
                             if course.source == "exam" {
                                 selectedExam = UpcomingExamResolver.resolved(recordsStore.exams, calendar: ScheduleCalendar.calendar).first { $0.id == course.id }
                             } else if let event = eventStore.events.first(where: { $0.id == course.id }) { editingEvent = event }
                             else { selectedCourse = course }
                         }
-                    }
+                        .overlay(alignment: .top) {
+                            if visibleCourses.isEmpty {
+                                ContentUnavailableView(emptyTitle, systemImage: "calendar.badge.checkmark",
+                                    description: Text(emptyDescription + " 双击空白处添加日程。"))
+                                    .allowsHitTesting(false)
+                            }
+                        }
                 }
                 .padding(.horizontal, 10)
                 .padding(.top, 6)
@@ -105,9 +108,16 @@ struct ScheduleView: View {
                     showingAcademicSync = true
                 }
                 Menu("课表操作", systemImage: "ellipsis.circle") {
+                    Button("课表来源与好友", systemImage: "person.2") { showingSources = true }
+                    Button("刷新当前来源", systemImage: "arrow.clockwise") {
+                        Task { await sources.refresh(ScheduleSource(rawValue: sourceID) ?? .academic, store: scheduleStore) }
+                    }.disabled(sources.isLoading)
                     Button("选择周次", systemImage: "calendar") { showingWeekPicker = true }
+                    Button("恢复课表高度", systemImage: "arrow.up.and.down") {
+                        UserDefaults.standard.set(68.0, forKey: "calendarHourHeight")
+                    }
                     Button("导出到系统日历", systemImage: "calendar.badge.plus") {
-                        Task { await exportToCalendar() }
+                        showingCalendar = true
                     }
                     .disabled(scheduleStore.courses.isEmpty)
                     Button("添加课程", systemImage: "plus") { showingAdd = true }
@@ -119,14 +129,21 @@ struct ScheduleView: View {
         }
         .sheet(item: $editingEvent) { CustomEventEditor(event: $0) }
         .sheet(item: $selectedExam) { item in
-            NavigationStack { UpcomingExamDetailView(item: item) }
+            AppNavigationStack { UpcomingExamDetailView(item: item) }
         }
         .sheet(isPresented: $showingAcademicSync) {
             AcademicScheduleSyncView()
         }
+        .sheet(isPresented: $showingSources) { AppNavigationStack { ScheduleSourcesView() } }
+        .sheet(isPresented: $showingCalendar) { AppNavigationStack { CalendarIntegrationView() } }
+        .safeAreaInset(edge: .top) {
+            if sources.isLoading { ProgressView("正在更新课表…").font(.caption).padding(6) }
+            else if let message = sources.message { Text(message).font(.caption).foregroundStyle(.secondary).padding(6) }
+        }
         .sheet(isPresented: $showingWeekPicker) {
-            WeekPickerSheet(selectedWeek: $selectedWeek, maximumWeek: maximumWeek)
-                .presentationDetents([.medium])
+            WeekPickerSheet(selectedWeek: $selectedWeek, maximumWeek: maximumWeek,
+                courses: scheduleStore.courses, termStart: termStart)
+                .presentationDetents([.medium, .large])
                 .presentationBackground(.ultraThinMaterial)
         }
         .navigationDestination(isPresented: selectedCourseBinding) {
@@ -146,12 +163,25 @@ struct ScheduleView: View {
         .onAppear { chooseInitialWeekIfNeeded() }
         .onChange(of: autoTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }
         .onChange(of: manualTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }
-        .onChange(of: selectedWeek) { _, _ in revealWeekendIfNeeded() }
+        .onChange(of: selectedWeek) { _, _ in
+            revealWeekendIfNeeded()
+            if sourceID == "zhijian" {
+                Task { await sources.refresh(.zhiJian, store: scheduleStore,
+                    weekStarting: ScheduleCalendar.startDate(of: selectedWeek, termStart: termStart)) }
+            }
+        }
         .onChange(of: selectedCourses) { _, _ in revealWeekendIfNeeded() }
         .onChange(of: scheduleStore.courses) { _, _ in chooseInitialWeekIfNeeded(force: true) }
         .onChange(of: scheduleStore.courses) { _, courses in
             Task { try? await notificationManager.reschedule(for: courses) }
         }
+    }
+
+    private func createEvent(weekday: Int, hour: Double) {
+        guard let monday = ScheduleCalendar.startDate(of: selectedWeek, termStart: termStart),
+              let day = ScheduleCalendar.calendar.date(byAdding: .day, value: weekday - 1, to: monday),
+              let start = ScheduleCalendar.calendar.date(byAdding: .minute, value: Int(hour * 60), to: day) else { return }
+        editingEvent = CustomEvent(title: "", start: start, end: start.addingTimeInterval(3600))
     }
 
     private var selectedCourseBinding: Binding<Bool> {
@@ -248,7 +278,7 @@ private struct AddCourseView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        AppNavigationStack {
             Form {
                 if let error = scheduleStore.storageError { Text(error).foregroundStyle(.red) }
                 Section("课程") {

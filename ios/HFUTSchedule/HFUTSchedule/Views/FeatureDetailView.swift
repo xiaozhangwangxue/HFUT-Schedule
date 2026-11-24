@@ -20,7 +20,7 @@ struct FeatureDetailView: View {
             case .workRest:
                 WorkRestView()
             case .notifications:
-                NotificationsView()
+                DeveloperNotificationsView()
             case .settings:
                 ProfileView()
             case .grades:
@@ -48,7 +48,7 @@ struct FeatureDetailView: View {
             case .secondClass:
                 SecondClassServiceView()
             case .courseSummary:
-                NativeCourseSummaryView()
+                AcademicTermCoursesView()
             case .dormitory:
                 NativeDormitoryView()
             case .program:
@@ -62,7 +62,7 @@ struct FeatureDetailView: View {
             case .express:
                 NativeExpressView()
             case .appointment:
-                NativeAppointmentView()
+                CommunityAppointmentView()
             case .repair:
                 NativeRepairView()
             case .campusMail:
@@ -84,9 +84,9 @@ struct FeatureDetailView: View {
             case .teacherSearch:
                 TeacherSearchView()
             case .transferMajor:
-                TransferMajorView()
+                AcademicTransferView()
             case .work:
-                WorkServiceView()
+                CampusDirectoryView(kind: .jobs)
             case .bus:
                 BusScheduleView()
             case .ai:
@@ -101,7 +101,17 @@ struct FeatureDetailView: View {
 
     @ViewBuilder
     private var portalOrUnavailable: some View {
-        if let originalURL = feature.url {
+        if feature.id == 39 {
+            CloudCommunityView()
+        } else if feature.id == 17 {
+            CampusNewsHubView()
+        } else if feature.id == 41 {
+            AdmissionsQueryView()
+        } else if feature.title == "事务跟踪" {
+            CampusProposalView()
+        } else if feature.title == "办事大厅" {
+            CampusDirectoryView(kind: .offices)
+        } else if let originalURL = feature.url {
             let url = WebVPNURLConverter.convertedIfNeeded(originalURL, mode: selectedConnectionMode)
             if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
                 PortalWebView(url: url)
@@ -187,7 +197,7 @@ private struct NativeWebNavigationView: View {
             Button("添加收藏", systemImage: "plus") { showingAdd = true }
         }
         .sheet(isPresented: $showingAdd) {
-            NavigationStack {
+            AppNavigationStack {
                 Form {
                     TextField("名称", text: $addName)
                     TextField("https://…", text: $addURL)
@@ -446,7 +456,7 @@ private struct NativeCampusLifeView: View {
             Section("实时天气") {
                 if let report = weatherReport {
                     let weather = report.observation
-                    NavigationLink { PortalWebView(url: report.detailURL) } label: {
+                    AppNavigationLink { PortalWebView(url: report.detailURL) } label: {
                         HStack(spacing: 16) {
                             Image(systemName: weather.symbol).font(.largeTitle).foregroundStyle(.orange)
                             VStack(alignment: .leading, spacing: 4) {
@@ -474,7 +484,7 @@ private struct NativeCampusLifeView: View {
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(warnings) { warning in
-                            NavigationLink {
+                            AppNavigationLink {
                                 PortalWebView(url: weatherReport?.warningURL ?? weatherLocation.officialWarningURL)
                             } label: {
                                 VStack(alignment: .leading, spacing: 5) {
@@ -492,7 +502,7 @@ private struct NativeCampusLifeView: View {
                     Text("当前预警请打开和风天气官方页面查看。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                NavigationLink {
+                AppNavigationLink {
                     PortalWebView(url: weatherReport?.warningURL ?? weatherLocation.officialWarningURL)
                 } label: {
                     Label("查看\(weatherLocation.cityName)官方预警", systemImage: "arrow.up.right.square")
@@ -500,14 +510,14 @@ private struct NativeCampusLifeView: View {
             }
 
             Section("校园生活") {
-                NavigationLink {
+                AppNavigationLink {
                     TermReportView()
                         .environmentObject(scheduleStore)
                         .environmentObject(studentStore)
                 } label: { Label("学期报告", systemImage: "sparkles") }
-                NavigationLink { CampusMapImagesView() } label: { Label("校园地图", systemImage: "map.fill") }
-                NavigationLink { CampusFloorGuideView() } label: { Label("楼层导向", systemImage: "building.2.crop.circle") }
-                NavigationLink { CampusThirdPartyAppsView() } label: { Label("第三方应用", systemImage: "square.grid.2x2.fill") }
+                AppNavigationLink { CampusMapImagesView() } label: { Label("校园地图", systemImage: "map.fill") }
+                AppNavigationLink { CampusFloorGuideView() } label: { Label("楼层导向", systemImage: "building.2.crop.circle") }
+                AppNavigationLink { CampusThirdPartyAppsView() } label: { Label("第三方应用", systemImage: "square.grid.2x2.fill") }
             }
 
             Section("校园身份") {
@@ -595,8 +605,8 @@ private struct CampusFloorGuideView: View {
             ForEach(buildings) { building in
                 Section(building.building.nameZh) {
                     ForEach(building.detail.sorted { $0.floor < $1.floor }) { floor in
-                        NavigationLink("\(floor.floor)F") {
-                            ScrollView { AsyncImage(url: URL(string: floor.imageURL)) { image in image.resizable().scaledToFit() } placeholder: { ProgressView() } }
+                        AppNavigationLink("\(floor.floor)F") {
+                            BuildingFloorMapView(resource: floor.imageURL)
                                 .navigationTitle("\(building.building.nameZh) \(floor.floor)F")
                         }
                     }
@@ -620,6 +630,9 @@ private struct CampusFloorGuideView: View {
 private struct CampusThirdPartyAppsView: View {
     @Environment(\.openURL) private var openURL
     var body: some View {
+        ThirdPartyShortcutsView()
+    }
+    private var legacyLinks: some View {
         List {
             Button("活在肥宣 · 新生指南", systemImage: "safari") { openURL(URL(string: "https://survive-hfut.cc/intro")!) }
             Button("拼多多身份码", systemImage: "shippingbox") { openURL(CampusServiceClient.pinduoduoExpressURL) }

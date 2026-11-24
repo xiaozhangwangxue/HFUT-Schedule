@@ -4,6 +4,9 @@ import Foundation
 final class AcademicRecordsStore: ObservableObject {
     @Published private(set) var gradeTerms: [AcademicGradeTerm] = []
     @Published private(set) var exams: [AcademicExam] = []
+    @Published private(set) var newGradeCount = 0
+    private let readGradesKey = "academicReadGradeIDs"
+    private var readGradeIDs: Set<String>?
 
     private let gradesKey = "academicGradeTerms"
     private let examsKey = "academicExams"
@@ -15,6 +18,13 @@ final class AcademicRecordsStore: ObservableObject {
            let decoded = try? JSONDecoder().decode([AcademicGradeTerm].self, from: data) {
             gradeTerms = decoded
         }
+        if let saved = defaults.stringArray(forKey: readGradesKey) {
+            readGradeIDs = Set(saved)
+            newGradeCount = Self.gradeIDs(gradeTerms).subtracting(readGradeIDs ?? []).count
+        } else if !gradeTerms.isEmpty {
+            readGradeIDs = Self.gradeIDs(gradeTerms)
+            defaults.set(Array(readGradeIDs ?? []), forKey: readGradesKey)
+        }
         if let data = defaults.data(forKey: examsKey),
            let decoded = try? JSONDecoder().decode([AcademicExam].self, from: data) {
             exams = decoded
@@ -22,8 +32,26 @@ final class AcademicRecordsStore: ObservableObject {
     }
 
     func replaceGrades(with terms: [AcademicGradeTerm]) {
+        let ids = Self.gradeIDs(terms)
+        if let readGradeIDs { newGradeCount = ids.subtracting(readGradeIDs).count }
+        else if !terms.isEmpty {
+            readGradeIDs = ids
+            defaults.set(Array(ids), forKey: readGradesKey)
+            newGradeCount = 0
+        }
         gradeTerms = terms
         persist(terms, key: gradesKey)
+    }
+
+    func markGradesRead() {
+        guard !gradeTerms.isEmpty || readGradeIDs != nil else { return }
+        readGradeIDs = Self.gradeIDs(gradeTerms)
+        defaults.set(Array(readGradeIDs ?? []), forKey: readGradesKey)
+        newGradeCount = 0
+    }
+
+    private static func gradeIDs(_ terms: [AcademicGradeTerm]) -> Set<String> {
+        Set(terms.flatMap { term in term.grades.map { "\(term.id)|\($0.id)" } })
     }
 
     func replaceExams(with newExams: [AcademicExam]) {

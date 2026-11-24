@@ -4,6 +4,7 @@ import UIKit
 @MainActor
 struct NativeCASLoginView: View {
     let mode: AcademicConnectionMode
+    var excludesAcademic = false
     let onAuthenticated: ([HTTPCookie], String, String) -> Void
     let onPreparationFailure: (Error) -> Void
 
@@ -27,15 +28,17 @@ struct NativeCASLoginView: View {
 
     init(
         mode: AcademicConnectionMode,
+        excludesAcademic: Bool = false,
         onAuthenticated: @escaping ([HTTPCookie], String, String) -> Void,
         onPreparationFailure: @escaping (Error) -> Void = { _ in },
         recognizer: any CASCaptchaRecognizing = CASCaptchaRecognizer.shared,
         initialPreparation: CASLoginPreparation? = nil
     ) {
         self.mode = mode
+        self.excludesAcademic = excludesAcademic
         self.onAuthenticated = onAuthenticated
         self.onPreparationFailure = onPreparationFailure
-        client = CASLoginClient(mode: mode)
+        client = CASLoginClient(mode: mode, excludesAcademic: excludesAcademic)
         _captchaAutofill = StateObject(wrappedValue: CASCaptchaAutofillModel(recognizer: recognizer))
         _preparation = State(initialValue: initialPreparation)
     }
@@ -105,7 +108,7 @@ struct NativeCASLoginView: View {
                 } label: {
                     HStack {
                         if isLoggingIn { ProgressView().tint(.white) }
-                        Text(isLoggingIn ? "正在登录…" : "登录并同步全部教务数据")
+                        Text(isLoggingIn ? "正在登录…" : excludesAcademic ? "登录校园平台（跳过教务）" : "登录并同步全部教务数据")
                             .frame(maxWidth: .infinity)
                     }
                 }

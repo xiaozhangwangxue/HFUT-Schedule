@@ -93,6 +93,11 @@ struct HFUTAppShortcuts: AppShortcutsProvider {
             shortTitle: "付款码",
             systemImageName: "barcode"
         )
+        AppShortcut(intent: OpenCampusTargetIntent(), phrases: ["打开 \(.applicationName) 的校园快捷入口"], shortTitle: "校园快捷入口", systemImageName: "square.grid.2x2")
+        AppShortcut(intent: OpenScannerIntent(), phrases: ["用 \(.applicationName) 扫码"], shortTitle: "扫码", systemImageName: "qrcode.viewfinder")
+        AppShortcut(intent: OpenRechargeIntent(), phrases: ["用 \(.applicationName) 充值校园卡"], shortTitle: "校园卡充值", systemImageName: "yensign.circle")
+        AppShortcut(intent: OpenHotWaterIntent(), phrases: ["用 \(.applicationName) 打开热水"], shortTitle: "饮水热水", systemImageName: "drop")
+        AppShortcut(intent: LoginCampusNetworkIntent(), phrases: ["用 \(.applicationName) 登录校园网"], shortTitle: "登录校园网", systemImageName: "wifi")
     }
 
     static var shortcutTileColor: ShortcutTileColor { .blue }
