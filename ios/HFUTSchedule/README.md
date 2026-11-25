@@ -1,6 +1,6 @@
 # 聚在工大 iOS 工程
 
-当前版本 **1.3.0 build 7**（2026-11-24），最低 iOS 17.0，发布使用 **iOS 27.2 SDK**。见 [更新与验收](../../docs/ios/1.3.0.md)、[逐项功能清单](../../docs/ios/parity-acceptance.md)。
+当前版本 **1.3.1 build 8**（2026-11-25），最低 iOS 17.0，发布使用 **iOS 27.2 SDK**。见 [更新与验收](../../docs/ios/1.3.1.md)、[逐项功能清单](../../docs/ios/parity-acceptance.md)。
 
 ## 工程组成
 
@@ -39,7 +39,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 ./ios/HFUTSchedule/scripts/build_unsigned_ipa.sh
 ```
 
-产物位于 `dist/HFUTSchedule-iOS-1.3.0-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.3.0-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
+产物位于 `dist/HFUTSchedule-iOS-1.3.1-unsigned.ipa`。侧载用包再执行 `./scripts/build_resignable_ipa.sh`，得到 `HFUTSchedule-iOS-1.3.1-resignable.ipa`。后者只有无证书的 ad-hoc 共享声明元数据，必须由自己的侧载工具重新签名后安装；两个流程均不读取 Apple 账号或描述文件，也不自动安装设备。
 
 模拟器测试使用本机已有目标。先执行 `xcrun simctl list devices available`，再从工程目录运行：
 
@@ -52,7 +52,7 @@ xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
 
 目标名称按本机可用模拟器调整。`HFUTSchedule` 共享 scheme 关联 `HFUTScheduleTests`。测试使用构造样例、临时目录和注入传输；DeepSeek 与 QWeather 测试不访问真实 API，也不消耗用户额度。
 
-本次最终命令、测试数量、构建与资源核验结果统一见 [1.3.0 更新说明的验证章节](../../docs/ios/1.3.0.md#安装与验证)。
+本次最终命令、测试数量、构建与资源核验结果统一见 [1.3.1 更新说明的验证章节](../../docs/ios/1.3.1.md#真机与自动化验证)。
 
 ## 原生登录验证码自动填写
 
@@ -125,4 +125,4 @@ App Group 容器仍按实际签名授权决定是否可用；不能根据免费 
 
 ## 当前验收边界
 
-单元测试与构建验证覆盖代码路径和构造响应。真实校方账号、不同学籍、直连 / WebVPN 网络、实时校车及个人签名后的真机小组件仍需在线验收；AI 服务也需由使用者自行配置 DeepSeek 后验证。具体迁移与未完成项见 [MIGRATION.md](MIGRATION.md)。
+单元测试与构建验证覆盖代码路径和构造响应。本版已验证本人账号的直连登录、信息门户 / 第二课堂和电费；其他学籍、WebVPN 完整业务、实时校车及所有签名方式下的真机小组件仍需分别验收；AI 服务也需由使用者自行配置 DeepSeek 后验证。具体迁移与未完成项见 [MIGRATION.md](MIGRATION.md)。

@@ -19,7 +19,10 @@ final class CASLoginClient: @unchecked Sendable {
     private let mode: AcademicConnectionMode
     private let excludesAcademic: Bool
     private let cookieStorage: HTTPCookieStorage
-    private let session: URLSession
+    typealias Transport = (URLRequest) async throws -> (Data, URLResponse)
+    private let transport: Transport
+    private let persistCookies: ([HTTPCookie]) -> Void
+    private let clearCASCookies: () -> Void
     private var webVPNFlavoring: String?
     // Keep the three values separately and assemble them in the same order as
     // the Android client. CAS deliberately creates SESSION and JSESSIONID in
@@ -28,10 +31,16 @@ final class CASLoginClient: @unchecked Sendable {
     private var directLoginCookieHeader: String?
     private var directCaptchaCookieHeader: String?
 
-    init(mode: AcademicConnectionMode = .direct, excludesAcademic: Bool = false) {
+    init(mode: AcademicConnectionMode = .direct, excludesAcademic: Bool = false,
+         transport: Transport? = nil, cookieStorage: HTTPCookieStorage = .shared,
+         persistCookies: @escaping ([HTTPCookie]) -> Void = { CampusSessionStore.shared.persist($0) },
+         clearCASCookies: @escaping () -> Void = { CampusSessionStore.shared.removeCookies(forDomainSuffix: "cas.hfut.edu.cn") }) {
         self.mode = mode
         self.excludesAcademic = excludesAcademic
-        cookieStorage = .shared
+        self.cookieStorage = cookieStorage
+        self.persistCookies = persistCookies
+        self.clearCASCookies = clearCASCookies
+        if let transport { self.transport = transport; return }
         let configuration = URLSessionConfiguration.ephemeral
         // Every Cookie header is attached explicitly below. This mirrors the
         // Retrofit implementation and prevents URLSession from silently
@@ -39,21 +48,40 @@ final class CASLoginClient: @unchecked Sendable {
         configuration.httpCookieStorage = nil
         configuration.httpCookieAcceptPolicy = .never
         configuration.httpShouldSetCookies = false
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.timeoutIntervalForRequest = 12
         configuration.timeoutIntervalForResource = 20
         configuration.httpAdditionalHeaders = [
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.17"
         ]
-        session = URLSession(configuration: configuration, delegate: NoRedirectDelegate.shared, delegateQueue: nil)
+        let session = URLSession(configuration: configuration, delegate: NoRedirectDelegate.shared, delegateQueue: nil)
+        self.transport = { try await session.data(for: $0) }
     }
 
     func prepare(includeCaptcha: Bool = true) async throws -> CASLoginPreparation {
+        for attempt in 0..<2 {
+            do { return try await prepareOnce(includeCaptcha: includeCaptcha) }
+            catch {
+                directLoginCookieHeader = nil; directCaptchaCookieHeader = nil; webVPNFlavoring = nil
+                try Task.checkCancellation()
+                guard attempt == 0, let failure = error as? CASLoginError else { throw error }
+                switch failure {
+                case .missingFlavoring, .missingJSession, .missingLoginSession, .invalidEncryptionKey: continue
+                default: throw error
+                }
+            }
+        }
+        throw CASLoginError.missingFlavoring
+    }
+
+    private func prepareOnce(includeCaptcha: Bool) async throws -> CASLoginPreparation {
         // A persisted TGC makes /cas/login immediately redirect to a service
         // ticket, so there is no login form (and therefore no `execution`).
         // Entering this screen means the user explicitly requested a fresh
         // authentication flow; clear only CAS cookies, retaining WebVPN and all
         // service-specific sessions.
-        CampusSessionStore.shared.removeCookies(forDomainSuffix: "cas.hfut.edu.cn")
+        clearCASCookies()
         directLoginCookieHeader = nil
         directCaptchaCookieHeader = nil
         webVPNFlavoring = nil
@@ -61,7 +89,7 @@ final class CASLoginClient: @unchecked Sendable {
         // Original Android flow starts these as independent Retrofit calls:
         //   1. GET /cas/login -> execution + SESSION
         //   2. GET /cas/checkInitParams -> JSESSIONID + LOGIN_FLAVORING
-        let (execution, loginCookies) = try await fetchExecution()
+        let (execution, loginResponse) = try await fetchExecution()
         let needsCaptcha: Bool
 
         if mode == .webVPN {
@@ -77,10 +105,10 @@ final class CASLoginClient: @unchecked Sendable {
 
             let cookieURL = URL(string: Self.webVPNRoot + "wengine-vpn/cookie?method=get&host=cas.hfut.edu.cn&scheme=http&path=/cas/login")!
             let (cookieData, _) = try await data(for: URLRequest(url: cookieURL), accepted: 200..<300)
-            guard let cookieText = String(data: cookieData, encoding: .utf8),
-                  let flavoring = Self.firstMatch(in: cookieText, pattern: #"LOGIN_FLAVORING=([^;\s]+)"#) else {
+            guard let flavoring = CASCookieParser.virtualValue(named: "LOGIN_FLAVORING", data: cookieData) else {
                 throw CASLoginError.missingFlavoring
             }
+            try Self.validateEncryptionKey(flavoring)
             webVPNFlavoring = flavoring
         } else {
             let keyURL = URL(string: "https://cas.hfut.edu.cn/cas/checkInitParams")!
@@ -90,14 +118,14 @@ final class CASLoginClient: @unchecked Sendable {
                 includeStoredCookies: false
             )
             needsCaptcha = (try? JSONDecoder().decode(FlavorResponse.self, from: keyData).needCaptcha) ?? false
-            let keyCookies = responseCookies(from: keyResponse)
-            guard let flavoring = cookieValue(named: "LOGIN_FLAVORING", in: keyCookies), !flavoring.isEmpty else {
+            guard let flavoring = CASCookieParser.value(named: "LOGIN_FLAVORING", in: keyResponse) else {
                 throw CASLoginError.missingFlavoring
             }
-            guard let loginSession = cookieValue(named: "SESSION", in: loginCookies), !loginSession.isEmpty else {
+            try Self.validateEncryptionKey(flavoring)
+            guard let loginSession = CASCookieParser.value(named: "SESSION", in: loginResponse) else {
                 throw CASLoginError.missingLoginSession
             }
-            guard let jsession = cookieValue(named: "JSESSIONID", in: keyCookies), !jsession.isEmpty else {
+            guard let jsession = CASCookieParser.value(named: "JSESSIONID", in: keyResponse) else {
                 throw CASLoginError.missingJSession
             }
             directCaptchaCookieHeader = "JSESSIONID=\(jsession)"
@@ -112,7 +140,7 @@ final class CASLoginClient: @unchecked Sendable {
         return CASLoginPreparation(execution: execution, needsCaptcha: needsCaptcha, captchaImageData: captchaData)
     }
 
-    private func fetchExecution() async throws -> (String, [HTTPCookie]) {
+    private func fetchExecution() async throws -> (String, HTTPURLResponse) {
         let loginURL = try Self.directLoginURL(includeService: !excludesAcademic)
         let (loginData, response) = try await data(
             for: URLRequest(url: loginURL),
@@ -124,7 +152,7 @@ final class CASLoginClient: @unchecked Sendable {
                 ?? Self.firstMatch(in: html, pattern: #"value=[\"']([^\"']+)[\"'][^>]*name=[\"']execution[\"']"#) else {
             throw CASLoginError.missingExecution
         }
-        return (execution, responseCookies(from: response))
+        return (execution, response)
     }
 
     func fetchCaptcha() async throws -> Data {
@@ -179,6 +207,19 @@ final class CASLoginClient: @unchecked Sendable {
             throw CASLoginError.http(response.statusCode)
         }
 
+        if mode == .webVPN {
+            // The gateway stores CAS's TGC in its virtual cookie jar. Bridge
+            // that same credential back to its exact CAS origin so the other
+            // public campus platforms can perform SSO after WebVPN login.
+            let cookieURL = URL(string:Self.webVPNRoot + "wengine-vpn/cookie?method=get&host=cas.hfut.edu.cn&scheme=http&path=/cas/login")!
+            let (cookieData, _) = try await data(for:URLRequest(url:cookieURL),accepted:200..<300)
+            guard let grantingCookie = CASCookieParser.grantingCookie(fromVirtualData:cookieData) else {
+                throw CASLoginError.invalidCredentials("WebVPN CAS 未建立登录凭据，请检查账号、密码或验证码")
+            }
+            cookieStorage.setCookie(grantingCookie)
+            persistCookies([grantingCookie])
+        }
+
         if excludesAcademic {
             if mode == .direct {
                 guard cookieStorage.cookies?.contains(where: {
@@ -186,15 +227,9 @@ final class CASLoginClient: @unchecked Sendable {
                 }) == true else {
                     throw CASLoginError.invalidCredentials("CAS 未建立登录凭据，请检查账号、密码或验证码")
                 }
-            } else {
-                let url = URL(string: Self.webVPNRoot + "wengine-vpn/cookie?method=get&host=cas.hfut.edu.cn&scheme=http&path=/cas/login")!
-                let (data, _) = try await data(for: URLRequest(url: url), accepted: 200..<300)
-                guard String(data: data, encoding: .utf8)?.contains("TGC=") == true else {
-                    throw CASLoginError.invalidCredentials("WebVPN CAS 尚未建立登录凭据，请检查登录信息")
-                }
             }
             let cookies = cookieStorage.cookies ?? []
-            CampusSessionStore.shared.persist(cookies)
+            persistCookies(cookies)
             return cookies
         }
 
@@ -222,7 +257,7 @@ final class CASLoginClient: @unchecked Sendable {
                 throw CASLoginError.missingWebVPNTicket
             }
             let allCookies = cookieStorage.cookies ?? vpnCookies
-            CampusSessionStore.shared.persist(allCookies)
+            persistCookies(allCookies)
             return allCookies
         } else {
             // A SESSION cookie alone is not proof of authentication: the
@@ -240,7 +275,7 @@ final class CASLoginClient: @unchecked Sendable {
             guard academicCookies.contains(where: { $0.name == "SESSION" }) else {
                 throw CASLoginError.missingAcademicSession
             }
-            CampusSessionStore.shared.persist(cookieStorage.cookies ?? academicCookies)
+            persistCookies(cookieStorage.cookies ?? academicCookies)
             return academicCookies
         }
     }
@@ -284,23 +319,16 @@ final class CASLoginClient: @unchecked Sendable {
             .flatMap { Self.firstMatch(in: $0, pattern: #"wengine_vpn_ticketwebvpn_hfut_edu_cn=([^;\s,]+)"#) }
     }
 
-    private func loginFlavoring(from response: HTTPURLResponse?) -> String? {
-        if let value = cookieStorage.cookies?.first(where: { $0.name == "LOGIN_FLAVORING" })?.value,
-           !value.isEmpty { return value }
-        guard let response,
-              let headers = HTTPCookie.cookies(withResponseHeaderFields: response.allHeaderFields.reduce(into: [:]) {
-                  guard let key = $1.key as? String, let value = $1.value as? String else { return }
-                  $0[key] = value
-              }, for: response.url ?? URL(string: "https://cas.hfut.edu.cn/")!) as [HTTPCookie]? else { return nil }
-        return headers.first(where: { $0.name == "LOGIN_FLAVORING" })?.value
-    }
-
     private func data(
         for originalRequest: URLRequest,
         accepted: Range<Int>,
         includeStoredCookies: Bool = true
     ) async throws -> (Data, HTTPURLResponse) {
         var request = originalRequest
+        if request.httpMethod == nil || request.httpMethod == "GET" {
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        }
         if includeStoredCookies,
            request.value(forHTTPHeaderField: "Cookie") == nil,
            let url = request.url {
@@ -315,7 +343,7 @@ final class CASLoginClient: @unchecked Sendable {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await transport(request)
         } catch {
             let nsError = error as NSError
             let failingURL = (nsError.userInfo[NSURLErrorFailingURLStringErrorKey] as? String)
@@ -324,32 +352,14 @@ final class CASLoginClient: @unchecked Sendable {
             throw CASLoginError.network(failingURL, error.localizedDescription)
         }
         guard let response = response as? HTTPURLResponse else { throw CASLoginError.invalidResponse }
-        if let url = response.url {
-            let headers = response.allHeaderFields.reduce(into: [String: String]()) { result, item in
-                guard let key = item.key as? String else { return }
-                result[key] = String(describing: item.value)
-            }
-            let responseCookies = HTTPCookie.cookies(withResponseHeaderFields: headers, for: url)
-            for cookie in responseCookies { cookieStorage.setCookie(cookie) }
-            CampusSessionStore.shared.persist((cookieStorage.cookies ?? []) + responseCookies)
-        }
+        #if DEBUG
+        CASPreparationProbe.record(request, response, data)
+        #endif
+        let cookies = CASCookieParser.cookies(from: response)
+        for cookie in cookies { cookieStorage.setCookie(cookie) }
+        persistCookies((cookieStorage.cookies ?? []) + cookies)
         guard accepted.contains(response.statusCode) else { throw CASLoginError.http(response.statusCode) }
         return (data, response)
-    }
-
-    private func responseCookies(from response: HTTPURLResponse) -> [HTTPCookie] {
-        let url = response.url ?? URL(string: "https://cas.hfut.edu.cn/")!
-        let fields = response.allHeaderFields.reduce(into: [String: String]()) { result, item in
-            guard let key = item.key as? String else { return }
-            result[key] = String(describing: item.value)
-        }
-        let parsed = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
-        if !parsed.isEmpty { return parsed }
-        return cookieStorage.cookies(for: url) ?? []
-    }
-
-    private func cookieValue(named name: String, in cookies: [HTTPCookie]) -> String? {
-        cookies.first(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame })?.value
     }
 
     private func loginURL() throws -> URL {
@@ -378,6 +388,12 @@ final class CASLoginClient: @unchecked Sendable {
             let encodedValue = value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
             return "\(encodedKey)=\(encodedValue)"
         }.joined(separator: "&").data(using: .utf8)!
+    }
+
+    private static func validateEncryptionKey(_ key: String) throws {
+        guard [kCCKeySizeAES128, kCCKeySizeAES192, kCCKeySizeAES256].contains(key.utf8.count) else {
+            throw CASLoginError.invalidEncryptionKey
+        }
     }
 
     static func encryptAES(_ plaintext: String, key: String) throws -> String {

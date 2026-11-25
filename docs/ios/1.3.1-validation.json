@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-25",
+  "version": "1.3.1",
+  "build": 8,
+  "sdk": "iOS 27.2",
+  "baseCommit": "76f82e88cffde0941151f492c9ad6973ce78ad27",
+  "automatedTests": {
+    "total": 308,
+    "failures": 0,
+    "device": "iPhone 18 Pro / iOS 27.2 Simulator",
+    "result": "TEST EXECUTE SUCCEEDED; 308 executed, 0 failures",
+    "log": "build-1.3.1-final-test-execution.log",
+    "notableCoverage": [
+      "Actual mounted NativeCASLoginView preserves client identity when parent redraws",
+      "Folded cookies, fresh-key retry, encryption/post Cookie pairing and no stale-key reuse",
+      "WebVPN success requires fresh TGC; scoped grant enables other campus SSO",
+      "Second-class scoped Cookie and final redirect completion",
+      "One-portal callback origin and code handling",
+      "Single dormitory selection, two actual meter IDs, legacy defaults migration, absent/ambiguous map safety"
+    ],
+    "fullBuildTestLog": "build-1.3.1-release-tests.log"
+  },
+  "deviceReleaseBuild": {
+    "result": "BUILD SUCCEEDED",
+    "log": "build-1.3.1-public-release.log"
+  },
+  "physicalDevice": {
+    "model": "iPhone 18 Pro Max",
+    "osVersion": "27.3",
+    "osBuild": "24C5049d",
+    "confirmed": [
+      "Direct and WebVPN GET-only preparation: execution and valid 16-byte key",
+      "One-portal access token returned",
+      "Second-class API returned 17 activity records",
+      "User confirmed full login succeeds with no crash and both platforms succeed",
+      "User confirmed one dormitory selection and normal electricity queries"
+    ],
+    "boundary": "Full authenticated user confirmation was for the current direct-login flow. WebVPN preparation was checked on-device; WebVPN grant transfer also has injected-transport success/failure tests. No claim of all school APIs being accepted."
+  },
+  "artifactChecks": [
+    "App and Widget: 1.3.1 build8 / iphoneos27.2",
+    "ZIP integrity",
+    "Empty [] public schedule snapshots",
+    "Verified bundled OCR model and stu.json",
+    "No provisioning profiles",
+    "Matching ad-hoc Keychain groups"
+  ],
+  "privacy": "Physical-device crash logs, diagnostic JSON, account data, real signing profiles and privately signed IPA are excluded from Git and public assets. DEBUG-only opt-in probes store no cookie/key/password values.",
+  "artifacts": [
+    {
+      "file": "HFUTSchedule-iOS-1.3.1-resignable.ipa",
+      "bytes": 13354388,
+      "sha256": "d97fede96b2692317045d5ed3ba4f513fd9f2a99bde2aaed8fd016fb0881e818"
+    },
+    {
+      "file": "HFUTSchedule-iOS-1.3.1-unsigned.ipa",
+      "bytes": 13293267,
+      "sha256": "8b3c651057ec27c1e1a0858374ef86e85783ceea4c11eef3aaaf3f0d867dd3f6"
+    }
+  ]
+}

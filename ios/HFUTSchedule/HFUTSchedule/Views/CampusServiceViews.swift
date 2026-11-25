@@ -93,41 +93,19 @@ struct ElectricityServiceView: View {
         List {
             Section {
                 if model.campus == .hefei {
-                    Text("照明电表").font(.subheadline.weight(.semibold))
-                    Picker("照明楼栋", selection: Binding(get: { model.selection.building }, set: model.setBuilding)) {
+                    Picker("宿舍楼与区域", selection: Binding(get: { model.dormitoryBuildingID }, set: { model.setDormitoryBuilding($0) })) {
                         Text("请选择宿舍楼").tag("")
-                        if !model.selection.building.isEmpty, !model.buildings.contains(where: { $0.value == model.selection.building }) {
-                            Text("已保存楼栋（\(model.selection.building)）").tag(model.selection.building)
+                        if !model.dormitoryBuildingID.isEmpty, !model.dormitoryBuildings.contains(where: { $0.value == model.dormitoryBuildingID }) {
+                            Text("已保存宿舍楼").tag(model.dormitoryBuildingID)
                         }
-                        ForEach(model.buildings) { option in Text(option.name).tag(option.value) }
+                        ForEach(model.dormitoryBuildings) { option in Text(option.name).tag(option.value) }
                     }
-                    Picker("照明房间", selection: Binding(get: { model.selection.room }, set: model.setRoom)) {
+                    Picker("房间", selection: Binding(get: { model.dormitoryRoomID }, set: { model.setDormitoryRoom($0) })) {
                         Text("请选择房间").tag("")
-                        if !model.selection.room.isEmpty, !model.rooms.contains(where: { $0.value == model.selection.room }) {
-                            Text("已保存房间（\(model.selection.room)）").tag(model.selection.room)
+                        if !model.dormitoryRoomID.isEmpty, !model.dormitoryRooms.contains(where: { $0.value == model.dormitoryRoomID }) {
+                            Text("已保存房间").tag(model.dormitoryRoomID)
                         }
-                        ForEach(model.rooms) { option in Text(option.name).tag(option.value) }
-                    }
-                    Text("空调电表").font(.subheadline.weight(.semibold))
-                    Picker("空调楼栋", selection: Binding(get: { model.selection.airConditioningBuilding }, set: model.setAirConditioningBuilding)) {
-                        Text("请选择宿舍楼").tag("")
-                        if !model.selection.airConditioningBuilding.isEmpty,
-                           !model.buildings.contains(where: { $0.value == model.selection.airConditioningBuilding }) {
-                            Text("已保存楼栋（\(model.selection.airConditioningBuilding)）").tag(model.selection.airConditioningBuilding)
-                        }
-                        ForEach(model.buildings) { option in Text(option.name).tag(option.value) }
-                    }
-                    Picker("空调房间", selection: Binding(get: { model.selection.airConditioningRoom }, set: model.setAirConditioningRoom)) {
-                        Text("请选择房间").tag("")
-                        if !model.selection.airConditioningRoom.isEmpty,
-                           !model.airConditioningRooms.contains(where: { $0.value == model.selection.airConditioningRoom }) {
-                            Text("已保存房间（\(model.selection.airConditioningRoom)）").tag(model.selection.airConditioningRoom)
-                        }
-                        ForEach(model.airConditioningRooms) { option in Text(option.name).tag(option.value) }
-                    }
-                    if model.selection.hasDuplicateHefeiMeters {
-                        Text("照明与空调选择了同一个电表，请分别选择对应的楼栋和房间。")
-                            .font(.footnote).foregroundStyle(.orange)
+                        ForEach(model.dormitoryRooms) { option in Text(option.name).tag(option.value) }
                     }
                 } else {
                     Picker("宿舍楼", selection: Binding(get: { model.selection.building }, set: model.setBuilding)) {
@@ -158,7 +136,7 @@ struct ElectricityServiceView: View {
                 if model.campus == .xuancheng {
                     Text("保存宿舍楼、房间和南／北区域后，下次进入本页会自动查询该宿舍的照明与空调电费。")
                 } else {
-                    Text("请分别选择照明、空调对应的校方楼栋和房间。保存后每次进入本页都会自动查询；暂未配置的电表会单独提示。")
+                    Text("宿舍楼和房间只需选择一次，程序会自动匹配校方的照明与空调电表编码并分别查询。校方未提供对应电表时会单独提示。")
                 }
             }
             .disabled(model.isLoadingOptions)
@@ -167,7 +145,7 @@ struct ElectricityServiceView: View {
                 Section(result.title) {
                     if result.isLoading { ProgressView("正在查询…") }
                     if result.needsConfiguration {
-                        Text("尚未设置此电表，请在上方选择对应的楼栋和房间后保存。")
+                        Text("未匹配到该宿舍的此类电表，请刷新校方列表或重新选择宿舍。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     ForEach(result.values.keys.sorted(), id: \.self) { key in

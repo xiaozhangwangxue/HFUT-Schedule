@@ -104,7 +104,7 @@ def inspect(app):
     profiles_match = groups_match and all(profile_allows(bundle, ent, common[0])
                                         for bundle, ent in [(app, app_ent), (widget, widget_ent)])
     print('两个描述文件允许共组：' + ('是' if profiles_match else '否或未能验证'))
-    valid = all(run('/usr/bin/codesign', '--verify', '--strict', str(bundle)).returncode == 0
+    valid = all(run('/usr/bin/codesign', '--verify', '--deep', '--strict', str(bundle)).returncode == 0
                 for bundle in [widget, app])
     print('App / Widget 签名完整性：' + ('通过' if valid else '未通过'))
     return bool(groups_match and profiles_match and valid)

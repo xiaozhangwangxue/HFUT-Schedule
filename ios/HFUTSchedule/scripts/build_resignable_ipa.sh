@@ -6,8 +6,8 @@ set -euo pipefail
 script_dir="${0:A:h}"
 project_dir="${script_dir:h}"
 dist_dir="${project_dir}/dist"
-unsigned_ipa="${1:-${dist_dir}/HFUTSchedule-iOS-1.3.0-unsigned.ipa}"
-output_ipa="${2:-${dist_dir}/HFUTSchedule-iOS-1.3.0-resignable.ipa}"
+unsigned_ipa="${1:-${dist_dir}/HFUTSchedule-iOS-1.3.1-unsigned.ipa}"
+output_ipa="${2:-${dist_dir}/HFUTSchedule-iOS-1.3.1-resignable.ipa}"
 if (( $# > 2 )); then
     echo "用法：$0 [unsigned.ipa] [output.ipa]" >&2
     exit 1
@@ -88,8 +88,8 @@ def bundle_info(bundle):
     identifier = info.get('CFBundleIdentifier', '')
     if not isinstance(identifier, str) or not re.fullmatch(r'[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+', identifier):
         raise SystemExit('Invalid bundle identifier.')
-    if info.get('CFBundleShortVersionString') != '1.3.0':
-        raise SystemExit('Expected an iOS 1.3.0 application and widget.')
+    if info.get('CFBundleShortVersionString') != '1.3.1':
+        raise SystemExit('Expected an iOS 1.3.1 application and widget.')
     executable = info.get('CFBundleExecutable')
     if not isinstance(executable, str) or Path(executable).name != executable or not (bundle / executable).is_file():
         raise SystemExit('Bundle is missing its executable.')

@@ -163,6 +163,47 @@ final class ElectricityQueryModel: ObservableObject {
     var hasUnsavedChanges: Bool { savedSelection != selection }
     var hasError: Bool { optionsError != nil || results.contains { $0.error != nil } }
 
+    var dormitoryBuildings: [HuiXinSelectionOption] {
+        HefeiMeterPairing.groups(buildings).map { .init(name:$0.name,value:$0.id) }
+    }
+    private var selectedGroup: HefeiDormitoryMeterGroup? {
+        HefeiMeterPairing.groups(buildings).first { $0.contains(selection.building) || $0.contains(selection.airConditioningBuilding) }
+    }
+    var dormitoryBuildingID: String { selectedGroup?.id ?? (selection.building.isEmpty ? selection.airConditioningBuilding : selection.building) }
+    var dormitoryRoomID: String { selection.building.isEmpty ? selection.airConditioningRoom : selection.room }
+    var dormitoryRooms: [HuiXinSelectionOption] {
+        (selection.building.isEmpty ? airConditioningRooms : rooms).filter {
+            selection.building.isEmpty ? !$0.name.contains("照明") : !$0.name.contains("空调")
+        }
+    }
+
+    func setDormitoryBuilding(_ value: String) {
+        guard value != dormitoryBuildingID else { return }
+        let group = HefeiMeterPairing.groups(buildings).first { $0.id == value }
+        invalidate()
+        selection.building = group?.lighting?.value ?? (group?.hasKnownTypes == false ? value : "")
+        selection.airConditioningBuilding = group?.airConditioning?.value ?? ""
+        selection.room = ""; selection.airConditioningRoom = ""
+        rooms = []; airConditioningRooms = []; optionsError = nil
+        if group != nil { loadOptions(loadBuildings:false) }
+    }
+
+    func setDormitoryRoom(_ value: String) {
+        guard let reference = dormitoryRooms.first(where: { $0.value == value }) else { return }
+        invalidate()
+        if selection.building.isEmpty { selection.airConditioningRoom = value }
+        else { selection.room = value }
+        synchronizeRoomPair(reference:reference)
+    }
+
+    private func synchronizeRoomPair(reference: HuiXinSelectionOption? = nil) {
+        guard let group = selectedGroup, group.hasKnownTypes else { return }
+        let reference = reference ?? dormitoryRooms.first { $0.value == dormitoryRoomID }
+        guard let reference else { return }
+        if group.lighting != nil { selection.room = HefeiMeterPairing.matchingRoom(reference,in:rooms,airConditioning:false)?.value ?? "" }
+        if group.airConditioning != nil { selection.airConditioningRoom = HefeiMeterPairing.matchingRoom(reference,in:airConditioningRooms,airConditioning:true)?.value ?? "" }
+    }
+
     func activate(campus: ElectricityCampus) {
         invalidate()
         isActive = true
@@ -253,8 +294,6 @@ final class ElectricityQueryModel: ObservableObject {
 
     private func loadOptions(loadBuildings: Bool = true, andQuery: Bool = false) {
         let requestGeneration = generation
-        let building = selection.building
-        let airConditioningBuilding = selection.airConditioningBuilding
         let service = service
         isLoadingOptions = true
         optionsTask = Task { [weak self] in
@@ -268,7 +307,13 @@ final class ElectricityQueryModel: ObservableObject {
                 guard let self, self.isCurrent(requestGeneration) else { return }
                 self.optionsError = error.localizedDescription
             }
-            for (isAirConditioning, selectedBuilding) in [(false, building), (true, airConditioningBuilding)] where !selectedBuilding.isEmpty {
+            guard let owner = self, owner.isCurrent(requestGeneration) else { return }
+            if let group = owner.selectedGroup, group.hasKnownTypes {
+                owner.selection.building = group.lighting?.value ?? ""
+                owner.selection.airConditioningBuilding = group.airConditioning?.value ?? ""
+            }
+            let meters = [(false,owner.selection.building),(true,owner.selection.airConditioningBuilding)]
+            for (isAirConditioning, selectedBuilding) in meters where !selectedBuilding.isEmpty {
                 do {
                     let values = try await service.options(building: selectedBuilding)
                     guard let self, self.isCurrent(requestGeneration) else { return }
@@ -280,8 +325,13 @@ final class ElectricityQueryModel: ObservableObject {
                 }
             }
             guard let self, self.isCurrent(requestGeneration) else { return }
+            self.synchronizeRoomPair()
             self.isLoadingOptions = false
             self.optionsTask = nil
+            if andQuery, self.selection.isValid(for:self.campus) {
+                self.defaults.save(self.selection,for:self.campus)
+                self.savedSelection = self.selection
+            }
             // A list-service failure must not prevent querying a valid, already saved dormitory.
             if andQuery { self.startQuery() }
         }

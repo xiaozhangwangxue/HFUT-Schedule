@@ -275,6 +275,11 @@ final class CampusServiceClient: @unchecked Sendable {
 
     @discardableResult
     func refreshOnePortalToken() async throws -> String {
+        do { return try await requestOnePortalToken() }
+        catch CampusServiceError.authenticationRequired { return try await requestOnePortalToken() }
+    }
+
+    private func requestOnePortalToken() async throws -> String {
         CampusSessionStore.shared.restoreToSharedStorage()
         let redirect = "https://one.hfut.edu.cn/home/index"
         var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/oauth2.0/authorize")!
@@ -284,9 +289,9 @@ final class CampusServiceClient: @unchecked Sendable {
             URLQueryItem(name: "redirect_uri", value: redirect)
         ]
         guard let start = components.url else { throw CampusServiceError.invalidResponse }
-        let callback = try await followRedirects(from: start) { url, headers, body in
-            let candidates = [url.absoluteString, headers["location"] ?? "", body]
-            return candidates.first { $0.contains("code=OC-") }
+        let callback = try await followRedirects(from: start) { url, headers, _, _ in
+            let candidates = [url.absoluteString, headers["location"] ?? ""]
+            return candidates.compactMap { CampusServiceAuthentication.onePortalCallback($0, relativeTo:url) }.first?.absoluteString
         }
         guard let callbackURL = URL(string: callback),
               let code = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?
@@ -344,7 +349,7 @@ final class CampusServiceClient: @unchecked Sendable {
             )
         ]
         guard let start = components.url else { throw CampusServiceError.invalidResponse }
-        let token = try await followRedirects(from: start) { url, headers, _ in
+        let token = try await followRedirects(from: start) { url, headers, _, _ in
             guard url.host?.lowercased() == "lib.hfut.edu.cn" else { return nil }
             let cookieText = headers["set-cookie"] ?? ""
             guard let raw = Self.firstMatch(
@@ -432,7 +437,7 @@ final class CampusServiceClient: @unchecked Sendable {
         var lastError: Error?
         for _ in 0..<2 {
             do {
-                let token = try await followRedirects(from: start) { url, headers, body in
+                let token = try await followRedirects(from: start) { url, headers, body, _ in
                     let candidates = [url.absoluteString, headers["location"] ?? "", body]
                     for candidate in candidates {
                         if let value = Self.firstMatch(in: candidate, pattern: #"synjones-auth=([^&\s\"']+)"#) {
@@ -764,17 +769,9 @@ final class CampusServiceClient: @unchecked Sendable {
         var components = URLComponents(string: "https://cas.hfut.edu.cn/cas/login")!
         components.queryItems = [URLQueryItem(name: "service", value: "https://dekt.hfut.edu.cn/scReports/uccp_index")]
         guard let start = components.url else { throw CampusServiceError.invalidResponse }
-        let cookie = try await followRedirects(from: start) { url, headers, _ in
-            let setCookie = headers["set-cookie"] ?? ""
-            if url.host == "dekt.hfut.edu.cn",
-               let token = Self.firstMatch(in: setCookie, pattern: #"(?:^|[,;]\s*)(SESSION=[^;,\s]+)"#) {
-                return token
-            }
-            if url.host == "dekt.hfut.edu.cn",
-               let value = HTTPCookieStorage.shared.cookies(for: URL(string: "https://dekt.hfut.edu.cn/")!)?.first(where: { $0.name == "SESSION" })?.value {
-                return "SESSION=\(value)"
-            }
-            return nil
+        let cookie = try await followRedirects(from: start) { url, headers, _, status in
+            CampusServiceAuthentication.secondClassSession(url:url,status:status,location:headers["location"],
+                setCookie:headers["set-cookie"] ?? "",storage:.shared)
         }
         try CampusCredentialStore.write(cookie, account: secondClassCookieKey)
         return cookie
@@ -782,7 +779,7 @@ final class CampusServiceClient: @unchecked Sendable {
 
     private func followRedirects(
         from start: URL,
-        extractor: (URL, [String: String], String) -> String?
+        extractor: (URL, [String: String], String, Int) -> String?
     ) async throws -> String {
         var current = start
         for _ in 0..<12 {
@@ -796,14 +793,10 @@ final class CampusServiceClient: @unchecked Sendable {
             }
             let (data, response) = try await noRedirectSession.data(for: request)
             guard let http = response as? HTTPURLResponse else { throw CampusServiceError.invalidResponse }
-            let responseHeaders = http.allHeaderFields.reduce(into: [String: String]()) { result, item in
-                guard let key = item.key as? String else { return }
-                result[key] = String(describing: item.value)
-            }
-            let responseCookies = HTTPCookie.cookies(
-                withResponseHeaderFields: responseHeaders,
-                for: http.url ?? current
-            )
+            #if DEBUG
+            CASPreparationProbe.record(request, http, data)
+            #endif
+            let responseCookies = CASCookieParser.cookies(from:http)
             for cookie in responseCookies { HTTPCookieStorage.shared.setCookie(cookie) }
             CampusSessionStore.shared.persist((HTTPCookieStorage.shared.cookies ?? []) + responseCookies)
             let headers = http.allHeaderFields.reduce(into: [String: String]()) { result, item in
@@ -811,7 +804,7 @@ final class CampusServiceClient: @unchecked Sendable {
                 result[key.lowercased()] = String(describing: item.value)
             }
             let body = String(data: data, encoding: .utf8) ?? ""
-            if let value = extractor(http.url ?? current, headers, body) { return value }
+            if let value = extractor(http.url ?? current, headers, body, http.statusCode) { return value }
             guard (300..<400).contains(http.statusCode),
                   let location = http.value(forHTTPHeaderField: "Location"),
                   let next = URL(string: location, relativeTo: http.url ?? current)?.absoluteURL else {
@@ -826,6 +819,9 @@ final class CampusServiceClient: @unchecked Sendable {
         CampusSessionStore.shared.restoreToSharedStorage()
         let (data, response) = try await session.data(for: request)
         guard let response = response as? HTTPURLResponse else { throw CampusServiceError.invalidResponse }
+        #if DEBUG
+        CASPreparationProbe.record(request, response, data)
+        #endif
         CampusSessionStore.shared.persist(HTTPCookieStorage.shared.cookies ?? [])
         return (data, response)
     }

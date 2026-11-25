@@ -1,6 +1,17 @@
 import SwiftUI
 import UIKit
 
+#if DEBUG
+/// Lets the regression test observe the actual mounted view's session identity
+/// without exposing credentials or adding controls to the login page.
+struct CASLoginClientIdentityPreference: PreferenceKey {
+    static let defaultValue: ObjectIdentifier? = nil
+    static func reduce(value: inout ObjectIdentifier?, nextValue: () -> ObjectIdentifier?) {
+        value = nextValue() ?? value
+    }
+}
+#endif
+
 @MainActor
 struct NativeCASLoginView: View {
     let mode: AcademicConnectionMode
@@ -19,7 +30,10 @@ struct NativeCASLoginView: View {
     @State private var operationTask: Task<Void, Never>?
     @State private var isVisible = false
 
-    private let client: CASLoginClient
+    // The parent can reconstruct this View while preparation remains in State.
+    // Keep its matching client too: a plain let created a fresh, unprepared
+    // client on redraw, so submitting the visible form lost LOGIN_FLAVORING.
+    @State private var client: CASLoginClient
     private enum LoginOperation { case prepare, refreshCaptcha, login }
     private var isNetworkBusy: Bool { operation != nil }
     private var isPreparing: Bool { operation == .prepare }
@@ -38,7 +52,7 @@ struct NativeCASLoginView: View {
         self.excludesAcademic = excludesAcademic
         self.onAuthenticated = onAuthenticated
         self.onPreparationFailure = onPreparationFailure
-        client = CASLoginClient(mode: mode, excludesAcademic: excludesAcademic)
+        _client = State(initialValue: CASLoginClient(mode: mode, excludesAcademic: excludesAcademic))
         _captchaAutofill = StateObject(wrappedValue: CASCaptchaAutofillModel(recognizer: recognizer))
         _preparation = State(initialValue: initialPreparation)
     }
@@ -130,6 +144,11 @@ struct NativeCASLoginView: View {
             .padding(18)
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .background {
+            #if DEBUG
+            Color.clear.preference(key: CASLoginClientIdentityPreference.self, value: ObjectIdentifier(client))
+            #endif
+        }
         .task {
             isVisible = true
             captchaAutofill.activate(enabled: enableOcrCaptcha)

@@ -31,16 +31,22 @@ struct HFUTScheduleApp: App {
         CourseNotificationDelegate.shared.install()
     }
 
-    var body: some Scene { WindowGroup { observedContent } }
-
-    private var baseContent: some View {
-            RootView()
+    var body: some Scene {
+        WindowGroup {
+            // Scope shared stores around the presentation modifiers too, so
+            // cold/warm deep links and shortcuts inherit the same objects.
+            observedContent
                 .environmentObject(appState)
                 .environmentObject(scheduleStore)
                 .environmentObject(customEventStore)
                 .environmentObject(notificationManager)
                 .environmentObject(academicRecordsStore)
                 .environmentObject(academicStudentStore)
+        }
+    }
+
+    private var baseContent: some View {
+            RootView()
                 .tint(themeAccent)
                 .preferredColorScheme(preferredScheme)
     }
@@ -115,6 +121,13 @@ struct HFUTScheduleApp: App {
 
     @MainActor
     private func prepareScene() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--cas-preparation-check") {
+            await CASPreparationProbe.run()
+        } else if ProcessInfo.processInfo.arguments.contains("--campus-service-check") {
+            await CASPreparationProbe.runServices()
+        }
+        #endif
         restoreTheme()
         let source = ScheduleSource(rawValue: scheduleSource) ?? .academic
         ScheduleSourceCoordinator.shared.activate(source, store: scheduleStore,

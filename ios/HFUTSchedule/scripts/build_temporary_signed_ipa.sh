@@ -13,6 +13,11 @@ fi
 script_dir="${0:A:h}"
 project_dir="${script_dir:h}"
 derived_dir="${project_dir}/build/SignedDeviceDerivedData"
+build_configuration="${HFUT_BUILD_CONFIGURATION:-Release}"
+if [[ "${build_configuration}" != "Release" && "${build_configuration}" != "Debug" ]]; then
+  echo "错误：HFUT_BUILD_CONFIGURATION 必须为 Release 或 Debug。" >&2
+  exit 1
+fi
 dist_dir="${project_dir}/dist"
 device_udid="${1:-}"
 install_after_build="${2:-no}"
@@ -139,7 +144,7 @@ app_identity="$(<"${work_dir}/app.identity")"
 widget_identity="$(<"${work_dir}/widget.identity")"
 stamp="$(date +%Y%m%d-%H%M%S)"
 ipa_path=""
-app_path="${derived_dir}/Build/Products/Release-iphoneos/HFUTSchedule.app"
+app_path="${derived_dir}/Build/Products/${build_configuration}-iphoneos/HFUTSchedule.app"
 widget_path="${app_path}/PlugIns/HFUTScheduleWidget.appex"
 
 echo "==> 生成工程"
@@ -148,7 +153,7 @@ xcodegen generate >/dev/null
 
 echo "==> 构建（未签名）"
 xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
-  -configuration Release -sdk iphoneos27.2 \
+  -configuration "${build_configuration}" -sdk iphoneos27.2 \
   -derivedDataPath "${derived_dir}" \
   DEVELOPMENT_TEAM="${signing_team}" CODE_SIGNING_ALLOWED=NO build \
   > "${TMPDIR:-/tmp}/hfut_unsigned_build.log" 2>&1
@@ -159,6 +164,21 @@ if [[ ! -d "${widget_path}" ]]; then
 fi
 
 echo "==> 签名 Widget 扩展与主应用"
+# SPM binary frameworks may retain the vendor/ad-hoc signature after an
+# unsigned build. iOS verifies every nested executable during installation.
+# Sign dependencies inside-out with this build's identity before their owner.
+python3 - "${app_path}" "${app_identity}" <<'PY'
+from pathlib import Path
+import subprocess
+import sys
+app = Path(sys.argv[1])
+code = [p for p in app.rglob('*')
+        if (p.is_dir() and p.suffix == '.framework')
+        or (p.is_file() and p.suffix == '.dylib')]
+for path in sorted(code, key=lambda p: len(p.parts), reverse=True):
+    subprocess.run(['/usr/bin/codesign', '--force', '--sign', sys.argv[2],
+                    '--timestamp=none', str(path)], check=True)
+PY
 cp "${work_dir}/widget.mobileprovision" "${widget_path}/embedded.mobileprovision"
 /usr/bin/codesign --force --sign "${widget_identity}" --timestamp=none \
   --entitlements "${work_dir}/widget.entitlements" "${widget_path}"

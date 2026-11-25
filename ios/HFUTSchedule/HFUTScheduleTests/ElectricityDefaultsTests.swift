@@ -108,7 +108,7 @@ final class ElectricityDefaultsTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: name) }
         let oneMeter = ElectricityDormitory(building: "A", room: "A101")
         store.save(oneMeter, for: .hefei)
-        let service = ImmediateService()
+        let service = ImmediateService(offersAirConditioning:false)
         let model = ElectricityQueryModel(defaults: store, service: service)
         model.activate(campus: .hefei)
         try await eventually { model.results.count == 2 && !model.isLoading }
@@ -309,6 +309,62 @@ final class ElectricityDefaultsTests: XCTestCase {
         }
     }
 
+    func testHefeiOneDormitorySelectionResolvesTwoDifferentServerMeters() async throws {
+        let (store, defaults, name) = makeStore()
+        defer { defaults.removePersistentDomain(forName:name) }
+        let service = ImmediateService()
+        let model = ElectricityQueryModel(defaults:store,service:service)
+        model.activate(campus:.hefei)
+        try await eventually { !model.isLoadingOptions }
+        XCTAssertEqual(model.dormitoryBuildings.count,1)
+        XCTAssertEqual(model.dormitoryBuildings.first?.name,"示例宿舍楼·")
+        model.setDormitoryBuilding("A")
+        try await eventually { !model.isLoadingOptions }
+        model.setDormitoryRoom("A101")
+        XCTAssertEqual(model.selection.building,"A")
+        XCTAssertEqual(model.selection.airConditioningBuilding,"B")
+        XCTAssertEqual(model.selection.room,"A101")
+        XCTAssertEqual(model.selection.airConditioningRoom,"B101")
+        XCTAssertTrue(model.canSave)
+        model.saveAndQuery()
+        try await eventually { !model.isLoading }
+        let calls = await service.feeRequests
+        XCTAssertEqual(calls.map { $0.fields["building"] },["A","B"])
+        XCTAssertEqual(calls.map { $0.fields["room"] },["A101","B101"])
+        XCTAssertFalse(model.results.contains { $0.needsConfiguration })
+        model.deactivate()
+    }
+
+    func testSavedSingleMeterMigratesOnlyUsingMatchingServerNames() async throws {
+        let (store, defaults, name) = makeStore()
+        defer { defaults.removePersistentDomain(forName:name) }
+        store.save(ElectricityDormitory(building:"A",room:"A101"),for:.hefei)
+        let service = ImmediateService()
+        let model = ElectricityQueryModel(defaults:store,service:service)
+        model.activate(campus:.hefei)
+        try await eventually { !model.isLoadingOptions && !model.isLoading && model.results.count == 2 }
+        XCTAssertEqual(model.selection,hefei)
+        XCTAssertEqual(store.load(for:.hefei),hefei)
+        XCTAssertTrue(model.canRefresh)
+        let requests = await service.feeRequests
+        XCTAssertEqual(requests.map { $0.fields["room"] },["A101","B101"])
+        model.deactivate()
+    }
+
+    func testHefeiPairingPreservesRegionAndRejectsAmbiguousRoomMatch() {
+        let values:[HuiXinSelectionOption] = [
+            .init(name:"翡翠湖1号北楼空调",value:"1"),.init(name:"翡翠湖1号北楼照明",value:"2"),
+            .init(name:"翡翠湖1号南楼空调",value:"3"),.init(name:"翡翠湖1号南楼照明",value:"4")]
+        let groups = HefeiMeterPairing.groups(values)
+        XCTAssertEqual(groups.count,2)
+        XCTAssertEqual(groups[0].lighting?.value,"2");XCTAssertEqual(groups[0].airConditioning?.value,"1")
+        XCTAssertEqual(groups[1].lighting?.value,"4");XCTAssertEqual(groups[1].airConditioning?.value,"3")
+        let room = HuiXinSelectionOption(name:"101照明",value:"light101")
+        XCTAssertEqual(HefeiMeterPairing.matchingRoom(room,in:[.init(name:"101空调",value:"air101")],airConditioning:true)?.value,"air101")
+        XCTAssertNil(HefeiMeterPairing.matchingRoom(room,in:[.init(name:"101空调",value:"a"),.init(name:"101空调",value:"b")],airConditioning:true))
+        XCTAssertNil(HefeiMeterPairing.matchingRoom(room,in:[.init(name:"102空调",value:"different-room")],airConditioning:true))
+    }
+
     private func makeStore() -> (ElectricityDefaultsStore, UserDefaults, String) {
         let name = "HFUT-electricity-tests-\(UUID())"
         let defaults = UserDefaults(suiteName: name)!
@@ -339,8 +395,9 @@ final class ElectricityDefaultsTests: XCTestCase {
         var feeRequests: [FeeRequest] = []
         private var responses: [Result<[String: String], FixtureError>]
         private let optionsFail: Bool
-        init(responses: [Result<[String: String], FixtureError>] = [], optionsFail: Bool = false) {
-            self.responses = responses; self.optionsFail = optionsFail
+        private let offersAirConditioning: Bool
+        init(responses: [Result<[String: String], FixtureError>] = [], optionsFail: Bool = false, offersAirConditioning: Bool = true) {
+            self.responses = responses; self.optionsFail = optionsFail; self.offersAirConditioning = offersAirConditioning
         }
         func fee(for kind: HuiXinFeeKind) async throws -> [String: String] {
             feeRequests.append(FeeRequest(kind))
@@ -349,7 +406,7 @@ final class ElectricityDefaultsTests: XCTestCase {
         func options(building: String?) async throws -> [HuiXinSelectionOption] {
             if optionsFail { throw FixtureError.failed }
             if let building { return [.init(name: "101", value: building + "101")] }
-            return [.init(name: "示例宿舍楼·照明", value: "A"), .init(name: "示例宿舍楼·空调", value: "B")]
+            return offersAirConditioning ? [.init(name: "示例宿舍楼·照明", value: "A"), .init(name: "示例宿舍楼·空调", value: "B")] : [.init(name:"示例宿舍楼·照明",value:"A")]
         }
     }
 
