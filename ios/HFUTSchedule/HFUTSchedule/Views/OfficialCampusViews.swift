@@ -270,13 +270,9 @@ struct OfficialClassroomSearchView: View {
 }
 
 struct OfficialFailRateView: View {
+    @EnvironmentObject private var scheduleStore: ScheduleStore
     @State private var query: String
     private let lessonCode: String?
-    @State private var page = 1
-    @State private var records: [OfficialFailRateRecord] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
-    @State private var showingLogin = false
 
     init(courseName: String = "", lessonCode: String? = nil) {
         _query = State(initialValue: courseName)
@@ -285,62 +281,104 @@ struct OfficialFailRateView: View {
 
     var body: some View {
         List {
+            #if DEBUG
+            if AppUIPreview.enabled { Text("界面预览 · 示例数据").font(.caption).foregroundStyle(.secondary) }
+            #endif
             Section("智慧社区官方接口") {
                 TextField("课程名称", text: $query)
-                Button("查询挂科率", systemImage: "percent") { page = 1; Task { await search() } }
-                    .disabled(isLoading || query.trimmed.isEmpty)
+                AppNavigationLink(title: "挂科率查询结果") {
+                    OfficialFailRateResultsView(courseName: query.trimmed, lessonCode: lessonCode)
+                } label: { Label("查询挂科率", systemImage: "percent") }
+                .disabled(query.trimmed.isEmpty)
             }
+            if !ownCourses.isEmpty {
+                Section("我的课程 · 点选查询") {
+                    ForEach(ownCourses) { course in
+                        AppNavigationLink(title: course.name + "挂科率") {
+                            OfficialFailRateResultsView(courseName: course.name, lessonCode: course.details?.code)
+                        } label: { Text(course.name) }
+                    }
+                }
+            }
+        }
+        .navigationTitle("挂科率")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    private var ownCourses: [Course] { OwnCourseLookup.courses(scheduleStore.courses) }
+}
+
+/// Results have their own pagination/loading state. Popping this page leaves
+/// the query form and its scroll position intact for the next course.
+struct OfficialFailRateResultsView: View {
+    let courseName: String
+    let lessonCode: String?
+    @State private var page = 1
+    @State private var records: [OfficialFailRateRecord] = []
+    @State private var isLoading = false
+    @State private var loaded = false
+    @State private var errorMessage: String?
+    @State private var showingLogin = false
+    @State private var requestID = UUID()
+
+    var body: some View {
+        List {
+            #if DEBUG
+            if AppUIPreview.enabled { Text("界面预览 · 示例数据").font(.caption).foregroundStyle(.secondary) }
+            #endif
+            Section("查询课程") { Text(courseName).font(.headline) }
             if let errorMessage {
                 Section {
                     ContentUnavailableView("查询失败", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
+                    Button("重新查询", systemImage: "arrow.clockwise") { Task { await search() } }
                     Button("前往安全登录", systemImage: "lock.shield") { showingLogin = true }
                 }
-            } else {
-                ForEach(records) { record in
-                    Section("\(record.courseName) · \(record.courseCode)") {
-                        ForEach(Array(record.terms.enumerated()), id: \.offset) { _, term in
-                            LabeledContent("\(term.year) 第\(term.period)学期") {
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text(String(format: "挂科率 %.2f%%", (1 - term.successRate) * 100))
-                                    Text("平均 \(term.averageScore, specifier: "%.1f") · \(term.failCount)/\(term.totalCount) 人")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
+            } else if loaded && records.isEmpty && !isLoading {
+                ContentUnavailableView("暂无匹配课程", systemImage: "magnifyingglass", description: Text("智慧社区未返回本次查询的记录，可返回后换一门课程。"))
+            }
+            ForEach(records) { record in
+                Section("\(record.courseName) · \(record.courseCode)") {
+                    ForEach(Array(record.terms.enumerated()), id: \.offset) { _, term in
+                        LabeledContent("\(term.year) 第\(term.period)学期") {
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(String(format: "挂科率 %.2f%%", (1 - term.successRate) * 100))
+                                Text("平均 \(term.averageScore, specifier: "%.1f") · \(term.failCount)/\(term.totalCount) 人")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
                 }
             }
+            Section {
+                AcademicPageControls(page: $page, loading: isLoading)
+            }
         }
-        .safeAreaInset(edge: .bottom) { AcademicPageControls(page: $page, loading: isLoading).padding().background(.regularMaterial) }
-        .onChange(of: page) { _, _ in Task { await search() } }
-        .navigationTitle("挂科率")
+        .navigationTitle("挂科率结果")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在读取智慧社区…") } }
-        .task { if !query.trimmed.isEmpty { await search() } }
+        .task(id: page) { await search() }
         .refreshable { await search() }
-        .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) {
-            AppNavigationStack { LoginPortalView() }
-        }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await search() } }) { AppNavigationStack { LoginPortalView() } }
     }
 
-    @MainActor
-    private func search() async {
-        guard !isLoading, !query.trimmed.isEmpty else { return }
-        isLoading = true
-        errorMessage = nil
+    @MainActor private func search() async {
+        guard !courseName.isEmpty else { return }
+        let id = UUID(); requestID = id; isLoading = true; errorMessage = nil; records = []
+        defer { if requestID == id { isLoading = false; loaded = true } }
+        #if DEBUG
+        if AppUIPreview.enabled { records = AppUIPreview.failRates(course: courseName); return }
+        #endif
         do {
-            let fetched = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: query.trimmed, page: page)
+            let fetched = try await OfficialCampusAPIClient.shared.fetchFailRates(courseName: courseName, page: page)
+            guard !Task.isCancelled, requestID == id else { return }
             if let lessonCode, !lessonCode.isEmpty {
                 let exact = fetched.filter { $0.courseCode == lessonCode }
                 records = exact.isEmpty ? fetched : exact
-            } else {
-                records = fetched
-            }
-            if records.isEmpty { errorMessage = "智慧社区未返回匹配课程。" }
-        } catch { AcademicServiceDiagnostics.record(context: "官方教务查询", error: error);
+            } else { records = fetched }
+        } catch {
+            guard !Task.isCancelled, requestID == id else { return }
+            AcademicServiceDiagnostics.record(context: "官方挂科率查询", error: error)
             errorMessage = error.localizedDescription
         }
-        isLoading = false
     }
 }
 
@@ -401,6 +439,9 @@ struct AcademicCourseSelectionView: View {
             if let errorMessage {
                 ContentUnavailableView("选课入口读取失败", systemImage: "checklist.unchecked", description: Text(errorMessage))
                 Button("重新安全登录", systemImage: "lock.shield") { showingLogin = true }
+            }
+            if !isLoading && turns.isEmpty && errorMessage == nil {
+                Text("校方当前没有开放的选课批次，开放后下拉刷新即可。").font(.footnote).foregroundStyle(.secondary)
             }
             ForEach(turns) { turn in
                 SourceAnchoredNavigationLink(sourceID: "course-selection-turn-\(turn.id)") {

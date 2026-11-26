@@ -39,8 +39,8 @@ enum ScheduleCalendar {
     private static func derivedTermStart(from courses: [Course]) -> Date? {
         var votes: [Date: Int] = [:]
         for course in courses {
-            guard let week = course.weekIndices?.sorted().first,
-                  let text = course.dates?.sorted().first,
+            guard let week = course.weekIndices?.min(),
+                  let text = course.dates?.min(),
                   let date = isoDate(text) else { continue }
             let days = (week - 1) * 7 + max(0, course.weekday - 1)
             if let start = calendar.date(byAdding: .day, value: -days, to: date) {
@@ -95,11 +95,7 @@ enum ScheduleCalendar {
     }
 
     static func isoDate(_ text: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: text)
+        CampusDateCodec.date(text, calendar: calendar)
     }
 }
 
@@ -236,9 +232,6 @@ struct TimetableGridView: View {
                     .buttonStyle(.plain)
                     .frame(width: width, height: max(34, bottom - top))
                     .offset(x: x, y: top)
-                    .contextMenu {
-                        Button("查看课程详情", systemImage: "info.circle") { onSelect(item.course) }
-                    }
                 }
 
                 if let todayColumn {
@@ -253,6 +246,7 @@ struct TimetableGridView: View {
             }
         }
         .frame(height: totalHeight)
+        .groupedGlass()
         .simultaneousGesture(MagnifyGesture().onChanged { value in
             if pinchStartHeight == nil { pinchStartHeight = savedHourHeight }
             savedHourHeight = min(140, max(40, (pinchStartHeight ?? 68) * value.magnification))

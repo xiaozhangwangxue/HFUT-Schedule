@@ -1,11 +1,25 @@
 import Combine
 import SwiftUI
 
+@MainActor
+final class PlatformNavigationDestination {
+    let build: () -> AnyView
+    init(build: @escaping () -> AnyView) { self.build = build }
+}
+
 struct PlatformNavigationRoute: Identifiable, Hashable {
     let id: UUID
     let title: String
+    // The path and native NavigationLink own the lazy destination together.
+    // Scrolling a source link offscreen cannot invalidate an active route.
+    var destination: PlatformNavigationDestination? = nil
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+@MainActor
+final class PlatformNavigationPath: ObservableObject {
+    @Published fileprivate(set) var routes: [PlatformNavigationRoute] = []
 }
 
 @MainActor
@@ -13,8 +27,12 @@ final class PlatformNavigationCoordinator: ObservableObject {
     static let shared = PlatformNavigationCoordinator()
     @Published private(set) var paths: [String: [PlatformNavigationRoute]] = [:]
     @Published private(set) var activeScope = "home"
-    private var builders: [UUID: () -> AnyView] = [:]
-    private var visibleLinks: Set<UUID> = []
+    private var pathStates: [String: PlatformNavigationPath] = [:]
+    func pathState(for scope: String) -> PlatformNavigationPath {
+        if let state = pathStates[scope] { return state }
+        let state = PlatformNavigationPath(); state.routes = paths[scope] ?? []; pathStates[scope] = state
+        return state
+    }
     private var rootIDs: [String: UUID] = [:]
     private var rootTitles = ["home": "聚焦", "schedule": "课表", "services": "校园服务", "me": "选项"]
     private weak var appState: AppState?
@@ -24,7 +42,7 @@ final class PlatformNavigationCoordinator: ObservableObject {
         guard appState !== state else { return }
         observations.removeAll(); appState = state
         activate(Self.scope(for: state.selectedTab))
-        state.$selectedTab.removeDuplicates().sink { [weak self] tab in
+        state.tabSelection.$selectedTab.removeDuplicates().sink { [weak self] tab in
             Task { @MainActor in self?.activate(Self.scope(for: tab)) }
         }.store(in: &observations)
         state.$navigationReturnRequest.compactMap { $0 }.sink { [weak self] id in
@@ -41,36 +59,33 @@ final class PlatformNavigationCoordinator: ObservableObject {
     }
     func setPath(_ path: [PlatformNavigationRoute], scope: String) {
         guard paths[scope] != path else { return }
-        let removed = Set((paths[scope] ?? []).map(\.id)).subtracting(path.map(\.id))
         paths[scope] = path
-        for id in removed { releaseBuilderIfUnused(id) }
+        pathStates[scope]?.routes = path
         if activeScope == scope { publishHistory() }
     }
     func activate(_ scope: String, title: String? = nil) {
         if let title { rootTitles[scope] = title }
         if rootIDs[scope] == nil { rootIDs[scope] = UUID() }
-        activeScope = scope
+        if activeScope != scope { activeScope = scope }
         publishHistory()
     }
     func closeScope(_ scope: String, restoring parent: String?) {
-        let removed = paths.removeValue(forKey: scope) ?? []
-        for route in removed { releaseBuilderIfUnused(route.id) }
+        paths.removeValue(forKey: scope)
         if activeScope == scope { activate(parent ?? Self.scope(for: appState?.selectedTab ?? .home)) }
-        rootIDs.removeValue(forKey: scope); rootTitles.removeValue(forKey: scope)
+        rootIDs.removeValue(forKey: scope); rootTitles.removeValue(forKey: scope); pathStates.removeValue(forKey: scope)
     }
     func deactivate(_ scope: String, restoring parent: String?) {
         if activeScope == scope { activate(parent ?? Self.scope(for: appState?.selectedTab ?? .home)) }
     }
     func register<Destination: View>(id: UUID, title: String?, @ViewBuilder destination: @escaping () -> Destination) -> PlatformNavigationRoute {
-        let view = destination()
-        let resolved = title ?? Self.title(for: view)
-        builders[id] = { AnyView(view) }
-        return PlatformNavigationRoute(id: id, title: resolved)
+        // Register closures, never destination values. A services grid can have
+        // hundreds of links; rendering it must not initialise their models.
+        let resolved = title ?? Self.title(for: String(describing: Destination.self))
+        return PlatformNavigationRoute(id: id, title: resolved,
+            destination: PlatformNavigationDestination { AnyView(destination()) })
     }
-    func linkAppeared(_ id: UUID) { visibleLinks.insert(id) }
-    func linkDisappeared(_ id: UUID) { visibleLinks.remove(id); releaseBuilderIfUnused(id) }
     func destination(for route: PlatformNavigationRoute) -> AnyView {
-        builders[route.id]?() ?? AnyView(ContentUnavailableView("页面已失效", systemImage: "arrow.uturn.backward", description: Text("请返回上一页重新打开。")))
+        route.destination?.build() ?? AnyView(ContentUnavailableView("页面已失效", systemImage: "arrow.uturn.backward", description: Text("请返回上一页重新打开。")))
     }
     func returnTo(_ id: UUID, in scope: String? = nil) {
         let targetScope = scope ?? activeScope
@@ -80,12 +95,9 @@ final class PlatformNavigationCoordinator: ObservableObject {
         }
         appState?.navigationReturnRequest = nil
     }
-    private func releaseBuilderIfUnused(_ id: UUID) {
-        guard !visibleLinks.contains(id), !paths.values.contains(where: { $0.contains(where: { $0.id == id }) }) else { return }
-        builders.removeValue(forKey: id)
-    }
     private func publishHistory() {
-        appState?.navigationHistory = history(forScope: activeScope)
+        let history = history(forScope: activeScope)
+        if appState?.navigationHistory != history { appState?.navigationHistory = history }
     }
     func history(forScope scope: String) -> [PlatformNavigationEntry] {
         if rootIDs[scope] == nil { rootIDs[scope] = UUID() }
@@ -128,8 +140,31 @@ private final class PlatformNavigationLifetime: ObservableObject {
 
 /// Used for local sheet/editor stacks. Root uses the same coordinator with its
 /// four tab bindings, so each navigation stack has a real independently owned path.
+/// Each tab observes only its own path. Opening a services page does not
+/// invalidate the timetable, Focus and settings trees at the same time.
+struct PlatformScopeNavigationStack<Content: View>: View {
+    private let coordinator = PlatformNavigationCoordinator.shared
+    @ObservedObject private var path: PlatformNavigationPath
+    private let scope: String
+    private let hidesSystemBar: Bool
+    private let content: Content
+    init(scope: String, hidesSystemBar: Bool = false, @ViewBuilder content: () -> Content) {
+        self.scope = scope; self.hidesSystemBar = hidesSystemBar; self.content = content()
+        _path = ObservedObject(wrappedValue: PlatformNavigationCoordinator.shared.pathState(for: scope))
+    }
+    var body: some View {
+        NavigationStack(path: coordinator.binding(forScope: scope)) {
+            content
+                .toolbar(hidesSystemBar ? .hidden : .visible, for: .tabBar)
+                .navigationDestination(for: PlatformNavigationRoute.self) { route in
+                    coordinator.destination(for: route).toolbar(hidesSystemBar ? .hidden : .visible, for: .tabBar)
+                }
+        }.environment(\.platformNavigationScope, scope)
+    }
+}
+
 struct AppNavigationStack<Content: View>: View {
-    @ObservedObject private var coordinator = PlatformNavigationCoordinator.shared
+    private let coordinator = PlatformNavigationCoordinator.shared
     @Environment(\.platformNavigationScope) private var parentScope
     @StateObject private var lifetime = PlatformNavigationLifetime()
     private let content: () -> Content
@@ -138,16 +173,15 @@ struct AppNavigationStack<Content: View>: View {
         self.content = content; self.title = title ?? PlatformNavigationCoordinator.title(for: String(describing: Content.self))
     }
     var body: some View {
-        NavigationStack(path: coordinator.binding(forScope: lifetime.scope)) {
-            content().navigationDestination(for: PlatformNavigationRoute.self) { coordinator.destination(for: $0) }
-        }.environment(\.platformNavigationScope, lifetime.scope)
+        PlatformScopeNavigationStack(scope: lifetime.scope, content: content)
             .onAppear { lifetime.parent = parentScope; coordinator.activate(lifetime.scope, title: title) }
             .onDisappear { coordinator.deactivate(lifetime.scope, restoring: parentScope) }
     }
 }
 
 struct AppNavigationLink<Label: View, Destination: View>: View {
-    @ObservedObject private var coordinator = PlatformNavigationCoordinator.shared
+    // Only stacks observe path changes. Links have no path-dependent UI.
+    private let coordinator = PlatformNavigationCoordinator.shared
     @State private var id = UUID()
     private let title: String?
     private let destination: () -> Destination
@@ -161,8 +195,7 @@ struct AppNavigationLink<Label: View, Destination: View>: View {
     var body: some View {
         let route = coordinator.register(id: id, title: title, destination: destination)
         SwiftUI.NavigationLink(value: route, label: label)
-            .onAppear { coordinator.linkAppeared(id) }
-            .onDisappear { coordinator.linkDisappeared(id) }
+
     }
 }
 

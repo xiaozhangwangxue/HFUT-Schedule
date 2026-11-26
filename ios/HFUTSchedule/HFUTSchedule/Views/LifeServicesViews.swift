@@ -358,16 +358,37 @@ struct ShowerBillsView: View {
 }
 
 struct HuiXinLaundryChargeView: View {
+    var body: some View { HuiXinFeeChargeView(itemID: 26, title: "慧新洗衣缴费") }
+}
+
+struct HuiXinFeeChargeView: View {
+    let itemID: Int
+    let title: String
     @State private var url: URL?
     @State private var error: String?
     var body: some View {
         Group {
             if let url { PortalWebView(url: url) }
-            else if let error { ContentUnavailableView("洗衣缴费登录失败", systemImage: "washer", description: Text(error)) }
-            else { ProgressView() }
+            else if let error {
+                ContentUnavailableView {
+                    Label("充值页面打开失败", systemImage: "exclamationmark.triangle")
+                } description: { Text(error) } actions: {
+                    Button("重新打开") { Task { await load() } }
+                }
+            } else { ProgressView().accessibilityLabel("正在打开官方充值页") }
         }
-        .navigationTitle("慧新洗衣缴费")
-        .task { do { url = try await CampusServiceClient.shared.huiXinChargeURL(itemID: 26) } catch { AcademicServiceDiagnostics.record(context: "生活服务操作", error: error); self.error = error.localizedDescription } }
+        .navigationTitle(title)
+        .task(id: itemID) { await load() }
+    }
+    @MainActor private func load() async {
+        error = nil
+        #if DEBUG
+        // The simulator fixture captures the loading state without requesting
+        // an account-specific payment URL. Release always uses the real flow.
+        if AppUIPreview.enabled { return }
+        #endif
+        do { url = try await CampusServiceClient.shared.huiXinChargeURL(itemID: itemID) }
+        catch { AcademicServiceDiagnostics.record(context: "官方充值入口", error: error); self.error = error.localizedDescription }
     }
 }
 

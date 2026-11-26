@@ -2,47 +2,43 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
-    @StateObject private var navigation = PlatformNavigationCoordinator.shared
+    var body: some View { RootTabShell(selection: appState.tabSelection) }
+}
+
+/// Tab selection invalidates the tab chrome, not every page that needs the
+/// campus/account state from AppState.
+private struct RootTabShell: View {
+    @EnvironmentObject private var appState: AppState
+    @ObservedObject var selection: AppTabSelection
+    private let navigation = PlatformNavigationCoordinator.shared
     @State private var showsLaunchpad = false
     @AppStorage("appShowsAllTabLabels") private var showsAllLabels = true
     @AppStorage("appBottomBarStyle") private var bottomBarStyle = "system"
     @AppStorage("appBottomBarInset") private var bottomInset = 8.0
+    @AppStorage(AppSettingsKey.accentHex) private var accentHex = ""
+    @AppStorage(AppSettingsKey.accentSaturation) private var saturation = 1.0
+    @AppStorage(AppSettingsKey.colorStyle) private var colorStyle = "normal"
+    private var themeRevision: String { "\(accentHex)|\(saturation)|\(colorStyle)" }
     private var usesCustomBar: Bool { bottomBarStyle == "floating" || !showsAllLabels }
 
     var body: some View {
-        TabView(selection: $appState.selectedTab) {
-            NavigationStack(path: navigation.binding(for: .schedule)) {
-                ScheduleView()
-                    .navigationDestination(for: PlatformNavigationRoute.self) { navigation.destination(for: $0) }
-            }
-            .environment(\.platformNavigationScope, "schedule")
+        TabView(selection: $selection.selectedTab) {
+            PersistentTabRoot(tab: .schedule, themeRevision: themeRevision, hidesSystemBar: usesCustomBar).equatable()
             .modifier(LaunchpadAccess(isPresented: $showsLaunchpad))
             .tabItem { Label("课程表", systemImage: "calendar") }
             .tag(AppTab.schedule)
 
-            NavigationStack(path: navigation.binding(for: .home)) {
-                DashboardView()
-                    .navigationDestination(for: PlatformNavigationRoute.self) { navigation.destination(for: $0) }
-            }
-            .environment(\.platformNavigationScope, "home")
+            PersistentTabRoot(tab: .home, themeRevision: themeRevision, hidesSystemBar: usesCustomBar).equatable()
             .modifier(LaunchpadAccess(isPresented: $showsLaunchpad))
             .tabItem { Label("聚焦", systemImage: "lightbulb.fill") }
             .tag(AppTab.home)
 
-            NavigationStack(path: navigation.binding(for: .services)) {
-                ServicesView()
-                    .navigationDestination(for: PlatformNavigationRoute.self) { navigation.destination(for: $0) }
-            }
-            .environment(\.platformNavigationScope, "services")
+            PersistentTabRoot(tab: .services, themeRevision: themeRevision, hidesSystemBar: usesCustomBar).equatable()
             .modifier(LaunchpadAccess(isPresented: $showsLaunchpad))
             .tabItem { Label("查询中心", systemImage: "square.grid.2x2.fill") }
             .tag(AppTab.services)
 
-            NavigationStack(path: navigation.binding(for: .me)) {
-                ProfileView()
-                    .navigationDestination(for: PlatformNavigationRoute.self) { navigation.destination(for: $0) }
-            }
-            .environment(\.platformNavigationScope, "me")
+            PersistentTabRoot(tab: .me, themeRevision: themeRevision, hidesSystemBar: usesCustomBar).equatable()
             .modifier(LaunchpadAccess(isPresented: $showsLaunchpad))
             .tabItem { Label("选项", systemImage: "shippingbox.fill") }
             .tag(AppTab.me)
@@ -68,17 +64,36 @@ struct RootView: View {
     }
 
     private func tabButton(_ tab: AppTab, title: String, symbol: String) -> some View {
-        Button { appState.selectedTab = tab } label: {
+        Button { selection.selectedTab = tab } label: {
             VStack(spacing: 3) {
                 Image(systemName: symbol).font(.system(size: 19, weight: .medium))
-                if showsAllLabels || appState.selectedTab == tab { Text(title).font(.caption2).lineLimit(1) }
+                if showsAllLabels || selection.selectedTab == tab { Text(title).font(.caption2).lineLimit(1) }
             }
-            .foregroundStyle(appState.selectedTab == tab ? AppTheme.accent : .secondary)
+            .foregroundStyle(selection.selectedTab == tab ? AppTheme.accent : .secondary)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(appState.selectedTab == tab ? AppTheme.accent.opacity(0.12) : .clear, in: Capsule())
+            .background(selection.selectedTab == tab ? AppTheme.accent.opacity(0.12) : .clear, in: Capsule())
             .contentShape(Capsule())
         }.buttonStyle(.plain).accessibilityLabel(title)
-            .accessibilityAddTraits(appState.selectedTab == tab ? .isSelected : [])
+            .accessibilityAddTraits(selection.selectedTab == tab ? .isSelected : [])
+    }
+}
+
+/// Keep the root screen's initializers and its AppStorage/StateObject wrappers
+/// out of bottom-bar redraws. The child views continue observing their own
+/// models and preferences; theme changes explicitly invalidate the shell.
+private struct PersistentTabRoot: View, Equatable {
+    let tab: AppTab
+    let themeRevision: String
+    let hidesSystemBar: Bool
+    var body: some View {
+        PlatformScopeNavigationStack(scope: PlatformNavigationCoordinator.scope(for: tab), hidesSystemBar: hidesSystemBar) {
+            switch tab {
+            case .schedule: ScheduleView()
+            case .home: DashboardView()
+            case .services: ServicesView()
+            case .me: ProfileView()
+            }
+        }
     }
 }
 
@@ -113,10 +128,12 @@ struct CampusAdaptiveGrid<Content: View>: View {
     var body: some View {
         LazyVGrid(columns: [GridItem(
             .adaptive(minimum: dynamicTypeSize.isAccessibilitySize ? max(260, minimumItemWidth) : minimumItemWidth),
-            spacing: spacing
+            spacing: spacing,
+            alignment: .top
         )], spacing: spacing) {
             content
         }
+        .groupedGlass()
         .frame(maxWidth: maximumContentWidth)
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 struct ServicesView: View {
     @EnvironmentObject private var appState: AppState
     @State private var query = ""
-    @State private var shortcutFeature: CampusFeature?
+    @Environment(\.platformNavigationScope) private var navigationScope
     @State private var serviceOrder: [Int] = []
     @State private var hiddenServiceIDs: Set<Int> = []
     @State private var showingEditor = false
@@ -27,7 +27,7 @@ struct ServicesView: View {
         ScrollView {
             CampusAdaptiveGrid {
                 ForEach(filtered) { feature in
-                    SourceAnchoredNavigationLink(sourceID: "service-\(feature.id)") {
+                    SourceAnchoredNavigationLink(sourceID: "service-\(feature.id)", title: feature.title) {
                         FeatureDetailView(feature: feature)
                     } label: {
                         CompactFeatureTile(feature: feature)
@@ -78,26 +78,15 @@ struct ServicesView: View {
                 }
             }
         }
-        .navigationDestination(isPresented: shortcutFeatureBinding) {
-            if let shortcutFeature {
-                FeatureDetailView(feature: shortcutFeature)
-            }
-        }
         .onAppear { loadServiceLayout(); consumeShortcutFeature() }
         .onChange(of: appState.pendingFeatureID) { _, _ in consumeShortcutFeature() }
     }
 
-    private var shortcutFeatureBinding: Binding<Bool> {
-        Binding(
-            get: { shortcutFeature != nil },
-            set: { if !$0 { shortcutFeature = nil } }
-        )
-    }
-
     private func consumeShortcutFeature() {
-        if let feature = appState.consumePendingFeature() {
-            shortcutFeature = feature
-        }
+        guard let feature = appState.consumePendingFeature() else { return }
+        let coordinator = PlatformNavigationCoordinator.shared
+        let route = coordinator.register(id: UUID(), title: feature.title) { FeatureDetailView(feature: feature) }
+        coordinator.setPath([route], scope: navigationScope ?? "services")
     }
 
     private func visibilityBinding(for id: Int) -> Binding<Bool> {
@@ -117,9 +106,9 @@ struct ServicesView: View {
     }
 
     private func loadServiceLayout() {
-        if let ids = UserDefaults.standard.array(forKey: "service-order") as? [Int] { serviceOrder = ids }
-        else { serviceOrder = FeatureCatalog.all.map(\.id) }
-        if let ids = UserDefaults.standard.array(forKey: "hidden-services") as? [Int] { hiddenServiceIDs = Set(ids) }
+        if let ids = UserDefaults.standard.array(forKey: "service-order") as? [Int], ids != serviceOrder { serviceOrder = ids }
+        else if serviceOrder.isEmpty { serviceOrder = FeatureCatalog.all.map(\.id) }
+        if let ids = UserDefaults.standard.array(forKey: "hidden-services") as? [Int], Set(ids) != hiddenServiceIDs { hiddenServiceIDs = Set(ids) }
     }
 
     private func persistServiceLayout() {

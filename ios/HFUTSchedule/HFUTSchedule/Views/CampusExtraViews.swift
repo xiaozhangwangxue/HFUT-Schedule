@@ -155,12 +155,15 @@ struct CampusMailPageView: View {
         }
         .navigationTitle("校园邮箱")
         .task { await load(force: false) }
+        .refreshable { await load(force: true) }
+        .toolbar { Button("刷新邮箱链接", systemImage: "arrow.clockwise") { Task { await load(force: true) } }.disabled(isLoading) }
     }
 
     @MainActor
     private func load(force: Bool) async {
-        isLoading = mailboxURL == nil
+        isLoading = true
         errorMessage = nil
+        if studentStore.info == nil { await studentStore.refresh() }
         let schoolEmail = email.contains("@") ? email : ""
         guard !schoolEmail.isEmpty else {
             isLoading = false
@@ -829,12 +832,13 @@ struct CloudWebNavigationView: View {
                         }
                         HStack(spacing: 12) {
                             Button("复制") { UIPasteboard.general.string = item.url }
-                            Button("分享") { share(item.url) }
+                            if let url = URL(string: item.url) { ShareLink("分享", item: url) }
                             Button("删除", role: .destructive) { delete(item) }
                         }
                         .font(.caption)
                         .buttonStyle(.plain)
                     }
+                    .buttonStyle(.borderless)
                     .padding(.vertical, 2)
                 }
             }
@@ -864,8 +868,8 @@ struct CloudWebNavigationView: View {
                 }
             }
         }
-        .navigationDestination(item: $openedURL) { url in
-            PortalWebView(url: url)
+        .sheet(isPresented: Binding(get: { openedURL != nil }, set: { if !$0 { openedURL = nil } }), onDismiss: reloadFavorites) {
+            if let url = openedURL { AppNavigationStack { PortalWebView(url: url) } }
         }
         .sheet(isPresented: $showsAddFavorite) {
             AppNavigationStack {
@@ -897,19 +901,10 @@ struct CloudWebNavigationView: View {
 
     private var normalizedInput: URL? { normalized(input) }
 
-    private func normalized(_ text: String) -> URL? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed != "https://", trimmed != "http://" else { return nil }
-        let candidate = trimmed.hasPrefix("http") ? trimmed : "http://\(trimmed)"
-        guard let url = URL(string: candidate), let host = url.host, host.contains(".") else { return nil }
-        return url
-    }
+    private func normalized(_ text: String) -> URL? { WebNavigationURL.normalized(text) }
 
-    private func share(_ text: String) {
-        let activity = UIActivityViewController(activityItems: [text], applicationActivities: nil)
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let root = scene.keyWindow?.rootViewController else { return }
-        root.present(activity, animated: true)
+    private func reloadFavorites() {
+        if let data = UserDefaults.standard.data(forKey: Self.favoritesKey), let saved = try? JSONDecoder().decode([Favorite].self, from: data) { favorites = saved }
     }
 
     private func saveFavorite() {

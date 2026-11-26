@@ -198,6 +198,7 @@ struct CampusNetworkServiceView: View {
 
 struct BathingServiceView: View {
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var studentStore: AcademicStudentStore
     @AppStorage("bathingPhone") private var phone = ""
     @State private var password = ""
     @State private var alternativeLoginCode = ""
@@ -239,6 +240,7 @@ struct BathingServiceView: View {
             }
             Section("慧新易校洗浴") {
                 TextField("绑定手机号", text: $phone).keyboardType(.phonePad)
+                if let value = StudentPhone.from(studentStore.info) { Button("使用个人信息中的手机号") { phone = value } }
                 Button("查询洗浴余额", systemImage: "shower") { Task { await queryFee() } }
                     .disabled(phone.trimmed.isEmpty || isLoading)
                 ForEach(feeResults.keys.sorted(), id: \.self) { key in
@@ -258,7 +260,13 @@ struct BathingServiceView: View {
         .navigationTitle("洗浴")
         .navigationBarTitleDisplayMode(.inline)
         .overlay { if isLoading { ProgressView("正在连接洗浴平台…") } }
-        .task { await loadBalancesAutomatically() }
+        .task {
+            if StudentPhone.from(studentStore.info) == nil { await studentStore.refresh() }
+            guard !Task.isCancelled else { return }
+            phone = await studentStore.phoneForLifeServices() ?? phone
+            await loadBalancesAutomatically()
+        }
+        .refreshable { await loadBalancesAutomatically() }
         .sheet(isPresented: $showingLogin) { AppNavigationStack { LoginPortalView() } }
     }
 
@@ -284,7 +292,7 @@ struct BathingServiceView: View {
         if !silently { isLoading = true }
         do {
             profile = try await CampusServiceClient.shared.fetchShowerProfile()
-            if let profile { phone = profile.phone }
+            if let profile, phone.trimmed.isEmpty { phone = profile.phone }
         } catch { AcademicServiceDiagnostics.record(context: "校园生活服务", error: error);
             if !silently { errorMessage = error.localizedDescription }
         }
@@ -301,7 +309,7 @@ struct BathingServiceView: View {
         if CampusServiceClient.shared.hasSavedShowerCredentials {
             do {
                 profile = try await CampusServiceClient.shared.fetchShowerProfile()
-                if let profile { phone = profile.phone }
+                if let profile, phone.trimmed.isEmpty { phone = profile.phone }
             } catch { AcademicServiceDiagnostics.record(context: "校园生活服务", error: error);
                 failures.append("洗浴账户：\(error.localizedDescription)")
             }
@@ -358,6 +366,7 @@ struct LaundryServiceView: View {
 
     var body: some View {
         List {
+            if appState.campus == .hefei { HuiXinLaundryBalanceSection() }
             Section("充值与支付") {
                 Button("打开微信小程序支付", systemImage: "message.fill") {
                     openURL(URL(string: "weixin://")!)

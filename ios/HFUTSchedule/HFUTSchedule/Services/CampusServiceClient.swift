@@ -169,6 +169,7 @@ enum HuiXinFeeKind: Sendable {
     case networkXuancheng
     case bathingHefei(phone: String)
     case bathingXuancheng(phone: String)
+    case laundryHefei(phone: String)
 
     var itemID: Int {
         switch self {
@@ -177,6 +178,7 @@ enum HuiXinFeeKind: Sendable {
         case .networkXuancheng: 281
         case .bathingHefei: 222
         case .bathingXuancheng: 223
+        case .laundryHefei: 26
         }
     }
 
@@ -191,7 +193,7 @@ enum HuiXinFeeKind: Sendable {
             values += [("level", "0")]
         case .bathingHefei(let phone):
             values += [("level", "1"), ("telPhone", phone)]
-        case .bathingXuancheng(let phone):
+        case .bathingXuancheng(let phone), .laundryHefei(let phone):
             values += [("level", "1"), ("telPhone", phone)]
         }
         return values
@@ -244,12 +246,29 @@ final class CampusServiceClient: @unchecked Sendable {
     static let alipayCampusCardURL = URL(string: "alipays://platformapi/startapp?appId=20000067&url=https://ur.alipay.com/_4kQhV32216tp7bzlDc3E1k")!
     static let alipayCampusCardFallbackURL = URL(string: "https://ur.alipay.com/_4kQhV32216tp7bzlDc3E1k")!
 
+    /// Official HuiXin personal information (charge-app uses this endpoint).
+    /// Verify the student number before using a phone from a saved session.
+    func fetchProfilePhone(studentID: String) async throws -> String? {
+        let data = try await huiXinAuthorizedData(path: "charge/user/caslogin_userxx")
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        #if DEBUG
+        CASPreparationProbe.recordProfileShape(root, studentID: studentID)
+        #endif
+        guard let user = root["user"] as? [String: Any] else { return nil }
+        let number = Self.string(user["sno"]) ?? Self.string(user["studentId"]) ?? Self.string(user["account"])
+        guard number == studentID else { return nil }
+        return StudentPhone.normalized(Self.string(user["phoneNumber"]))
+    }
+
     func fetchCampusMailURL(email: String, forceRefresh: Bool = false) async throws -> URL? {
         let token = try await onePortalToken(forceRefresh: forceRefresh)
         let secret = String((0..<16).compactMap { _ in "0123456789ABCDEF".randomElement() })
         let encrypted = try CASLoginClient.encryptAES(email, key: secret)
         var components = URLComponents(string: "https://one.hfut.edu.cn/api/msg/mailBusiness/getLoginUrl")!
         components.queryItems = [URLQueryItem(name: "mail", value: encrypted)]
+        // URLComponents leaves '+' literal. The portal decodes this query as
+        // form data, so base64 '+' must reach it as %2B, just like Retrofit.
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         var request = URLRequest(url: components.url!)
         request.setValue(token, forHTTPHeaderField: "Authorization")
         request.setValue("secret=\(secret)", forHTTPHeaderField: "Cookie")
@@ -259,13 +278,9 @@ final class CampusServiceClient: @unchecked Sendable {
             return try await fetchCampusMailURL(email: email, forceRefresh: true)
         }
         guard (200..<300).contains(response.statusCode) else { throw CampusServiceError.http(response.statusCode) }
-        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw CampusServiceError.invalidData("校园邮箱接口返回格式无法识别")
-        }
         // The official endpoint returns data = null when the student has not
         // activated a campus mailbox. That is a valid state, not a parse error.
-        guard let value = Self.string(root["data"]), !value.isEmpty else { return nil }
-        return URL(string: value)
+        return try CampusMailResponse.url(from: data)
     }
 
     /// 复用已保存的信息门户令牌，没有则登录一次。
@@ -460,7 +475,7 @@ final class CampusServiceClient: @unchecked Sendable {
         var components = URLComponents(string: "http://121.251.19.62/berserker-app/ykt/tsm/getCampusCards")!
         components.queryItems = [URLQueryItem(name: "synAccessSource", value: "h5")]
         var request = URLRequest(url: components.url!)
-        request.setValue(token, forHTTPHeaderField: "synjones-auth")
+        request.setValue(Self.huiXinAuthorization(token), forHTTPHeaderField: "synjones-auth")
         let (data, response) = try await data(for: request)
         if [401, 403].contains(response.statusCode), !forceRefresh {
             CampusCredentialStore.delete(huiXinTokenKey)
@@ -508,7 +523,19 @@ final class CampusServiceClient: @unchecked Sendable {
         request.httpMethod = "POST"
         request.setValue("bearer \(token)", forHTTPHeaderField: "synjones-auth")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = Self.formBody(kind.fields)
+        var fields = kind.fields
+        if case .laundryHefei(let phone) = kind {
+            var metadataRequest = request
+            metadataRequest.httpBody = Self.formBody([("feeitemid", "26"), ("type", "select"), ("level", "0")])
+            let (metadata, metadataResponse) = try await data(for: metadataRequest)
+            let metadataRoot = (try? JSONSerialization.jsonObject(with: metadata)) as? [String: Any]
+            if ([401, 403].contains(metadataResponse.statusCode) || metadataRoot.map(Self.isAuthenticationFailure) == true), !retrying {
+                return try await fetchFee(kind, retrying: true)
+            }
+            guard (200..<300).contains(metadataResponse.statusCode) else { throw CampusServiceError.http(metadataResponse.statusCode) }
+            fields = try HuiXinPhoneFeeForm.fields(metadata: metadata, itemID: 26, phone: phone)
+        }
+        request.httpBody = Self.formBody(fields)
         let (data, response) = try await data(for: request)
         if [401, 403].contains(response.statusCode), !retrying {
             CampusCredentialStore.delete(huiXinTokenKey)
@@ -697,7 +724,7 @@ final class CampusServiceClient: @unchecked Sendable {
         let token = try await huiXinToken(forceRefresh: false)
         let url = URL(string: path, relativeTo: URL(string: "http://121.251.19.62/")!)!.absoluteURL
         var request = URLRequest(url: url)
-        request.setValue(token, forHTTPHeaderField: "synjones-auth")
+        request.setValue(Self.huiXinAuthorization(token), forHTTPHeaderField: "synjones-auth")
         let (data, response) = try await self.data(for: request)
         let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         if [401, 403].contains(response.statusCode) || root.map(Self.isAuthenticationFailure) == true {
@@ -749,6 +776,10 @@ final class CampusServiceClient: @unchecked Sendable {
     private func huiXinToken(forceRefresh: Bool) async throws -> String {
         if !forceRefresh, let token = CampusCredentialStore.read(huiXinTokenKey), !token.isEmpty { return token }
         return try await refreshHuiXinToken()
+    }
+
+    static func huiXinAuthorization(_ token: String) -> String {
+        token.lowercased().hasPrefix("bearer ") ? token : "bearer \(token)"
     }
 
     private func onePortalToken(forceRefresh: Bool) async throws -> String {
@@ -892,8 +923,8 @@ final class CampusServiceClient: @unchecked Sendable {
         return ShowerProfile(
             phone: phone,
             name: string(object["name"]) ?? "洗浴账户",
-            balance: money(object["accountMoney"]),
-            giftedBalance: money(object["accountGivenMoney"]),
+            balance: ShowerMoney.yuan(object["accountMoney"]),
+            giftedBalance: ShowerMoney.yuan(object["accountGivenMoney"]),
             loginCode: code
         )
     }

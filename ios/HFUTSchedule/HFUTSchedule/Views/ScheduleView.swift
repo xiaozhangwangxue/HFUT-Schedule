@@ -159,7 +159,6 @@ struct ScheduleView: View {
         } message: {
             Text(exportMessage ?? "")
         }
-        .task { try? await notificationManager.reschedule(for: scheduleStore.courses) }
         .onAppear { chooseInitialWeekIfNeeded() }
         .onChange(of: autoTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }
         .onChange(of: manualTermStart) { _, _ in chooseInitialWeekIfNeeded(force: true) }

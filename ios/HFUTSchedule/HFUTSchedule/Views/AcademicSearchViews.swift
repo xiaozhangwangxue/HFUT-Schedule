@@ -6,6 +6,8 @@ struct AcademicTermCoursesView: View {
     @State private var query = ""
     @State private var error: String?
     @State private var loading = false
+    @State private var loaded = false
+    @State private var showingLogin = false
     var body: some View {
         List {
             Section("学期") {
@@ -13,6 +15,9 @@ struct AcademicTermCoursesView: View {
                 Button("读取学期课程与教材") { Task { await load() } }.disabled(loading)
             }
             if let error { Text(error).foregroundStyle(.red) }
+            if let notice = items.first?.textbookNotice { Text(notice).font(.footnote).foregroundStyle(.secondary) }
+            if loaded && items.isEmpty && error == nil { Text("本学期暂无课程，可切换学期后重新读取。").foregroundStyle(.secondary) }
+            Button("重新登录教务系统", systemImage: "lock.shield") { showingLogin = true }
             ForEach(items.filter { query.isEmpty || "\($0.lesson.courseName) \($0.lesson.code ?? "") \($0.course.teacher)".localizedCaseInsensitiveContains(query) }) { item in
                 AppNavigationLink { AcademicTermCourseDetailView(item: item) } label: {
                     VStack(alignment: .leading, spacing: 5) {
@@ -27,10 +32,11 @@ struct AcademicTermCoursesView: View {
         .navigationTitle("学期课程汇总")
         .searchable(text: $query, prompt: "课程、代码、教师")
         .task { await load() }.refreshable { await load() }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await load() } }) { AppNavigationStack { LoginPortalView() } }
         .overlay { if loading { ProgressView() } }
     }
     @MainActor private func load() async {
-        guard !loading else { return }; loading = true; error = nil; defer { loading = false }
+        guard !loading else { return }; loading = true; error = nil; defer { loading = false; loaded = true }
         do {
             let mode = AcademicConnectionMode(rawValue: UserDefaults.standard.string(forKey: "academicConnectionMode") ?? "") ?? .direct
             items = try await AcademicClient(mode: mode, cookies: CampusSessionStore.shared.allCookies).fetchTermCourses(semesterID: semesterID)

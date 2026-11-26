@@ -66,6 +66,7 @@ struct PortalWebView: View {
             if let error = webViewReference.errorMessage {
                 VStack(spacing: 8) {
                     Text(error).font(.footnote)
+                    Button("重新加载") { webViewReference.errorMessage = nil; webViewReference.webView?.reload() }
                     Button("关闭提示") { webViewReference.errorMessage = nil }
                 }.padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)).padding()
             }
@@ -271,6 +272,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation?) {
             parent.isLoading = true
+            parent.reference.errorMessage = nil
             parent.reference.synchronize()
         }
 
@@ -295,12 +297,43 @@ private struct WebViewRepresentable: UIViewRepresentable {
             }
         }
 
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation?, withError error: Error) {
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation?, withError error: Error) { report(error) }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation?, withError error: Error) { report(error) }
+
+        private func report(_ error: Error) {
             parent.isLoading = false
+            if (error as NSError).code != NSURLErrorCancelled { parent.reference.errorMessage = error.localizedDescription }
         }
 
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation?, withError error: Error) {
-            parent.isLoading = false
+        private func presenter(for webView: WKWebView) -> UIViewController? {
+            var controller = webView.window?.rootViewController
+            while let presented = controller?.presentedViewController { controller = presented }
+            return controller?.viewIfLoaded?.window == nil ? nil : controller
+        }
+
+        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+            guard let presenter = presenter(for: webView), !(presenter is UIAlertController) else { completionHandler(); return }
+            let alert = UIAlertController(title: frame.request.url?.host, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "好", style: .default) { _ in completionHandler() })
+            presenter.present(alert, animated: true)
+        }
+
+        func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+            guard let presenter = presenter(for: webView), !(presenter is UIAlertController) else { completionHandler(false); return }
+            let alert = UIAlertController(title: frame.request.url?.host, message: message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(false) })
+            alert.addAction(UIAlertAction(title: "确认", style: .default) { _ in completionHandler(true) })
+            presenter.present(alert, animated: true)
+        }
+
+        func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+            guard let presenter = presenter(for: webView), !(presenter is UIAlertController) else { completionHandler(nil); return }
+            let alert = UIAlertController(title: frame.request.url?.host, message: prompt, preferredStyle: .alert)
+            alert.addTextField { $0.text = defaultText }
+            alert.addAction(UIAlertAction(title: "取消", style: .cancel) { _ in completionHandler(nil) })
+            alert.addAction(UIAlertAction(title: "确认", style: .default) { _ in completionHandler(alert.textFields?.first?.text) })
+            presenter.present(alert, animated: true)
         }
 
         func webView(

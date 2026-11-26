@@ -174,7 +174,7 @@ final class ElectricityQueryModel: ObservableObject {
     var dormitoryRooms: [HuiXinSelectionOption] {
         (selection.building.isEmpty ? airConditioningRooms : rooms).filter {
             selection.building.isEmpty ? !$0.name.contains("照明") : !$0.name.contains("空调")
-        }
+        }.map { HuiXinSelectionOption(name: HefeiMeterPairing.normalizedName($0.name), value: $0.value) }
     }
 
     func setDormitoryBuilding(_ value: String) {
@@ -202,6 +202,13 @@ final class ElectricityQueryModel: ObservableObject {
         guard let reference else { return }
         if group.lighting != nil { selection.room = HefeiMeterPairing.matchingRoom(reference,in:rooms,airConditioning:false)?.value ?? "" }
         if group.airConditioning != nil { selection.airConditioningRoom = HefeiMeterPairing.matchingRoom(reference,in:airConditioningRooms,airConditioning:true)?.value ?? "" }
+    }
+
+    /// Focus survives push/pop and tab changes. Keep its current selection and
+    /// readings unless the campus or persisted dormitory actually changed.
+    func activateIfNeeded(campus: ElectricityCampus) {
+        if isActive && self.campus == campus && savedSelection == defaults.load(for: campus) { return }
+        activate(campus: campus)
     }
 
     func activate(campus: ElectricityCampus) {

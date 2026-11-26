@@ -123,9 +123,10 @@ extension AcademicClient {
         return AcademicSyncPayload(term: term, datum: datum).courses()
     }
     static func parseSelectionLessons(_ data: Data) throws -> [AcademicSelectableLesson] {
-        guard let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { throw AcademicClientError.invalidData("选课列表格式无法识别") }
+        let root = try JSONSerialization.jsonObject(with: data)
+        guard let rows = root as? [[String: Any]] ?? (root as? [String: Any])?["data"] as? [[String: Any]] else { throw AcademicClientError.invalidData("选课列表格式无法识别，请刷新教务登录状态后重试") }
         return rows.compactMap { row in
-            guard let id = row["id"] as? Int else { return nil }
+            guard let id = (row["id"] as? Int) ?? (row["id"] as? String).flatMap(Int.init) else { return nil }
             let course = row["course"] as? [String: Any] ?? [:]
             return AcademicSelectableLesson(id: id, code: row["code"] as? String ?? "", courseName: course["nameZh"] as? String ?? row["nameZh"] as? String ?? "课程", className: row["nameZh"] as? String ?? "", teachers: (row["teachers"] as? [[String: Any]] ?? []).compactMap { $0["nameZh"] as? String }, limitCount: row["limitCount"] as? Int ?? 0, remark: row["remark"] as? String, schedule: (row["dateTimePlace"] as? [String: Any])?["textZh"] as? String)
         }

@@ -56,6 +56,10 @@ final class CampusWeatherTests: XCTestCase {
     func testConfiguredQWeatherRequestsAndLinksMatchUpstream() async throws {
         let configuration = try QWeatherConfiguration(apiBaseURL: URL(string: "https://test.qweatherapi.com/v7/")!, bearerToken: "test-only-jwt")
         let client = CampusWeatherClient(qWeather: configuration) { request in
+            if request.url?.host == "api.open-meteo.com" {
+                XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+                return Self.response(Self.twoDayJSON, url: try XCTUnwrap(request.url))
+            }
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-only-jwt")
             XCTAssertEqual(URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?.queryItems?.first?.value, "101220101")
             let payload = request.url?.path == "/v7/weather/now" ? Self.nowJSON : Self.warningJSON
@@ -64,6 +68,10 @@ final class CampusWeatherTests: XCTestCase {
         }
         let report = try await client.fetch(location: .hefei)
         XCTAssertEqual(report.source, "和风天气 QWeather")
+        XCTAssertEqual(report.observation.temperature, 19)
+        XCTAssertEqual(report.temperatureRange?.maximum, 25)
+        XCTAssertEqual(report.tomorrowForecast?.condition, "雨")
+        XCTAssertEqual(report.tomorrowForecast?.temperatureRange.maximum, 17)
         guard case let .available(warnings) = report.warnings else { return XCTFail("Expected parsed warnings") }
         XCTAssertEqual(warnings.count, 1)
         XCTAssertEqual(report.detailURL, CampusWeatherLocation.hefei.officialWeatherURL)
@@ -91,6 +99,64 @@ final class CampusWeatherTests: XCTestCase {
         XCTAssertEqual(report.source, "Open-Meteo")
         guard case .unavailable = report.warnings else { return XCTFail("Fallback has no warning feed") }
     }
+
+    func testTodayHighLowUsesDailyForecastWithCampusTimeZone() async throws {
+        let client = CampusWeatherClient { request in
+            let query = URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?.queryItems ?? []
+            XCTAssertEqual(query.first { $0.name == "daily" }?.value, "temperature_2m_max,temperature_2m_min,weather_code")
+            XCTAssertEqual(query.first { $0.name == "forecast_days" }?.value, "2")
+            XCTAssertEqual(query.first { $0.name == "timezone" }?.value, "Asia/Shanghai")
+            let current = String(Self.freeJSON.dropLast())
+            let json = current + #","daily":{"time":["2026-11-26"],"temperature_2m_max":[-2.4],"temperature_2m_min":[-9.0]}}"#
+            return Self.response(String(json), url: try XCTUnwrap(request.url))
+        }
+        let result = try await client.fetch(location: .hefei)
+        XCTAssertEqual(result.temperatureRange?.maximum, -2.4)
+        XCTAssertEqual(result.temperatureRange?.minimum, -9)
+        XCTAssertEqual(result.temperatureRange?.day, "2026-11-26")
+        XCTAssertNil(result.tomorrowForecast)
+    }
+
+    func testTomorrowUsesItsOwnDailyWeatherAndTemperatureRange() async throws {
+        let client = CampusWeatherClient { request in
+            Self.response(Self.twoDayJSON, url: try XCTUnwrap(request.url))
+        }
+        let report = try await client.fetch(location: .hefei)
+        XCTAssertEqual(report.observation.temperature, 21.5)
+        XCTAssertEqual(report.observation.condition, "多云")
+        XCTAssertEqual(report.temperatureRange?.maximum, 25)
+        let tomorrow = try XCTUnwrap(report.tomorrowForecast)
+        XCTAssertEqual(tomorrow.temperatureRange.day, "2026-11-28")
+        XCTAssertEqual(tomorrow.temperatureRange.maximum, 17)
+        XCTAssertEqual(tomorrow.temperatureRange.minimum, 8)
+        XCTAssertEqual(tomorrow.condition, "雨")
+        XCTAssertEqual(tomorrow.symbol, "cloud.rain.fill")
+    }
+
+    func testMissingInvalidOrNonconsecutiveTomorrowDoesNotReuseToday() async throws {
+        for daily in [
+            #"{"time":["2026-11-27","2026-11-28"],"temperature_2m_max":[25],"temperature_2m_min":[12,8]}"#,
+            #"{"time":["2026-11-27","2026-11-28"],"temperature_2m_max":[25,17],"temperature_2m_min":[12,null]}"#,
+            #"{"time":["2026-11-27","2026-11-28"],"temperature_2m_max":[25,7],"temperature_2m_min":[12,8]}"#,
+            #"{"time":["2026-11-27","2026-11-29"],"temperature_2m_max":[25,17],"temperature_2m_min":[12,8]}"#
+        ] {
+            let payload = String(Self.freeJSON.dropLast()) + ",\"daily\":" + daily + "}"
+            let client = CampusWeatherClient { request in Self.response(payload, url: try XCTUnwrap(request.url)) }
+            let report = try await client.fetch(location: .hefei)
+            XCTAssertEqual(report.temperatureRange?.maximum, 25)
+            XCTAssertNil(report.tomorrowForecast)
+        }
+    }
+
+    func testTomorrowWithoutWeatherCodeKeepsRangeAndDoesNotCopyCurrentCondition() async throws {
+        let payload = Self.twoDayJSON.replacingOccurrences(of: ",\"weather_code\":[0,61]", with: "")
+        let client = CampusWeatherClient { request in Self.response(payload, url: try XCTUnwrap(request.url)) }
+        let report = try await client.fetch(location: .hefei)
+        XCTAssertEqual(report.tomorrowForecast?.temperatureRange.maximum, 17)
+        XCTAssertEqual(report.tomorrowForecast?.condition, "预报暂未更新")
+    }
+
+    private static let twoDayJSON = String(freeJSON.dropLast()) + #","daily":{"time":["2026-11-27","2026-11-28"],"temperature_2m_max":[25,17],"temperature_2m_min":[12,8],"weather_code":[0,61]}}"#
 
     func testConfigurationRequiresHTTPSAndNoHeaderInjection() {
         XCTAssertThrowsError(try QWeatherConfiguration(apiBaseURL: URL(string: "http://test.qweatherapi.com/v7/")!, bearerToken: "test-only-jwt"))

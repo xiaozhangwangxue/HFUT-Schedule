@@ -5,6 +5,7 @@ struct AcademicTermCourse: Identifiable {
     let lesson: AcademicLesson
     let textbook: String
     let specialTextbook: String
+    var textbookNotice: String? = nil
     var course: Course { AcademicClient.detailCourse(for: lesson) }
 }
 
@@ -43,11 +44,20 @@ extension AcademicClient {
         let context = try await loadStudentContext()
         let query = [URLQueryItem(name: "bizTypeId", value: "\(context.bizTypeID)"), URLQueryItem(name: "semesterId", value: "\(semesterID)"), URLQueryItem(name: "dataId", value: "\(context.studentID)")]
         let term = try JSONDecoder().decode(AcademicTermResponse.self, from: await get("for-std/course-table/get-data", query: query))
-        let booksData = try await get("for-std/lesson-textbook/get-data", query: query)
-        let booksRoot = try JSONSerialization.jsonObject(with: booksData) as? [String: Any]
-        let books = booksRoot?["textbookAssignMap"] as? [String: [String: Any]] ?? [:]
+        var books: [String: [String: Any]] = [:]
+        var notice: String?
+        do {
+            let data = try await get("for-std/lesson-textbook/get-data", query: query)
+            guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let map = root["textbookAssignMap"] as? [String: [String: Any]] else { throw AcademicClientError.invalidData("教材尚未公布") }
+            books = map
+        } catch {
+            // Courses remain useful while the independent textbook service is
+            // unavailable. Surface that partial state instead of an empty page.
+            notice = "教材暂未获取，可下拉刷新重试"
+        }
         return term.lessons.map { lesson in
-            AcademicTermCourse(lesson: lesson, textbook: books[lesson.id]?["textbook"] as? String ?? "", specialTextbook: books[lesson.id]?["specialTextbook"] as? String ?? "")
+            AcademicTermCourse(lesson: lesson, textbook: books[lesson.id]?["textbook"] as? String ?? "", specialTextbook: books[lesson.id]?["specialTextbook"] as? String ?? "", textbookNotice: notice)
         }
     }
 }

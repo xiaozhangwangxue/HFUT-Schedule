@@ -68,6 +68,17 @@ struct AcademicCourseSelectionTurn: Decodable, Identifiable, Hashable {
     let bulletin: String
     let selectDateTimeText: String
     let addRulesText: [String]
+    private enum CodingKeys: String, CodingKey { case id, name, bulletin, selectDateTimeText, addRulesText }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let value = try? c.decode(Int.self, forKey: .id) { id = value }
+        else if let value = Int(try c.decode(String.self, forKey: .id)) { id = value }
+        else { throw DecodingError.dataCorruptedError(forKey: .id, in: c, debugDescription: "选课批次代号无效") }
+        name = (try? c.decode(String.self, forKey: .name)) ?? "选课入口 \(id)"
+        bulletin = (try? c.decode(String.self, forKey: .bulletin)) ?? ""
+        selectDateTimeText = (try? c.decode(String.self, forKey: .selectDateTimeText)) ?? ""
+        addRulesText = (try? c.decode([String].self, forKey: .addRulesText)) ?? []
+    }
 }
 
 struct AcademicSelectableLesson: Identifiable, Hashable {
@@ -132,7 +143,7 @@ struct AcademicClient {
     private let noRedirectSession: URLSession
     private let initialCookies: [HTTPCookie]
 
-    init(mode: AcademicConnectionMode, cookies: [HTTPCookie]) {
+    init(mode: AcademicConnectionMode, cookies: [HTTPCookie], configuration: URLSessionConfiguration? = nil) {
         self.mode = mode
         initialCookies = cookies
 
@@ -141,7 +152,7 @@ struct AcademicClient {
             storage.setCookie(cookie)
         }
 
-        let configuration = URLSessionConfiguration.ephemeral
+        let configuration = configuration ?? URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = storage
         configuration.httpCookieAcceptPolicy = .always
         configuration.httpShouldSetCookies = true
@@ -277,24 +288,7 @@ struct AcademicClient {
             "ws/for-std/course-select/addable-lessons",
             fields: [("turnId", String(turnID))]
         )
-        guard let rows = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            throw AcademicClientError.invalidData("选课课程列表返回格式无法识别")
-        }
-        return rows.compactMap { row in
-            guard let id = Self.int(row["id"]), let code = row["code"] as? String else { return nil }
-            let course = row["course"] as? [String: Any]
-            let teachers = (row["teachers"] as? [[String: Any]] ?? []).compactMap { $0["nameZh"] as? String }
-            return AcademicSelectableLesson(
-                id: id,
-                code: code,
-                courseName: course?["nameZh"] as? String ?? (row["nameZh"] as? String ?? code),
-                className: row["nameZh"] as? String ?? "",
-                teachers: teachers,
-                limitCount: Self.int(row["limitCount"]) ?? 0,
-                remark: row["remark"] as? String,
-                schedule: (row["dateTimePlace"] as? [String: Any])?["textZh"] as? String
-            )
-        }
+        return try Self.parseSelectionLessons(data)
     }
 
     func fetchTeachingSurveys(semesterID: Int) async throws -> [AcademicSurveyLesson] {
@@ -676,12 +670,8 @@ struct AcademicClient {
     }
 
     private func attachCookies(to request: inout URLRequest) {
-        guard let host = request.url?.host?.lowercased() else { return }
-        let liveCookies = HTTPCookieStorage.shared.cookies ?? initialCookies
-        let matching = liveCookies.filter { cookie in
-            let domain = cookie.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
-            return host == domain || host.hasSuffix("." + domain)
-        }
+        guard let url = request.url else { return }
+        let matching = HTTPCookieStorage.shared.cookies(for: url) ?? []
         guard !matching.isEmpty else { return }
         let fields = HTTPCookie.requestHeaderFields(with: matching)
         if let value = fields["Cookie"] { request.setValue(value, forHTTPHeaderField: "Cookie") }
@@ -692,6 +682,10 @@ struct AcademicClient {
         guard let response = response as? HTTPURLResponse else { throw AcademicClientError.invalidResponse }
         guard (200..<300).contains(response.statusCode) else {
             throw AcademicClientError.http(response.statusCode)
+        }
+        if let html = String(data: data.prefix(16000), encoding: .utf8),
+           html.contains("id=\"casLoginForm\"") || html.contains("name=\"pwdEncryptSalt\"") || html.contains("id=\"loginFromId\"") {
+            throw AcademicClientError.authenticationRequired
         }
         return (data, response)
     }
@@ -851,7 +845,7 @@ enum AcademicHTMLParser {
         for (key, value) in zip(terms, values) where !key.isEmpty && !value.isEmpty { fields[key] = value }
 
         for pair in pairs(in: profileHTML, pattern: #"(?is)<strong\b[^>]*>(.*?)</strong>.*?<span\b[^>]*>(.*?)</span>"#) {
-            let key = clean(pair.0)
+            let key = clean(pair.0).trimmingCharacters(in: CharacterSet(charactersIn: "：: "))
             let value = clean(pair.1)
             guard !key.isEmpty, !value.isEmpty else { continue }
             fields[key] = value
@@ -865,7 +859,7 @@ enum AcademicHTMLParser {
             fields["证件号"] = identity
         }
 
-        let studentID = labeledSpan(in: html, label: "学号") ?? fallbackStudentID
+        let studentID = labeledSpan(in: html, label: "学号") ?? fields["学号"] ?? UserDefaults.standard.string(forKey: "academicUsername").flatMap { $0.isEmpty ? nil : $0 } ?? fallbackStudentID
         let name = labeledSpan(in: html, label: "中文姓名") ?? fields["姓名"] ?? ""
         return AcademicStudentInfo(studentID: studentID, name: name, fields: fields)
     }

@@ -1,0 +1,74 @@
+{
+  "version": "1.3.2",
+  "build": "9",
+  "sdk": "iphoneos27.2",
+  "minimumIOS": "17.0",
+  "artifacts": [
+    {
+      "name": "HFUTSchedule-iOS-1.3.2-unsigned.ipa",
+      "bytes": 13443112,
+      "sha256": "72efbdb3fef1dd13b1593257352e57a06a4f738b2bc4d999f5495886502e4c81",
+      "bundles": [
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios.widget",
+          "version": "1.3.2",
+          "build": "9",
+          "sdk": "iphoneos27.2"
+        },
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios",
+          "version": "1.3.2",
+          "build": "9",
+          "sdk": "iphoneos27.2"
+        }
+      ],
+      "emptyWidgetSnapshot": true,
+      "noProvisioningProfile": true,
+      "noDebugPreview": true,
+      "verifiedOCRModel": true
+    },
+    {
+      "name": "HFUTSchedule-iOS-1.3.2-resignable.ipa",
+      "bytes": 13502145,
+      "sha256": "3863419738382b00bb58e335a534c1589e885c2b4982bb340901d97f0176c29b",
+      "bundles": [
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios",
+          "version": "1.3.2",
+          "build": "9",
+          "sdk": "iphoneos27.2"
+        },
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios.widget",
+          "version": "1.3.2",
+          "build": "9",
+          "sdk": "iphoneos27.2"
+        }
+      ],
+      "emptyWidgetSnapshot": true,
+      "noProvisioningProfile": true,
+      "noDebugPreview": true,
+      "verifiedOCRModel": true
+    }
+  ],
+  "date": "2026-11-27",
+  "releaseTag": "ios-v1.3.2",
+  "automatedTests": {
+    "platform": "iOS Simulator 27.2",
+    "tests": 330,
+    "failures": 0,
+    "result": "TEST SUCCEEDED"
+  },
+  "releaseBuild": "BUILD SUCCEEDED",
+  "visualChecks": {
+    "platform": "iOS Simulator 27.2",
+    "fixtureDataClearlyLabeled": true,
+    "focusWeather": "today left, tomorrow right; no divider or empty warning label; actual warnings have separate links"
+  },
+  "earlierDeviceVerification": {
+    "system": "iOS 27.3",
+    "scope": "read-only campus services in earlier local repair builds",
+    "finalReleaseInstalledOnDevice": false
+  },
+  "sharedKeychainMetadata": "resignable artifact: matching ad-hoc placeholder groups verified by packaging script; requires user re-signing"
+}

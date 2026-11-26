@@ -68,14 +68,7 @@ enum PlatformScheduleResolver {
     }
 
     static func date(_ text: String, calendar: Calendar) -> Date? {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.isLenient = false
-        guard let value = formatter.date(from: text), formatter.string(from: value) == text else { return nil }
-        return value
+        CampusDateCodec.date(text, calendar: calendar)
     }
 
     private static func clock(_ text: String, on day: Date, calendar: Calendar) -> Date? {

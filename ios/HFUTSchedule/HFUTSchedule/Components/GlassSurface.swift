@@ -73,7 +73,8 @@ struct GlassIcon: View {
 /// fully interactive navigation.
 struct SourceAnchoredNavigationLink<Destination: View, Label: View>: View {
     let sourceID: String
-    private let destination: Destination
+    private let destination: () -> Destination
+    private let title: String?
     private let label: Label
 
     @Namespace private var namespace
@@ -83,28 +84,29 @@ struct SourceAnchoredNavigationLink<Destination: View, Label: View>: View {
 
     init(
         sourceID: String,
-        @ViewBuilder destination: () -> Destination,
+        title: String? = nil,
+        @ViewBuilder destination: @escaping () -> Destination,
         @ViewBuilder label: () -> Label
     ) {
         self.sourceID = sourceID
-        self.destination = destination()
+        self.destination = destination
+        self.title = title
         self.label = label()
     }
 
     @ViewBuilder
     var body: some View {
-        if #available(iOS 18.0, *), !reduceMotion, transitionLevel > 0, sharedContainer {
-            AppNavigationLink(title: PlatformNavigationCoordinator.title(for: destination)) {
-                destination
-                    .configuredPageTransition()
+        if #available(iOS 18.0, *), !reduceMotion, transitionLevel == 2, sharedContainer {
+            AppNavigationLink(title: title ?? PlatformNavigationCoordinator.title(for: String(describing: Destination.self))) {
+                destination()
                     .navigationTransition(.zoom(sourceID: sourceID, in: namespace))
             } label: {
                 label
                     .matchedTransitionSource(id: sourceID, in: namespace)
             }
         } else {
-            AppNavigationLink(title: PlatformNavigationCoordinator.title(for: destination)) {
-                destination.configuredPageTransition()
+            AppNavigationLink(title: title ?? PlatformNavigationCoordinator.title(for: String(describing: Destination.self))) {
+                destination().configuredPageTransition()
             } label: {
                 label
             }
@@ -120,19 +122,44 @@ struct ConfiguredPageTransition: ViewModifier {
     @AppStorage(AppSettingsKey.containerClips) private var clips = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var entered = false
-    private var enabled: Bool { level > 0 && !reduceMotion }
+    private var enabled: Bool { level > 0 && !reduceMotion && effect != "default" }
+    @ViewBuilder
     func body(content: Content) -> some View {
+        if !enabled {
+            content
+        } else {
         content
             .opacity(!enabled || entered ? 1 : 0)
             .scaleEffect(enabled && effect == "scale" && !entered ? 0.94 : 1)
             .offset(x: enabled && effect == "push" && !entered ? (level == 2 ? 36 : 16) : 0)
-            .clipShape(RoundedRectangle(cornerRadius: clips && !entered ? 20 : 0))
+            .modifier(EntranceClip(enabled: clips && !entered))
             .onAppear {
                 guard enabled else { entered = true; return }
                 withAnimation(.easeOut(duration: 0.3 / max(0.25, min(3, speed)))) { entered = true }
             }
+        }
+    }
+}
+private struct EntranceClip: ViewModifier {
+    let enabled: Bool
+    @ViewBuilder func body(content: Content) -> some View {
+        if enabled { content.clipShape(RoundedRectangle(cornerRadius: 20)) }
+        else { content }
     }
 }
 extension View {
     func configuredPageTransition() -> some View { modifier(ConfiguredPageTransition()) }
+}
+
+/// Share backdrop sampling for adjacent glass controls while retaining each
+/// card's own liquid-glass appearance. A small spacing keeps cards separate.
+private struct GroupedGlass: ViewModifier {
+    let spacing: CGFloat
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) { GlassEffectContainer(spacing: spacing) { content } }
+        else { content }
+    }
+}
+extension View {
+    func groupedGlass(spacing: CGFloat = 2) -> some View { modifier(GroupedGlass(spacing: spacing)) }
 }

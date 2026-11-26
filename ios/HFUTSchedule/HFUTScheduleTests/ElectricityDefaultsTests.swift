@@ -320,6 +320,8 @@ final class ElectricityDefaultsTests: XCTestCase {
         XCTAssertEqual(model.dormitoryBuildings.first?.name,"示例宿舍楼·")
         model.setDormitoryBuilding("A")
         try await eventually { !model.isLoadingOptions }
+        XCTAssertTrue(model.dormitoryRooms.allSatisfy { !$0.name.contains("照明") && !$0.name.contains("空调") })
+        XCTAssertTrue(model.dormitoryRooms.contains { $0.value == "A101" })
         model.setDormitoryRoom("A101")
         XCTAssertEqual(model.selection.building,"A")
         XCTAssertEqual(model.selection.airConditioningBuilding,"B")

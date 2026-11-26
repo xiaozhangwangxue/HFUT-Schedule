@@ -31,13 +31,16 @@ final class CourseLiveActivityManager: ObservableObject {
                 guard let self else { return }
                 let value = inputs()
                 let now = Date()
-                if self.isEnabled {
-                    await self.refresh(courses: value.courses, exams: value.exams, events: value.events,
-                        termStart: value.termStart, now: now)
+                guard self.isEnabled else {
+                    do { try await Task.sleep(for: .seconds(60)) } catch { return }
+                    continue
                 }
+                let start = value.termStart ?? ScheduleCalendar.termStart(from: value.courses)
+                let occurrences = await Self.resolve(value.courses, exams: value.exams, events: value.events, termStart: start)
+                guard !Task.isCancelled, self.isEnabled else { return }
+                let token = UUID(); self.generation = token
+                await self.update(occurrences, now: now, token: token)
                 guard !Task.isCancelled else { return }
-                let occurrences = PlatformScheduleResolver.occurrences(courses: value.courses, exams: value.exams,
-                    events: value.events, termStart: value.termStart ?? ScheduleCalendar.termStart(from: value.courses))
                 let next = Self.nextForegroundRefresh(occurrences, now: Date())
                 let delay = max(0.05, min(60, next.timeIntervalSinceNow))
                 do { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
@@ -65,8 +68,20 @@ final class CourseLiveActivityManager: ObservableObject {
             status = "系统未允许实时活动，请在 App 的系统设置中开启。"
             await endAll(); return
         }
-        let items = PlatformScheduleResolver.occurrences(courses: courses, exams: exams, events: events,
-            termStart: termStart ?? ScheduleCalendar.termStart(from: courses))
+        let start = termStart ?? ScheduleCalendar.termStart(from: courses)
+        let items = await Self.resolve(courses, exams: exams, events: events, termStart: start)
+        guard generation == token, isEnabled else { return }
+        await update(items, now: now, token: token)
+    }
+
+    private nonisolated static func resolve(_ courses: [Course], exams: [AcademicExam], events: [CustomEvent], termStart: Date?) async -> [PlatformScheduleOccurrence] {
+        await Task.detached(priority: .utility) {
+            PlatformScheduleResolver.occurrences(courses: courses, exams: exams, events: events, termStart: termStart)
+        }.value
+    }
+
+    private func update(_ items: [PlatformScheduleOccurrence], now: Date, token: UUID) async {
+        guard generation == token, isEnabled else { return }
         let relevant = Self.currentOrSoon(items, now: now)
         for activity in Activity<CourseActivityAttributes>.activities where activity.attributes.occurrenceID != relevant?.id {
             await activity.end(nil, dismissalPolicy: .immediate)

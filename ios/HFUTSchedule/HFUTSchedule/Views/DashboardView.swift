@@ -1,6 +1,22 @@
 import SwiftUI
 
 struct DashboardView: View {
+    private let isUIPreview: Bool
+    @MainActor init() {
+        #if DEBUG
+        isUIPreview = AppUIPreview.enabled
+        if isUIPreview {
+            _weather = State(initialValue: AppUIPreview.weather)
+            _campusCardBalance = State(initialValue: 128.50)
+            _networkError = State(initialValue: "余额 ¥20.00（示例）")
+            _electricity = StateObject(wrappedValue: AppUIPreview.electricityModel())
+            _bathingBalance = StateObject(wrappedValue: AppUIPreview.phoneModel(.bathing))
+            _laundryBalance = StateObject(wrappedValue: AppUIPreview.phoneModel(.laundry))
+        }
+        #else
+        isUIPreview = false
+        #endif
+    }
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var scheduleStore: ScheduleStore
     @EnvironmentObject private var eventStore: CustomEventStore
@@ -15,6 +31,13 @@ struct DashboardView: View {
     @State private var quickActionError: String?
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @State private var section = 0
+    @AppStorage("bathingPhone") private var bathingPhone = ""
+    @AppStorage("laundryPhone") private var laundryPhone = ""
+    @StateObject private var bathingBalance = PhoneFeeBalanceModel(service: .bathing)
+    @StateObject private var laundryBalance = PhoneFeeBalanceModel(service: .laundry)
+    @State private var lastLifeRefresh: Date?
+    @State private var lifeRefreshing = false
+    @State private var lastCardRefresh: Date?
     @State private var campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
     @State private var isRefreshingCampusCardBalance = false
     @State private var tomorrowStatus: FocusTomorrowStatus = .firstClass(hour: nil)
@@ -67,6 +90,7 @@ struct DashboardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
+                if isUIPreview { Text("界面预览 · 示例数据").font(.caption).foregroundStyle(.secondary) }
                 Picker("聚焦内容", selection: $section) {
                     Text("重要安排").tag(0)
                     Text("其他事项").tag(1)
@@ -85,7 +109,7 @@ struct DashboardView: View {
                     eventList
                     CampusAdaptiveGrid(minimumItemWidth: 180, spacing: 10, maximumContentWidth: 840) {
                         ForEach(quickFeatures) { feature in
-                            SourceAnchoredNavigationLink(sourceID: "dashboard-service-\(feature.id)") {
+                            SourceAnchoredNavigationLink(sourceID: "dashboard-service-\(feature.id)", title: feature.title) {
                                 FeatureDetailView(feature: feature)
                             } label: {
                                 focusService(feature)
@@ -134,18 +158,21 @@ struct DashboardView: View {
             if phase == .active { Task { await refreshClock() } }
         }
         .onAppear {
+            if isUIPreview { electricity.activateIfNeeded(campus: .hefei); return }
             campusCardBalance = CampusServiceClient.shared.cachedCampusCardBalance
-            electricity.activate(campus: appState.campus == .hefei ? .hefei : .xuancheng)
+            electricity.activateIfNeeded(campus: appState.campus == .hefei ? .hefei : .xuancheng)
             Task { await refreshCampusCardBalance() }
             Task { await refreshLifeInformation() }
         }
         .onChange(of: appState.campus) { _, campus in
+            if isUIPreview { return }
             electricity.activate(campus: campus == .hefei ? .hefei : .xuancheng)
-            weather = nil; network = nil
+            weather = nil; network = nil; lastLifeRefresh = nil
             Task { await refreshLifeInformation() }
         }
-        .onDisappear { electricity.deactivate() }
+        .task(id: "\(appState.campus.rawValue)|\(StudentPhone.from(studentStore.info) ?? "")|\(bathingPhone)|\(laundryPhone)") { await refreshPhoneBalances() }
         .task {
+            if isUIPreview { await refreshClock(); return }
             await HolidayCalendarStore.shared.refreshIfNeeded()
             await CampusCloudConfigStore.shared.refreshIfNeeded()
             publicEvents = CampusCloudConfigStore.shared.publicEvents
@@ -165,6 +192,7 @@ struct DashboardView: View {
 
     @MainActor
     private func refreshAll() async {
+        if isUIPreview { await refreshPhoneBalances(force: true); return }
         guard !refreshing else { return }
         refreshing = true
         defer { refreshing = false }
@@ -182,23 +210,54 @@ struct DashboardView: View {
         do { recordsStore.replaceExams(with: try await client.fetchExams()) } catch { failed.append("考试") }
         do { studentStore.replace(with: try await client.fetchStudentInfo()) } catch { failed.append("学籍") }
         electricity.refreshSaved()
+        lastCardRefresh = nil; lastLifeRefresh = nil
         await refreshCampusCardBalance()
         await refreshLifeInformation()
+        await refreshPhoneBalances(force: true)
         await refreshClock()
         refreshStatus = failed.isEmpty ? "刷新完成" : "已刷新可用数据；\(failed.joined(separator: "、"))暂未更新，请检查登录或网络。"
     }
 
     @MainActor
     private func refreshLifeInformation() async {
+        guard !lifeRefreshing, lastLifeRefresh.map({ Date().timeIntervalSince($0) >= 60 }) != false else { return }
+        lifeRefreshing = true
+        defer { lifeRefreshing = false }
         let campus = appState.campus
+        lastLifeRefresh = Date()
+        async let weatherResult = captureResult { try await CampusWeatherClient().fetch(location: campus == .hefei ? .hefei : .xuancheng) }
+        async let networkResult = captureResult { try await SchoolNetworkClient.shared.status(xuancheng: campus == .xuancheng) }
         do {
-            let value = try await CampusWeatherClient().fetch(location: campus == .hefei ? .hefei : .xuancheng)
+            let value = try await weatherResult.get()
             if campus == appState.campus { weather = value; weatherError = nil }
         } catch { if campus == appState.campus { weatherError = "天气暂未更新" } }
         do {
-            let value = try await SchoolNetworkClient.shared.status(xuancheng: campus == .xuancheng)
+            let value = try await networkResult.get()
             if campus == appState.campus { network = value; networkError = nil }
         } catch { if campus == appState.campus { networkError = "校园网暂不可连接" } }
+    }
+
+    private func captureResult<T>(_ operation: () async throws -> T) async -> Result<T, Error> {
+        do { return .success(try await operation()) } catch { return .failure(error) }
+    }
+
+    @MainActor private func refreshPhoneBalances(force: Bool = false) async {
+        #if DEBUG
+        if isUIPreview {
+            await bathingBalance.refresh(campus: .hefei, phone: AppUIPreview.phone, force: force)
+            await laundryBalance.refresh(campus: .hefei, phone: AppUIPreview.phone, force: force)
+            return
+        }
+        #endif
+        if StudentPhone.from(studentStore.info) == nil { await studentStore.refresh() }
+        guard !Task.isCancelled else { return }
+        let profilePhone = await studentStore.phoneForLifeServices()
+        guard !Task.isCancelled else { return }
+        let bathPhone = profilePhone ?? bathingPhone
+        let washPhone = profilePhone ?? StudentPhone.normalized(laundryPhone) ?? bathingPhone
+        async let bath: Void = bathingBalance.refresh(campus: appState.campus, phone: bathPhone, force: force)
+        async let laundry: Void = laundryBalance.refresh(campus: appState.campus, phone: washPhone, force: force)
+        _ = await (bath, laundry)
     }
 
     @ViewBuilder
@@ -291,35 +350,32 @@ struct DashboardView: View {
     }
 
     private var campusSnapshot: some View {
+        VStack(spacing: 10) {
         CampusAdaptiveGrid(minimumItemWidth: 180, spacing: 8, maximumContentWidth: 840) {
             if showsCard {
-            VStack(spacing: 0) {
-                SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-card") {
-                    FeatureDetailView(feature: feature(1))
-                } label: {
-                    snapshotItem("一卡通", value: campusCardBalanceText, icon: "creditcard")
-                }
-                if let action = FocusCardAction(rawValue: cardAction), action != .none {
-                    if action == .recharge {
-                        Button("充值", systemImage: "plus.circle") {
-                            openURL(CampusServiceClient.alipayCampusCardURL) { accepted in
-                                if !accepted { openURL(CampusServiceClient.alipayCampusCardFallbackURL) }
-                            }
-                        }.buttonStyle(.bordered)
-                    } else {
-                        AppNavigationLink {
-                            FocusPayCodeView()
-                        } label: { Label("付款码", systemImage: "qrcode") }.buttonStyle(.bordered)
+                focusBalanceTile("一卡通", value: campusCardBalanceText, icon: "creditcard", destination: { FeatureDetailView(feature: feature(1)) }) {
+                    if let action = FocusCardAction(rawValue: cardAction), action != .none {
+                        if action == .recharge {
+                            Button {
+                                openURL(CampusServiceClient.alipayCampusCardURL) { accepted in
+                                    if !accepted { openURL(CampusServiceClient.alipayCampusCardFallbackURL) }
+                                }
+                            } label: { rechargePlusIcon }
+                            .buttonStyle(.plain).accessibilityLabel("校园卡充值")
+                        } else {
+                            AppNavigationLink { FocusPayCodeView() } label: {
+                                Image(systemName: "qrcode").font(.body.weight(.semibold)).frame(width: 44, height: 44)
+                            }.buttonStyle(.plain).accessibilityLabel("校园卡付款码")
+                        }
                     }
                 }
             }
-            }
             if showsElectric {
-            SourceAnchoredNavigationLink(sourceID: "dashboard-snapshot-electricity") {
-                FeatureDetailView(feature: feature(3))
-            } label: {
-                snapshotItem("宿舍电费", value: electricitySummary, icon: "bolt")
+                balanceSnapshot("宿舍电费", value: electricitySummary, icon: "bolt", chargeItemID: appState.campus == .hefei ? 1 : 261) { ElectricityServiceView() }
             }
+            balanceSnapshot("洗澡余额", value: bathingBalance.summary, icon: "shower", footnote: bathingBalance.error, chargeItemID: appState.campus == .hefei ? 222 : 223) { BathingServiceView() }
+            if appState.campus == .hefei {
+                balanceSnapshot("洗衣余额", value: laundryBalance.summary, icon: "washer", footnote: laundryBalance.error, chargeItemID: 26) { LaundryServiceView() }
             }
             if showsTomorrowCard {
             SourceAnchoredNavigationLink(sourceID: "dashboard-tomorrow") {
@@ -337,30 +393,16 @@ struct DashboardView: View {
                     icon: "globe", footnote: network.map { String(format: "已用 %.2f GB", $0.usedMB / 1024) })
             }
             }
-            if showsWeather {
-                SourceAnchoredNavigationLink(sourceID: "dashboard-weather") {
-                    FeatureDetailView(feature: feature(28))
-                } label: {
-                    snapshotItem("天气", value: weather.map { String(format: "%.0f° · %@", $0.observation.temperature, $0.observation.condition) } ?? weatherError ?? "正在读取",
-                        icon: weather?.observation.symbol ?? "cloud", footnote: weatherWarningSummary)
-                }
-            }
             if recordsStore.newGradeCount > 0 {
                 SourceAnchoredNavigationLink(sourceID: "dashboard-new-grades") {
                     AcademicRecordsView(kind: .grades)
                 } label: { snapshotItem("新出成绩", value: "\(recordsStore.newGradeCount) 门", icon: "graduationcap") }
             }
         }
+        if showsWeather { focusWeatherBar }
+        }
         .padding(10)
         .adaptiveGlass(cornerRadius: 22, tint: AppTheme.accent.opacity(0.035))
-    }
-
-    private var weatherWarningSummary: String? {
-        guard let weather else { return nil }
-        switch weather.warnings {
-        case .available(let items): return items.first?.title ?? "暂无预警"
-        case .unavailable: return "预警暂未更新"
-        }
     }
 
     private var electricitySummary: String {
@@ -370,7 +412,8 @@ struct DashboardView: View {
             if item.error != nil { return "\(item.title)：暂未更新" }
             let balance = item.values.first { $0.key.contains("余额") || $0.key.contains("剩余") || $0.key.contains("金额") }?.value
                 ?? item.values.sorted { $0.key < $1.key }.first?.value ?? "未配置"
-            return "\(item.title)：\(balance)"
+            let title = item.title.replacingOccurrences(of: "电费", with: "")
+            return "\(title)：\(balance)"
         }.joined(separator: "\n")
     }
 
@@ -419,6 +462,77 @@ struct DashboardView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var rechargePlusIcon: some View {
+        Image(systemName: "plus").font(.body.weight(.semibold)).frame(width: 44, height: 44).contentShape(Rectangle())
+    }
+
+    private func balanceSnapshot<Destination: View>(_ title: String, value: String, icon: String, footnote: String? = nil, chargeItemID: Int, @ViewBuilder destination: @escaping () -> Destination) -> some View {
+        focusBalanceTile(title, value: value, icon: icon, footnote: footnote, destination: destination) {
+            AppNavigationLink(title: title + "充值") { HuiXinFeeChargeView(itemID: chargeItemID, title: title + "充值") } label: { rechargePlusIcon }
+                .buttonStyle(.plain).accessibilityLabel(title + "充值")
+        }
+    }
+
+    private func focusBalanceTile<Destination: View, Action: View>(_ title: String, value: String, icon: String, footnote: String? = nil, @ViewBuilder destination: @escaping () -> Destination, @ViewBuilder action: () -> Action) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.title3.weight(.medium)).foregroundStyle(.secondary).frame(width: 28)
+                AppNavigationLink(title: title, destination: destination) {
+                    Text(title).font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                }.buttonStyle(.plain)
+                action()
+            }
+            AppNavigationLink(title: title, destination: destination) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(value).font(.body).foregroundStyle(.primary).lineLimit(4)
+                    if let footnote { Text(footnote).font(.caption2).foregroundStyle(.tertiary).lineLimit(2) }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 40).padding(.bottom, 6)
+            }.buttonStyle(.plain)
+        }.frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+    }
+
+    private var focusWeatherBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SourceAnchoredNavigationLink(sourceID: "dashboard-weather", title: "天气") { FeatureDetailView(feature: feature(28)) } label: {
+                HStack(alignment: .top, spacing: 12) {
+                    focusWeatherDay("今天", value: weather.map { String(format: "%.0f° · %@", $0.observation.temperature, $0.observation.condition) } ?? weatherError ?? "正在读取",
+                        symbol: weather?.observation.symbol ?? "cloud", range: weather?.temperatureRange)
+                    focusWeatherDay("明天", value: weather?.tomorrowForecast?.condition ?? (weather == nil && weatherError == nil ? "正在读取" : "预报暂未更新"),
+                        symbol: weather?.tomorrowForecast?.symbol ?? "cloud", range: weather?.tomorrowForecast?.temperatureRange)
+                }.frame(maxWidth: .infinity, minHeight: 68, alignment: .leading).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+            if let weather, case .available(let warnings) = weather.warnings {
+                ForEach(warnings) { warning in
+                    Link(destination: weather.warningURL) {
+                        Label(warning.title, systemImage: "exclamationmark.triangle")
+                            .font(.caption).foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func focusWeatherDay(_ day: String, value: String, symbol: String, range: CampusWeatherTemperatureRange?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.title2).foregroundStyle(.secondary).frame(width: 28)
+                Text(day).font(.caption).foregroundStyle(.secondary)
+            }
+            Text(value).font(.body).foregroundStyle(.primary).lineLimit(2)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { focusWeatherTemperatures(range) }
+                VStack(alignment: .leading, spacing: 2) { focusWeatherTemperatures(range) }
+            }.font(.subheadline.monospacedDigit())
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private func focusWeatherTemperatures(_ range: CampusWeatherTemperatureRange?) -> some View {
+        Text("最高 \(range.map { String(format: "%.0f°", $0.maximum) } ?? "—")").foregroundStyle(.orange).fixedSize()
+        Text("最低 \(range.map { String(format: "%.0f°", $0.minimum) } ?? "—")").foregroundStyle(.secondary).fixedSize()
     }
 
     private func snapshotItem(_ title: String, value: String, icon: String, footnote: String? = nil) -> some View {
@@ -524,7 +638,9 @@ struct DashboardView: View {
     @MainActor
     private func refreshCampusCardBalance() async {
         guard !isRefreshingCampusCardBalance,
+              lastCardRefresh.map({ Date().timeIntervalSince($0) >= 60 }) != false,
               CampusServiceClient.shared.savedHuiXinToken != nil else { return }
+        lastCardRefresh = Date()
         isRefreshingCampusCardBalance = true
         defer { isRefreshingCampusCardBalance = false }
         do {

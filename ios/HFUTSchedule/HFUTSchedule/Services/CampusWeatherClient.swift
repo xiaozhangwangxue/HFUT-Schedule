@@ -36,12 +36,27 @@ enum CampusWeatherWarningState: Equatable {
     case unavailable(String)
 }
 
+struct CampusWeatherTemperatureRange: Equatable {
+    let maximum: Double
+    let minimum: Double
+    let day: String
+    let source: String
+}
+
+struct CampusWeatherDayForecast: Equatable {
+    let temperatureRange: CampusWeatherTemperatureRange
+    let condition: String
+    let symbol: String
+}
+
 struct CampusWeatherReport: Equatable {
     let observation: CampusWeatherObservation
     let source: String
     let detailURL: URL
     let warningURL: URL
     let warnings: CampusWeatherWarningState
+    var temperatureRange: CampusWeatherTemperatureRange? = nil
+    var tomorrowForecast: CampusWeatherDayForecast? = nil
 }
 
 enum CampusWeatherError: LocalizedError, Equatable {
@@ -98,17 +113,19 @@ struct CampusWeatherClient {
     }
 
     func fetch(location: CampusWeatherLocation) async throws -> CampusWeatherReport {
+        // One free forecast request supplies both a fallback observation and
+        // today's high/low and tomorrow's forecast. Run it alongside the primary feed.
+        let warningStatus = qWeather == nil ? "当前预警请打开和风天气官方页面查看。" : "和风天气连接未成功，请打开官方预警页查看当前预警。"
+        async let freeReport = fetchOpenMeteo(location: location, warningStatus: warningStatus)
         if let qWeather {
-            do { return try await fetchQWeather(location: location, configuration: qWeather) }
-            catch is CancellationError { throw CancellationError() }
-            catch {
-                try Task.checkCancellation()
-                // Keep ordinary users' weather available even if optional QWeather access expires.
-                return try await fetchOpenMeteo(
-                    location: location,
-                    warningStatus: "和风天气连接未成功，请打开官方预警页查看当前预警。"
-                )
-            }
+            do {
+                var report = try await fetchQWeather(location: location, configuration: qWeather)
+                let forecast = try? await freeReport
+                report.temperatureRange = forecast?.temperatureRange
+                report.tomorrowForecast = forecast?.tomorrowForecast
+                return report
+            } catch is CancellationError { throw CancellationError() }
+            catch { try Task.checkCancellation(); return try await freeReport }
         }
         if usesPublicPage {
             do {
@@ -119,15 +136,14 @@ struct CampusWeatherClient {
                     let data = try await request(URLRequest(url: location.officialWarningURL))
                     warningState = .available(try QWeatherPublicPage.warnings(String(decoding: data, as: UTF8.self)))
                 } catch { warningState = .unavailable("预警读取暂未成功，可打开官方预警页面。") }
+                let forecast = try? await freeReport
                 return CampusWeatherReport(observation: observation, source: "和风天气", detailURL: location.officialWeatherURL,
-                    warningURL: location.officialWarningURL, warnings: warningState)
+                    warningURL: location.officialWarningURL, warnings: warningState, temperatureRange: forecast?.temperatureRange,
+                    tomorrowForecast: forecast?.tomorrowForecast)
             } catch is CancellationError { throw CancellationError() }
             catch { try Task.checkCancellation() }
         }
-        return try await fetchOpenMeteo(
-            location: location,
-            warningStatus: "当前预警请打开和风天气官方页面查看。"
-        )
+        return try await freeReport
     }
 
     private func fetchOpenMeteo(location: CampusWeatherLocation, warningStatus: String) async throws -> CampusWeatherReport {
@@ -136,16 +152,21 @@ struct CampusWeatherClient {
             .init(name: "latitude", value: String(location.coordinates.latitude)),
             .init(name: "longitude", value: String(location.coordinates.longitude)),
             .init(name: "current", value: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m"),
-            .init(name: "timezone", value: "Asia/Shanghai")
+            .init(name: "timezone", value: "Asia/Shanghai"),
+            .init(name: "daily", value: "temperature_2m_max,temperature_2m_min,weather_code"),
+            .init(name: "forecast_days", value: "2")
         ]
         let data = try await request(URLRequest(url: url.url!))
-        let observation = try JSONDecoder().decode(OpenMeteoResponse.self, from: data).current
+        let decoded = try JSONDecoder().decode(OpenMeteoResponse.self, from: data)
+        let observation = decoded.current
         return CampusWeatherReport(
             observation: observation.value,
             source: "Open-Meteo",
             detailURL: location.officialWeatherURL,
             warningURL: location.officialWarningURL,
-            warnings: .unavailable(warningStatus)
+            warnings: .unavailable(warningStatus),
+            temperatureRange: decoded.daily?.temperatureRange(at: 0),
+            tomorrowForecast: decoded.daily?.tomorrowForecast
         )
     }
 
@@ -183,7 +204,7 @@ struct CampusWeatherClient {
 
     private func request(_ request: URLRequest) async throws -> Data {
         var request = request
-        request.timeoutInterval = 20
+        request.timeoutInterval = 8
         let (data, response) = try await transport(request)
         try Task.checkCancellation()
         guard let http = response as? HTTPURLResponse else { throw CampusWeatherError.invalidObservation }
@@ -193,6 +214,30 @@ struct CampusWeatherClient {
 
     private struct OpenMeteoResponse: Decodable {
         let current: Current
+        let daily: Daily?
+        struct Daily: Decodable {
+            let time: [String]
+            let temperature_2m_max: [Double?]
+            let temperature_2m_min: [Double?]
+            let weather_code: [Int?]?
+            func temperatureRange(at index: Int) -> CampusWeatherTemperatureRange? {
+                guard time.indices.contains(index), temperature_2m_max.indices.contains(index), temperature_2m_min.indices.contains(index),
+                      let high = temperature_2m_max[index], let low = temperature_2m_min[index],
+                      high.isFinite, low.isFinite, high >= low else { return nil }
+                return .init(maximum: high, minimum: low, day: time[index], source: "Open-Meteo")
+            }
+            var tomorrowForecast: CampusWeatherDayForecast? {
+                guard let today = time.first, let range = temperatureRange(at: 1) else { return nil }
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!
+                guard let first = CampusDateCodec.date(today, calendar: calendar),
+                      let next = CampusDateCodec.date(range.day, calendar: calendar),
+                      calendar.dateComponents([.day], from: first, to: next).day == 1 else { return nil }
+                let code = weather_code.flatMap { $0.indices.contains(1) ? $0[1] : nil }
+                let description = code.map { OpenMeteoResponse.condition(for: $0) }
+                return .init(temperatureRange: range, condition: description?.text ?? "预报暂未更新", symbol: description?.symbol ?? "cloud")
+            }
+        }
         struct Current: Decodable {
             let temperature_2m: Double
             let apparent_temperature: Double
@@ -200,22 +245,23 @@ struct CampusWeatherClient {
             let weather_code: Int
             let wind_speed_10m: Double
             var value: CampusWeatherObservation {
-                let condition: String
-                let symbol: String
-                switch weather_code {
-                case 0: (condition, symbol) = ("晴", "sun.max.fill")
-                case 1...3: (condition, symbol) = ("多云", "cloud.sun.fill")
-                case 45...48: (condition, symbol) = ("雾", "cloud.fog.fill")
-                case 51...67, 80...82: (condition, symbol) = ("雨", "cloud.rain.fill")
-                case 71...77, 85...86: (condition, symbol) = ("雪", "cloud.snow.fill")
-                case 95...99: (condition, symbol) = ("雷暴", "cloud.bolt.rain.fill")
-                default: (condition, symbol) = ("天气", "cloud.fill")
-                }
+                let description = OpenMeteoResponse.condition(for: weather_code)
                 return .init(
                     temperature: temperature_2m, apparent: apparent_temperature,
-                    humidity: relative_humidity_2m, condition: condition, symbol: symbol,
+                    humidity: relative_humidity_2m, condition: description.text, symbol: description.symbol,
                     windDescription: "风速 \(wind_speed_10m.formatted(.number.precision(.fractionLength(1)))) km/h"
                 )
+            }
+        }
+        static func condition(for code: Int) -> (text: String, symbol: String) {
+            switch code {
+            case 0: ("晴", "sun.max.fill")
+            case 1...3: ("多云", "cloud.sun.fill")
+            case 45...48: ("雾", "cloud.fog.fill")
+            case 51...67, 80...82: ("雨", "cloud.rain.fill")
+            case 71...77, 85...86: ("雪", "cloud.snow.fill")
+            case 95...99: ("雷暴", "cloud.bolt.rain.fill")
+            default: ("天气", "cloud.fill")
             }
         }
     }

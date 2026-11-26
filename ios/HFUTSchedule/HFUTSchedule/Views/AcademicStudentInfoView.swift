@@ -4,6 +4,7 @@ import UIKit
 struct AcademicStudentInfoView: View {
     @EnvironmentObject private var studentStore: AcademicStudentStore
     @AppStorage("studentInfoShowsSensitiveFields") private var showsSensitive = false
+    @State private var showingLogin = false
     @State private var photo: UIImage?
     @State private var photoError: String?
 
@@ -12,6 +13,9 @@ struct AcademicStudentInfoView: View {
             if let info = studentStore.info {
                 List {
                     Section {
+                        if let error = studentStore.error { Text(error).font(.footnote).foregroundStyle(.red) }
+                        Button("刷新个人信息", systemImage: "arrow.clockwise") { Task { await studentStore.refresh(force: true) } }.disabled(studentStore.loading)
+                        Button("重新登录教务系统", systemImage: "lock.shield") { showingLogin = true }
                         HStack(spacing: 14) {
                             if let photo {
                                 Image(uiImage: photo).resizable().scaledToFill().frame(width: 56, height: 72).clipShape(RoundedRectangle(cornerRadius: 9))
@@ -55,12 +59,19 @@ struct AcademicStudentInfoView: View {
                 ContentUnavailableView {
                     Label("尚未同步学籍信息", systemImage: "person.crop.circle.badge.questionmark")
                 } description: {
-                    Text("请先在“我的”中完成统一身份认证，登录成功后会自动读取并保存。")
+                    Text(studentStore.error ?? "正在同步个人信息；若登录已过期，请重新登录。")
+                } actions: {
+                    Button("重新读取") { Task { await studentStore.refresh(force: true) } }.disabled(studentStore.loading)
+                    Button("安全登录") { showingLogin = true }
                 }
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .task { if studentStore.info != nil { await loadPhoto() } }
+        .navigationTitle("个人信息")
+        .refreshable { await studentStore.refresh(force: true) }
+        .overlay { if studentStore.loading { ProgressView() } }
+        .task { await studentStore.refresh(); if studentStore.info != nil && photo == nil { await loadPhoto() } }
+        .sheet(isPresented: $showingLogin, onDismiss: { Task { await studentStore.refresh(force: true) } }) { AppNavigationStack { LoginPortalView() } }
     }
 
     @ViewBuilder

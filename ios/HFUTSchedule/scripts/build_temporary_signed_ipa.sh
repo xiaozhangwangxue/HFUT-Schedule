@@ -152,10 +152,16 @@ cd "${project_dir}"
 xcodegen generate >/dev/null
 
 echo "==> 构建（未签名）"
+# Private on-device diagnostics can be exercised with Release optimisation.
+# Normal Release builds keep all opt-in probes compiled out.
+extra_build_settings=()
+if [[ "${HFUT_ENABLE_DEVICE_PROBES:-no}" == "yes" ]]; then
+  extra_build_settings+=( 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=$(inherited) DEBUG' )
+fi
 xcodebuild -project HFUTSchedule.xcodeproj -scheme HFUTSchedule \
   -configuration "${build_configuration}" -sdk iphoneos27.2 \
   -derivedDataPath "${derived_dir}" \
-  DEVELOPMENT_TEAM="${signing_team}" CODE_SIGNING_ALLOWED=NO build \
+  DEVELOPMENT_TEAM="${signing_team}" CODE_SIGNING_ALLOWED=NO "${extra_build_settings[@]}" build \
   > "${TMPDIR:-/tmp}/hfut_unsigned_build.log" 2>&1
 
 if [[ ! -d "${widget_path}" ]]; then

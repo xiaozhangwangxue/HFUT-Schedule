@@ -91,8 +91,11 @@ final class CourseNotificationManager: ObservableObject {
         guard generation == token else { return }
 
         let resolvedStart = termStart ?? ScheduleCalendar.termStart(from: courses)
-        let occurrences = PlatformScheduleResolver.occurrences(courses: courses, exams: cachedExams,
-            events: cachedEvents, termStart: resolvedStart)
+        let exams = cachedExams, events = cachedEvents
+        let occurrences = await Task.detached(priority: .utility) {
+            PlatformScheduleResolver.occurrences(courses: courses, exams: exams, events: events, termStart: resolvedStart)
+        }.value
+        guard generation == token else { return }
         let otherCount = pending.filter { !$0.identifier.hasPrefix(identifierPrefix) }.count
         let reminders = PlatformReminderPlanner.reminders(occurrences, leadMinutes: leadMinutes,
             now: now, limit: max(0, 64 - otherCount))

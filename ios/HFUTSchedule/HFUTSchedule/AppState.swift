@@ -1,6 +1,11 @@
 import SwiftUI
 
 @MainActor
+final class AppTabSelection: ObservableObject {
+    @Published var selectedTab: AppTab = .home
+}
+
+@MainActor
 final class AppState: ObservableObject {
     enum Campus: String, CaseIterable, Identifiable {
         case hefei = "合肥校区"
@@ -12,13 +17,19 @@ final class AppState: ObservableObject {
     @Published var campus: Campus {
         didSet { UserDefaults.standard.set(campus.rawValue, forKey: "selectedCampus") }
     }
-    @Published var selectedTab: AppTab = .home
+    let tabSelection = AppTabSelection()
+    var selectedTab: AppTab {
+        get { tabSelection.selectedTab }
+        set { if tabSelection.selectedTab != newValue { tabSelection.selectedTab = newValue } }
+    }
     @Published var pendingFeatureID: Int?
     @Published var shouldPresentLogin = false
     @Published var pendingOccurrence: PlatformOccurrenceDestination?
     @Published var pendingPlatformLink: PlatformDeepLinkRequest?
     @Published var pendingShortcut: CampusShortcutTarget?
-    @Published var navigationHistory: [PlatformNavigationEntry] = []
+    // The launchpad takes a history snapshot when it opens. Publishing this
+    // on AppState made every page redraw on each push/pop and tab switch.
+    var navigationHistory: [PlatformNavigationEntry] = []
     @Published var navigationReturnRequest: UUID?
     @Published var prefersHaptics: Bool {
         didSet { UserDefaults.standard.set(prefersHaptics, forKey: "prefersHaptics") }

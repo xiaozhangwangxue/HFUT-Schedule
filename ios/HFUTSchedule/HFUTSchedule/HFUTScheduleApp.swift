@@ -122,8 +122,20 @@ struct HFUTScheduleApp: App {
     @MainActor
     private func prepareScene() async {
         #if DEBUG
+        if AppUIPreview.enabled {
+            AppUIPreview.configure(state: appState, courses: scheduleStore, student: academicStudentStore)
+            restoreTheme()
+            if ProcessInfo.processInfo.arguments.contains("--navigation-performance-check") {
+                await NavigationFrameProbe.run(state: appState)
+            }
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("--cas-preparation-check") {
             await CASPreparationProbe.run()
+        } else if ProcessInfo.processInfo.arguments.contains("--navigation-performance-check") {
+            await NavigationFrameProbe.run(state: appState)
+        } else if ProcessInfo.processInfo.arguments.contains("--campus-function-check") {
+            await CASPreparationProbe.runFunctions()
         } else if ProcessInfo.processInfo.arguments.contains("--campus-service-check") {
             await CASPreparationProbe.runServices()
         }

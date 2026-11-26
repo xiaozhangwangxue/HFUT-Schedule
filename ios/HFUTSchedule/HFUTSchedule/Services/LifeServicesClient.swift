@@ -32,6 +32,14 @@ struct CampusCardBillPage: Decodable {
     let records: [CampusCardBill]
     let total: Int
     let size: Int
+    init(records: [CampusCardBill], total: Int, size: Int) { self.records = records; self.total = total; self.size = size }
+    private enum CodingKeys: String, CodingKey { case records, total, size }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        records = try c.decode([CampusCardBill].self, forKey: .records)
+        total = try c.billInteger(.total) ?? records.count
+        size = try c.billInteger(.size) ?? records.count
+    }
 }
 struct CampusCardBill: Decodable, Identifiable, Hashable {
     var id: String { "\(orderId)|\(jndatetimeStr)|\(resume)|\(tranamt ?? 0)" }
@@ -42,9 +50,54 @@ struct CampusCardBill: Decodable, Identifiable, Hashable {
     let orderId: String
     let jndatetimeStr: String
     let effectdateStr: String
+    init(tranamt: Int?, resume: String, fromAccount: String, turnoverType: String, orderId: String, jndatetimeStr: String, effectdateStr: String) {
+        self.tranamt = tranamt; self.resume = resume; self.fromAccount = fromAccount; self.turnoverType = turnoverType
+        self.orderId = orderId; self.jndatetimeStr = jndatetimeStr; self.effectdateStr = effectdateStr
+    }
+    private enum CodingKeys: String, CodingKey { case tranamt, resume, fromAccount, turnoverType, orderId, jndatetimeStr, effectdateStr }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tranamt = try c.billInteger(.tranamt)
+        resume = c.billString(.resume); fromAccount = c.billString(.fromAccount)
+        turnoverType = c.billString(.turnoverType); orderId = c.billString(.orderId)
+        jndatetimeStr = c.billString(.jndatetimeStr); effectdateStr = c.billString(.effectdateStr)
+    }
     var amount: Double { Double(tranamt ?? 0) / 100 }
     var day: String { String(jndatetimeStr.prefix(10)) }
 }
+private extension KeyedDecodingContainer {
+    func billString(_ key: Key) -> String {
+        (try? decode(String.self, forKey: key)) ?? (try? decode(Int64.self, forKey: key)).map(String.init) ?? ""
+    }
+    func billInteger(_ key: Key) throws -> Int? {
+        if !contains(key) { return nil }
+        if try decodeNil(forKey: key) { return nil }
+        if let value = try? decode(Int.self, forKey: key) { return value }
+        if let value = try? decode(String.self, forKey: key), let number = Double(value), number.isFinite, number.rounded() == number,
+           let result = Int(exactly: number) { return result }
+        throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "金额或分页数量不是整数")
+    }
+}
+
+/// Walk actual pages: HuiXin may cap the requested page size. Never silently
+/// turn the first capped page into a complete consumption analysis.
+enum CampusCardPagination {
+    static func all(fetch: (Int, Int) async throws -> CampusCardBillPage) async throws -> [CampusCardBill] {
+        var page = 1, results: [CampusCardBill] = [], seen = Set<String>()
+        while true {
+            try Task.checkCancellation()
+            let response = try await fetch(page, 100)
+            let additions = response.records.filter { seen.insert($0.id).inserted }
+            results.append(contentsOf: additions)
+            if results.count >= response.total { return results }
+            guard !additions.isEmpty, page < 10000 else {
+                throw CampusServiceError.invalidData("账单分页未完整返回，请稍后重新加载分析")
+            }
+            page += 1
+        }
+    }
+}
+
 struct CampusCardRangeTotal: Decodable { let income: Double; let expenses: Double }
 struct CampusCardForecast: Equatable {
     let dailyAmounts: [String: Double]
@@ -108,9 +161,9 @@ extension CampusServiceClient {
         return try JSONDecoder().decode(Envelope.self, from: data).data
     }
     func fetchAllCampusCardBills() async throws -> [CampusCardBill] {
-        let first = try await fetchCampusCardBills(size: 1)
-        if first.total == 0 { return [] }
-        return try await fetchCampusCardBills(size: first.total).records
+        try await CampusCardPagination.all { page, size in
+            try await fetchCampusCardBills(page: page, size: size)
+        }
     }
     func fetchCampusCardMonthlyAmounts(month: String) async throws -> [String: Double] {
         var components = URLComponents()
