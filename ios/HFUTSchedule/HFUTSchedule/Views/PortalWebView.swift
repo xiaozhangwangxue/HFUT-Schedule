@@ -8,6 +8,7 @@ struct PortalWebView: View {
     var onAcademicAuthenticated: (([HTTPCookie]) -> Void)?
     var autoOpenCampusMailbox = false
     var cookieHeader: String?
+    var huiXinPhoneAutofill: HuiXinPhoneAutofill?
     @State private var isLoading = true
     @State private var title = ""
     @StateObject private var webViewReference = PortalBrowserController()
@@ -28,13 +29,15 @@ struct PortalWebView: View {
         academicMode: AcademicConnectionMode? = nil,
         onAcademicAuthenticated: (([HTTPCookie]) -> Void)? = nil,
         autoOpenCampusMailbox: Bool = false,
-        cookieHeader: String? = nil
+        cookieHeader: String? = nil,
+        huiXinPhoneAutofill: HuiXinPhoneAutofill? = nil
     ) {
         self.url = url
         self.academicMode = academicMode
         self.onAcademicAuthenticated = onAcademicAuthenticated
         self.autoOpenCampusMailbox = autoOpenCampusMailbox
         self.cookieHeader = cookieHeader
+        self.huiXinPhoneAutofill = huiXinPhoneAutofill
     }
 
     var body: some View {
@@ -46,6 +49,7 @@ struct PortalWebView: View {
                 autoOpenCampusMailbox: autoOpenCampusMailbox,
                 reference: webViewReference,
                 cookieHeader: cookieHeader,
+                huiXinPhoneAutofill: huiXinPhoneAutofill,
                 isLoading: $isLoading,
                 pageTitle: $title
             )
@@ -197,6 +201,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
     let autoOpenCampusMailbox: Bool
     let reference: PortalBrowserController
     let cookieHeader: String?
+    let huiXinPhoneAutofill: HuiXinPhoneAutofill?
     @Binding var isLoading: Bool
     @Binding var pageTitle: String
 
@@ -226,6 +231,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
         }
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        context.coordinator.phoneAutofill.update(huiXinPhoneAutofill, on: webView)
         reference.webView = webView
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
@@ -247,6 +253,7 @@ private struct WebViewRepresentable: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.phoneAutofill.update(huiXinPhoneAutofill, on: webView)
         guard !context.coordinator.didRequestInitialLoad else { return }
         context.coordinator.didRequestInitialLoad = true
         webView.load(URLRequest(url: initialURL()))
@@ -256,12 +263,13 @@ private struct WebViewRepresentable: UIViewRepresentable {
     private func initialURL() -> URL {
         WebVPNBrowsingSession.shared.initialURL(
             url,
-            isProtectedFlow: academicMode != nil || onAcademicAuthenticated != nil || autoOpenCampusMailbox
+            isProtectedFlow: academicMode != nil || onAcademicAuthenticated != nil || autoOpenCampusMailbox || HuiXinPhoneAutofill.isOfficialChargePage(url)
         )
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebViewRepresentable
+        let phoneAutofill = HuiXinPhoneAutofillController()
         private var enteredAcademicAfterVPNLogin = false
         private var reportedAuthentication = false
         var didRequestInitialLoad = false

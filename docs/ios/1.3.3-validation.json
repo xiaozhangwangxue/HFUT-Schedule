@@ -1,0 +1,78 @@
+{
+  "version": "1.3.3",
+  "build": "10",
+  "sdk": "iphoneos27.2",
+  "minimumIOS": "17.0",
+  "date": "2026-11-27",
+  "releaseTag": "ios-v1.3.3",
+  "artifacts": [
+    {
+      "name": "HFUTSchedule-iOS-1.3.3-unsigned.ipa",
+      "bytes": 13452076,
+      "sha256": "14114d2862ad84fa13bf667188d03c9ae49d664ddbc881caf3d21d80c4dee74c",
+      "bundles": [
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios.widget",
+          "version": "1.3.3",
+          "build": "10",
+          "sdk": "iphoneos27.2"
+        },
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios",
+          "version": "1.3.3",
+          "build": "10",
+          "sdk": "iphoneos27.2"
+        }
+      ],
+      "emptyWidgetSnapshot": true,
+      "noProvisioningProfile": true,
+      "noDebugPreview": true,
+      "verifiedOCRModel": true
+    },
+    {
+      "name": "HFUTSchedule-iOS-1.3.3-resignable.ipa",
+      "bytes": 13512839,
+      "sha256": "f7e8b2fd1ebf1b355be70e5c55f9d97c0486606096b2a5a44d37b4cfd37c0de2",
+      "bundles": [
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios",
+          "version": "1.3.3",
+          "build": "10",
+          "sdk": "iphoneos27.2"
+        },
+        {
+          "id": "com.xiaozhangwangxue.hfutschedule.ios.widget",
+          "version": "1.3.3",
+          "build": "10",
+          "sdk": "iphoneos27.2"
+        }
+      ],
+      "emptyWidgetSnapshot": true,
+      "noProvisioningProfile": true,
+      "noDebugPreview": true,
+      "verifiedOCRModel": true
+    }
+  ],
+  "automatedTests": {
+    "platform": "iOS Simulator 27.2",
+    "tests": 337,
+    "newTests": 7,
+    "failures": 0,
+    "result": "TEST EXECUTE SUCCEEDED",
+    "log": "build-1.3.3-test-results.log"
+  },
+  "releaseBuild": "BUILD SUCCEEDED",
+  "autofillVerification": {
+    "engine": "real WKWebView using offline official-style forms",
+    "asynchronousForm": true,
+    "latePhone": true,
+    "boundModelInputEvent": true,
+    "keepsExistingAndClearedValues": true,
+    "rejectsForeignOriginAndDifferentFee": true,
+    "excludesAmountOTPPassword": true,
+    "mainFrameOnlyUserScript": true,
+    "noAutomaticSubmission": true,
+    "realAccountPaymentPerformed": false
+  },
+  "sharedKeychainMetadata": "matching ad-hoc placeholder group verified; requires user re-signing"
+}

@@ -362,13 +362,15 @@ struct HuiXinLaundryChargeView: View {
 }
 
 struct HuiXinFeeChargeView: View {
+    @EnvironmentObject private var studentStore: AcademicStudentStore
     let itemID: Int
     let title: String
     @State private var url: URL?
     @State private var error: String?
+    @State private var phone: String?
     var body: some View {
         Group {
-            if let url { PortalWebView(url: url) }
+            if let url { PortalWebView(url: url, huiXinPhoneAutofill: HuiXinPhoneAutofill(phone: phone, itemID: itemID, url: url)) }
             else if let error {
                 ContentUnavailableView {
                     Label("充值页面打开失败", systemImage: "exclamationmark.triangle")
@@ -378,17 +380,38 @@ struct HuiXinFeeChargeView: View {
             } else { ProgressView().accessibilityLabel("正在打开官方充值页") }
         }
         .navigationTitle(title)
-        .task(id: itemID) { await load() }
+        .task(id: "\(itemID)|\(studentStore.info?.studentID ?? "")") { await load() }
+        .task(id: "\(itemID)|\(studentStore.info?.studentID ?? "")") { await loadPhone() }
+    }
+    @MainActor private func loadPhone() async {
+        phone = nil
+        guard HuiXinPhoneAutofill.feeItemIDs.contains(itemID) else { return }
+        #if DEBUG
+        if AppUIPreview.enabled { phone = AppUIPreview.phone; return }
+        #endif
+        if let value = StudentPhone.from(studentStore.info) { phone = value; return }
+        if studentStore.info == nil { await studentStore.refresh() }
+        let value = await studentStore.phoneForLifeServices()
+        guard !Task.isCancelled else { return }
+        phone = value
     }
     @MainActor private func load() async {
-        error = nil
+        error = nil; url = nil
         #if DEBUG
         // The simulator fixture captures the loading state without requesting
         // an account-specific payment URL. Release always uses the real flow.
         if AppUIPreview.enabled { return }
         #endif
-        do { url = try await CampusServiceClient.shared.huiXinChargeURL(itemID: itemID) }
-        catch { AcademicServiceDiagnostics.record(context: "官方充值入口", error: error); self.error = error.localizedDescription }
+        do {
+            let value = try await CampusServiceClient.shared.huiXinChargeURL(itemID: itemID)
+            guard !Task.isCancelled else { return }
+            url = value
+        }
+        catch {
+            guard !Task.isCancelled else { return }
+            AcademicServiceDiagnostics.record(context: "官方充值入口", error: error)
+            self.error = error.localizedDescription
+        }
     }
 }
 
